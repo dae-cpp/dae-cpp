@@ -15,17 +15,17 @@ class Jacobian
 
     RHS &m_rhs;
 
-    double m_tol;
+    double m_tol = 1.0e-6;
 
 public:
     /*
-     * TODO:
+     * TODO: Description
      */
     Jacobian(RHS &rhs) : m_rhs(rhs) {}
     Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol) {}
 
     /*
-     * TODO: Numerical differentiation of RHS with the give tolerance
+     * TODO: Numerical differentiation of RHS with the given tolerance
      * Can be overriden to provide analytical Jacobian
      * x is not a constant here to avoid unnecessary array copying
      */
