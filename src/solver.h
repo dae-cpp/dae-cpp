@@ -9,6 +9,7 @@
 #include "jacobian.h"
 #include "mass_matrix.h"
 #include "solver_options.h"
+#include "time_integrator.h"
 
 namespace daecpp_namespace_name
 {

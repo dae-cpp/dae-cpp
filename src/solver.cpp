@@ -11,12 +11,27 @@
 
 #include "solver.h"
 
+#define BDF_MAX_ORDER 1
+
 namespace daecpp_namespace_name
 {
 
 void Solver::operator()(state_type &x)
 {
+    //m_opt.N = (int)(x.size());
+
     MKL_INT size = (MKL_INT)(x.size());
+
+    TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, (int)size);
+
+    // this will give J and x
+    double dt = m_opt.dt_init;
+    double t = 0.0;
+    state_type x_prev[BDF_MAX_ORDER+1];
+    state_type J;
+    vector_type_int J_ia;
+    vector_type_int J_ja;
+    ti(J, J_ia, J_ja, x, x_prev, t, dt); // move inside the solver loop
 
     state_type      a(5 * size);
     state_type      b(size);
@@ -30,7 +45,7 @@ void Solver::operator()(state_type &x)
     MKL_INT *ia = jia.data();
     MKL_INT *ja = jja.data();
 
-    double dt = 0.1;  // time step
+    //double dt = 0.1;  // time step
 
     int count = 0;
     int calls = 0;

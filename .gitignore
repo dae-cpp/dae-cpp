@@ -1,3 +1,4 @@
 *.exe
 *.png
+.vs/
 .vscode/ipch/
