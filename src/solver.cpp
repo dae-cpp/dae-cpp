@@ -18,19 +18,26 @@ namespace daecpp_namespace_name
 
 void Solver::operator()(state_type &x)
 {
-    //m_opt.N = (int)(x.size());
-
     MKL_INT size = (MKL_INT)(x.size());
 
+    // We might not need m_rhs in the time integrator since we have Jacobian and Mass matrix there
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, (int)size);
 
-    // this will give J and x
-    double dt = m_opt.dt_init;
+    // Initial time and time step
     double t = 0.0;
+    double dt = m_opt.dt_init;
+
+    // Contains a few latest successful time steps for Time Integrator
     state_type x_prev[BDF_MAX_ORDER+1];
+
+    // Full Jacobian matrix holder
     state_type J;
     vector_type_int J_ia;
     vector_type_int J_ja;
+
+
+    // this will give J and x
+    
     ti(J, J_ia, J_ja, x, x_prev, t, dt); // move inside the solver loop
 
     state_type      a(5 * size);
