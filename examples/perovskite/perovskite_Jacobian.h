@@ -5,14 +5,14 @@
 #pragma once
 
 #include "../../src/jacobian.h"
+#include "perovskite_parameters.h"
 
-class MyJacobian : public Jacobian
+class MyJacobian : public daecpp::Jacobian
 {
-//    MyParams m_p;
+    MyParams m_p;
 
 public:
-//    MyRHS(MyParams p) : RHS(), m_p(p) {}
-    //void operator()(const state_type& x, state_type& f, const double t);
-    MyJacobian(RHS &rhs) : Jacobian(rhs) {}
-    void operator() (state_type &x, state_type &J, vector_type_int &ia, vector_type_int &ja, const double t, const double dt);
+    MyJacobian(daecpp::RHS &rhs, MyParams p) : daecpp::Jacobian(rhs), m_p(p) {}
+    void operator()(daecpp::state_type &x, daecpp::sparse_matrix_holder &J,
+                    const double t, const double dt);
 };

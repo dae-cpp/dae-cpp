@@ -5,13 +5,12 @@
 #pragma once
 
 #include "../../src/mass_matrix.h"
-//#include "perovskite_parameters.h"
 
-class MyMassMatrix : public MassMatrix
+class MyMassMatrix : public daecpp::MassMatrix
 {
-    //MyParams m_p;
+    const int m_N;
 
 public:
-    //MyMassMatrix(MyParams p) : RHS(), m_p(p) {}
-    void operator()(const state_type& x, state_type& f, const double t);
+    MyMassMatrix(const int N) : daecpp::MassMatrix(), m_N(N) {}
+    void operator()(daecpp::sparse_matrix_holder &M);
 };

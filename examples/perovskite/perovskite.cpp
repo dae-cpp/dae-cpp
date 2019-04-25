@@ -1,5 +1,6 @@
 /*
  * TODO: Description of the problem
+ * Keywords: perovskite solar cell, potential, ion concentration
  *
  */
 
@@ -8,9 +9,9 @@
 
 #include "../../src/solver.h"  // dae-cpp library
 
-#include "perovskite_Jacobian.h"    // Jacobian of the problem
-#include "perovskite_Mass.h"        // Mass Matrix definition
 #include "perovskite_RHS.h"         // RHS of the problem
+#include "perovskite_Mass.h"        // Mass Matrix definition
+#include "perovskite_Jacobian.h"    // Jacobian of the problem
 #include "perovskite_parameters.h"  // Parameter container of the problem
 
 namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
@@ -41,26 +42,28 @@ int main()
     std::cout << "N = " << p.N << "; lambda = " << p.lambda << "; t = " << p.t1
               << '\n';
 
-    // Define state vectors, where 2*N is the total number of the equations.
-    // We are going to start two independent simulations, hence two vectors.
+    // Define state vectors. Here 2*N is the total number of the equations.
+    // We are going to carry out two independent simulations: with analytical
+    // Jacobian and numerically estimated one, hence two vectors.
     dae::state_type x1(2 * N), x2(2 * N);
 
     // Initial conditions
-    for (int i = 0; i < N; i++)
+    for(int i = 0; i < N; i++)
     {
-        x1[i]     = 1.0;  // P
-        x1[i + N] = 0.0;  // Phi
+        x1[i]     = 1.0;  // for P - ion concentration
+        x1[i + N] = 0.0;  // for Phi - potential
     }
     x2 = x1;  // x1 and x2 will be overwritten by the solver
 
     // Set up the RHS of the problem.
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
-    MyRHS rhs(p);
-    // dae::RHS *prhs = &rhs;
+    MyRHS     rhs(p);
+    dae::RHS *prhs = &rhs;
 
     // We can override Jacobian class from dae-cpp library
     // and provide analytical Jacobian
-    MyJacobian jac(*prhs);
+    MyJacobian jac(rhs, p);
+    // MyJacobian jac(*prhs, p);
     // dae::Jacobian *pjac = &jac;
 
     // Set up the Mass Matrix of the problem.
@@ -69,12 +72,11 @@ int main()
     // dae::MassMatrix *pmass = &mass;
 
     // Update some of the solver options
-    dae::SolverOptions opt();
-    opt.t1   = p.t1;
+    dae::SolverOptions opt;
     opt.atol = 1.0e-6;
 
     // Create an instance of the solver
-    dae::Solver solve(&rhs, &jac, &mass, opt);
+    dae::Solver solve(rhs, jac, mass, opt, p.t1);
 
     // Now we are ready to solve the set of DAEs
     std::cout << "Starting DAE solver...\n";
@@ -96,11 +98,10 @@ int main()
 
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
-    const double  tol = 1.0e-6;
-    dae::Jacobian jac_est(*prhs, tol);
+    dae::Jacobian jac_est(*prhs, 1.0e-6);
 
     // Create a new instance of the solver for estimated Jacobian
-    dae::Solver solve_slow(&rhs, jac_est, &mass, opt);
+    dae::Solver solve_slow(rhs, jac_est, mass, opt, p.t1);
 
     // Solve the set of DAEs again
     std::cout << "Starting DAE solver with estimated Jacobian...\n";
@@ -122,12 +123,12 @@ int main()
 
 #ifdef PLOTTING
     state_type x_axis(N), p(N), phi(N), d2phi(N);
-    for (int i = 0; i < N; i++)
+    for(int i = 0; i < N; i++)
     {
         x_axis[i] = (0.5 + i) / N;
         p[i]      = x[i];
         phi[i]    = x[i + N];
-        if (i > 0 && i < (N - 1))
+        if(i > 0 && i < (N - 1))
             d2phi[i] =
                 1.0 - lambda * lambda *
                           (x[i + 1 + N] - 2.0 * x[i + N] + x[i - 1 + N]) *
@@ -138,11 +139,6 @@ int main()
     d2phi[N - 1] = 1.0 - lambda * lambda *
                              (2.0 * t1 - 3.0 * x[2 * N - 1] + x[2 * N - 2]) *
                              ((double)(N) * (double)(N));
-
-    // std::cout << "L: " << 1.0 - lambda*lambda*(x[N+1] - 3.0*x[N]
-    // - 2.0*t1)*((double)(N)*(double)(N)) << '\n'; std::cout << "R: " << 1.0 -
-    // lambda*lambda*(2.0*t1 - 3.0*x[2*N-1] +
-    // x[2*N-2])*((double)(N)*(double)(N)) << '\n';
 
     plt::figure();
     plt::figure_size(800, 600);

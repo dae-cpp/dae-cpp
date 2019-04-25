@@ -12,7 +12,7 @@ class MyRHS : public daecpp::RHS
     MyParams m_p;
 
 public:
-    MyRHS(MyParams p) : RHS(), m_p(p) {}
-    void operator()(const daecpp::state_type& x, daecpp::state_type& f,
+    MyRHS(MyParams p) : daecpp::RHS(), m_p(p) {}
+    void operator()(const daecpp::state_type &x, daecpp::state_type &f,
                     const double t);
 };

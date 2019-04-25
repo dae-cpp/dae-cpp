@@ -12,8 +12,7 @@ namespace daecpp_namespace_name
  * Numerical Jacobian
  * Calls rhs N times, hence O(N^2) operations
  */
-void Jacobian::operator()(state_type &J, vector_type_int &ia,
-                          vector_type_int &ja, state_type &x, const double t)
+void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t)
 {
     const int size = (int)(x.size());
 
@@ -42,13 +41,13 @@ void Jacobian::operator()(state_type &J, vector_type_int &ia,
             }
             else
             {
-                J[cj]  = der;    // write derivative
-                ja[cj] = i + 1;  // write column number -- FORTRAN style here
+                J.A[cj]  = der;    // write derivative
+                J.ja[cj] = i + 1;  // write column number -- FORTRAN style here
                 cj++;
 
                 if(first)
                 {
-                    ia[ci] = cj;  // write ID of the first element in a row --
+                    J.ia[ci] = cj;  // write ID of the first element in a row --
                                   // FORTRAN style here
                     first = false;
                     ci++;
@@ -59,7 +58,7 @@ void Jacobian::operator()(state_type &J, vector_type_int &ia,
         x[j] -= m_tol;
     }
 
-    ia[size] = cj + 1;  // FORTRAN style here
+    J.ia[size] = cj + 1;  // FORTRAN style here
 }
 
 }  // namespace daecpp_namespace_name

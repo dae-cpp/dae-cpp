@@ -29,8 +29,7 @@ public:
      * Can be overriden to provide analytical Jacobian
      * x is not a constant here to avoid unnecessary array copying
      */
-    void operator()(state_type &J, vector_type_int &ia, vector_type_int &ja,
-                    state_type &x, const double t);
+    void operator()(sparse_matrix_holder &J, state_type &x, const double t);
 
     /*
      * TODO: Helper function to print Jacobian

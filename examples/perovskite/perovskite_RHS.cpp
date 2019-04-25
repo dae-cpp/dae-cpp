@@ -8,11 +8,8 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
                        const double t)
 {
     // Locals
-    const int    N       = m_p.N;          // number of points
-    const double L       = m_p.L;          // box length
-    const double h       = L / (double)N;  // cell size
-    const double invh    = 1.0 / h;
-    const double invh2   = invh * invh;
+    const int    N       = m_p.N;
+    const double invh2   = m_p.invh * m_p.invh;
     const double invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
 
     // RHS for P = dFlux/dx
