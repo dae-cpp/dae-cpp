@@ -12,7 +12,8 @@ namespace daecpp_namespace_name
  * Numerical Jacobian
  * Calls rhs N times, hence O(N^2) operations
  */
-void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t)
+void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
+                          const double t)
 {
     const int size = (int)(x.size());
 
@@ -21,7 +22,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t
 
     m_rhs(x, f0, t);
 
-    int ci = 0, cj = 0;
+    int cj = 0;
 
     for(int j = 0; j < size; j++)
     {
@@ -29,7 +30,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t
 
         m_rhs(x, f1, t);
 
-        bool first = true;  // first element in a row
+        bool is_first = true;  // first element in a row
 
         for(int i = 0; i < size; i++)  // loop over columns
         {
@@ -41,16 +42,15 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t
             }
             else
             {
-                J.A[cj]  = der;    // write derivative
-                J.ja[cj] = i + 1;  // write column number -- FORTRAN style here
+                J.A.push_back(der);     // write derivative
+                J.ja.push_back(i + 1);  // write column number -- FORTRAN style
                 cj++;
 
-                if(first)
+                if(is_first)
                 {
-                    J.ia[ci] = cj;  // write ID of the first element in a row --
-                                  // FORTRAN style here
-                    first = false;
-                    ci++;
+                    J.ia.push_back(cj);  // write ID of the first element in a
+                                         // row -- FORTRAN style here
+                    is_first = false;
                 }
             }
         }
@@ -58,7 +58,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x, const double t
         x[j] -= m_tol;
     }
 
-    J.ia[size] = cj + 1;  // FORTRAN style here
+    J.ia.push_back(cj + 1);  // FORTRAN style here
 }
 
 }  // namespace daecpp_namespace_name

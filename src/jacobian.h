@@ -25,9 +25,9 @@ public:
     Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol) {}
 
     /*
-     * TODO: Numerical differentiation of RHS with the given tolerance
-     * Can be overriden to provide analytical Jacobian
-     * x is not a constant here to avoid unnecessary array copying
+     * TODO: Numerical differentiation of RHS with the given tolerance.
+     * Can be overriden to provide analytical Jacobian.
+     * x is not a constant here to avoid unnecessary array copying.
      */
     void operator()(sparse_matrix_holder &J, state_type &x, const double t);
 

@@ -19,7 +19,7 @@ public:
      * Sparse matrix format
      * Static Mass matrix, does not depend on t and vector x
      */
-    virtual void operator()(daecpp::sparse_matrix_holder &M) = 0;
+    virtual void operator()(sparse_matrix_holder &M) = 0;
 
     /*
      * TODO: Helper function(s) to create mass matrices in sparse format

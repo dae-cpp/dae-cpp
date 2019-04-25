@@ -11,7 +11,7 @@
 
 #include "solver.h"
 
-#define BDF_MAX_ORDER 1
+#define BDF_MAX_ORDER 1  // Max BDF scheme order currently implemented
 
 namespace daecpp_namespace_name
 {
@@ -21,8 +21,7 @@ void Solver::operator()(state_type &x)
     // Matrix size
     MKL_INT size = (MKL_INT)(x.size());
 
-    // We might not need m_rhs in the time integrator since we have Jacobian and
-    // Mass matrix there
+    // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
     // Initial time and time step
@@ -35,7 +34,7 @@ void Solver::operator()(state_type &x)
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
 
-    // Full RHS and solution
+    // Full RHS and solution vector
     state_type b(size), xk(size);
 
     float_type *mkl_a = J.A.data();
@@ -45,13 +44,14 @@ void Solver::operator()(state_type &x)
     MKL_INT *ia = J.ia.data();
     MKL_INT *ja = J.ja.data();
 
-    int count = 0;  //
-    int calls = 0;  //
+    // Copy current state vector into the history vector
+    x_prev[0] = x;
 
-    x_prev[0] = x;  // Copy current state vector into the history vector
+    int calls = 0;  // Counts linear algebra solver calls
 
     /*
      * Pardiso control parameters
+     * ==========================
      */
 
     MKL_INT phase;  // Current phase of the solver
@@ -119,11 +119,12 @@ void Solver::operator()(state_type &x)
 
     /*
      * Start solver
+     * ============
      */
 
     // Start timer here
 
-    bool exitf = false;
+    bool final_time_step = false;
 
     for(double t = dt; t <= (m_t1 + dt * 0.5); t += dt)
     {
@@ -131,23 +132,21 @@ void Solver::operator()(state_type &x)
 
         int iter;
 
+        // remove 20 to options
         for(iter = 0; iter < 20; iter++)
         {
-            // m_rhs(x, b, t);
-
-            // this will give J and x
-            // const double t here
-            // estimate new J only for inter == 0?
+            // estimate new numerical J only for inter == 0?
             ti(J, b, x, x_prev, t, dt);
 
-            // In case Jacobian is re-allocated
+            // Jacobian can change its size and can be re-allocated.
+            // Catch up new array addresses.
             mkl_a = J.A.data();
             ia    = J.ia.data();
             ja    = J.ja.data();
 
             if(iter == 0)
             {
-
+                // PHASE 1.
                 // Reordering and Symbolic Factorization. This step also
                 // allocates all memory that is necessary for the factorization
                 phase = 11;
@@ -162,6 +161,7 @@ void Solver::operator()(state_type &x)
                 // printf("\nNumber of nonzeros in factors = %d", iparm[17]);
                 // printf("\nNumber of factorization MFLOPS = %d", iparm[18]);
 
+                // PHASE 2.
                 // Numerical factorization
                 phase = 22;
                 PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
@@ -174,9 +174,9 @@ void Solver::operator()(state_type &x)
                 // printf("\nFactorization completed ... ");
             }
 
+            // PHASE 3.
             // Back substitution and iterative refinement
-            phase     = 33;
-            iparm[11] = 0;  // Conjugate transposed/transpose solve
+            phase = 33;
             PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia, ja,
                     &idum, &nrhs, iparm, &msglvl, mkl_b, mkl_x, &error);
             if(error != 0)
@@ -197,16 +197,17 @@ void Solver::operator()(state_type &x)
             }
 
             std::cout << iter << ':' << tol << ' ';
+
             if(tol < m_opt.atol)
                 break;
-
         }  // for iter
 
         std::cout << '=' << iter << "= dt: " << dt;
 
-        if(exitf)
+        if(final_time_step)
             break;
 
+        // Temporary adaptive time stepping
         if(iter <= 3)
             dt *= 1.4;
         else if(iter > 6)
@@ -214,13 +215,12 @@ void Solver::operator()(state_type &x)
 
         if(t + dt > m_t1)
         {
-            dt    = m_t1 - t;
-            exitf = 1;
+            final_time_step = true;
+            // Adjust the last time step size
+            dt = m_t1 - t;
         }
 
         x_prev[0] = x;
-
-        count++;
 
     }  // for t
 

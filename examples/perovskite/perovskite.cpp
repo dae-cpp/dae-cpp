@@ -1,13 +1,14 @@
 /*
  * TODO: Description of the problem
- * Keywords: perovskite solar cell, potential, ion concentration
+ * Keywords: perovskite solar cell, potential, ion concentration,
+ * singular mass matrix
  *
  */
 
 #include <chrono>
 #include <iostream>
 
-#include "../../src/solver.h"  // dae-cpp library
+#include "../../src/solver.h"  // dae-cpp library solver
 
 #include "perovskite_RHS.h"         // RHS of the problem
 #include "perovskite_Mass.h"        // Mass Matrix definition
@@ -24,9 +25,6 @@ namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 namespace plt = matplotlibcpp;
 #endif
 
-using clock     = std::chrono::high_resolution_clock;
-using time_unit = std::chrono::milliseconds;
-
 int main()
 {
     // These parameters can be obtained from a parameter file or
@@ -42,10 +40,14 @@ int main()
     std::cout << "N = " << p.N << "; lambda = " << p.lambda << "; t = " << p.t1
               << '\n';
 
+    using clock     = std::chrono::high_resolution_clock;
+    using time_unit = std::chrono::milliseconds;
+
     // Define state vectors. Here 2*N is the total number of the equations.
     // We are going to carry out two independent simulations: with analytical
-    // Jacobian and numerically estimated one, hence two vectors.
-    dae::state_type x1(2 * N), x2(2 * N);
+    // Jacobian and with numerically estimated one, hence two vectors.
+    dae::state_type x1(2 * N);
+    dae::state_type x2(2 * N);
 
     // Initial conditions
     for(int i = 0; i < N; i++)
@@ -57,23 +59,19 @@ int main()
 
     // Set up the RHS of the problem.
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
-    MyRHS     rhs(p);
-    dae::RHS *prhs = &rhs;
+    MyRHS rhs(p);
 
     // We can override Jacobian class from dae-cpp library
     // and provide analytical Jacobian
     MyJacobian jac(rhs, p);
-    // MyJacobian jac(*prhs, p);
-    // dae::Jacobian *pjac = &jac;
 
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass(N);
-    // dae::MassMatrix *pmass = &mass;
 
     // Update some of the solver options
     dae::SolverOptions opt;
-    opt.atol = 1.0e-6;
+    opt.atol = 1.0e-6;  // Absolute tolerance
 
     // Create an instance of the solver
     dae::Solver solve(rhs, jac, mass, opt, p.t1);
@@ -93,18 +91,19 @@ int main()
             << " sec." << '\n';
     }
 
+    std::cout << "Solution check:\n";
     std::cout << x1[0] << ' ' << x1[N - 1] << '\n';
     std::cout << x1[N] << ' ' << x1[2 * N - 1] << '\n';
 
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
-    dae::Jacobian jac_est(*prhs, 1.0e-6);
+    dae::Jacobian jac_est(rhs, 1.0e-6);
 
     // Create a new instance of the solver for estimated Jacobian
     dae::Solver solve_slow(rhs, jac_est, mass, opt, p.t1);
 
     // Solve the set of DAEs again
-    std::cout << "Starting DAE solver with estimated Jacobian...\n";
+    std::cout << "\nStarting DAE solver with estimated Jacobian...\n";
 
     {
         auto tic0 = clock::now();
@@ -118,6 +117,7 @@ int main()
             << " sec." << '\n';
     }
 
+    std::cout << "Solution check:\n";
     std::cout << x2[0] << ' ' << x2[N - 1] << '\n';
     std::cout << x2[N] << ' ' << x2[2 * N - 1] << '\n';
 
@@ -158,4 +158,6 @@ int main()
 #endif
 
     std::cout << "...done\n\n";
+
+    return 0;
 }

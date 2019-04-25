@@ -6,13 +6,14 @@
 
 void MyMassMatrix::operator()(daecpp::sparse_matrix_holder &M)
 {
-    const int N = ((int)(M.ia.size()) - 1) / 2;  // check this
+    const int N = m_N;
 
     for(int i = 0; i < N; i++)
     {
-        M.A[i]  = 1.0;
-        M.ja[i] = i + 1;
-        M.ia[i] = i + 1;
+        M.A.push_back(1.0);
+        M.ja.push_back(i + 1);
+        M.ia.push_back(i + 1);
     }
-    M.ia[N] = N + 1;
+
+    M.ia.push_back(N + 1);
 }
