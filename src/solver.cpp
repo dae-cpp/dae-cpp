@@ -37,12 +37,12 @@ void Solver::operator()(state_type &x)
     // Full RHS and solution vector
     state_type b(size), xk(size);
 
-    float_type *mkl_a = J.A.data();
+    MKL_INT *ia;
+    MKL_INT *ja;
+
+    float_type *mkl_a;
     float_type *mkl_b = b.data();
     float_type *mkl_x = xk.data();
-
-    MKL_INT *ia = J.ia.data();
-    MKL_INT *ja = J.ja.data();
 
     // Copy current state vector into the history vector
     x_prev[0] = x;

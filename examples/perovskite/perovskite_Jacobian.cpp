@@ -18,7 +18,6 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
     for(int i = 0; i < size; i++)
     {
         J.ia.push_back(c + 1);
-        c++;
 
         if(i == 0)
         {

@@ -21,7 +21,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
     {
         for(int i = 0; i < size; i++)
         {
-            dxdt[i] = (x[i] - x_prev[i][0]) * invdt;
+            dxdt[i] = (x[i] - x_prev[0][i]) * invdt;
         }
     }
     else
@@ -70,9 +70,10 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
         m_opt.max_size_mult *= (int)(mult + 1.001);
     }
 
-    int *sort = nullptr;
-    int  info;
-    int  nzmax = m_M.A.size() + J.A.size();
+    int job   = 0;
+    int sort  = 0;
+    int nzmax = m_M.A.size() + J.A.size();
+    int info;
 
     double beta = -invdt;
 
@@ -82,10 +83,10 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
 
-    /*void*/ mkl_dcsradd("N", 0, sort, &size, &size, J.A.data(), J.ja.data(),
-                         J.ia.data(), &beta, m_M.A.data(), m_M.ja.data(),
-                         m_M.ia.data(), Jt.A.data(), Jt.ja.data(), Jt.ia.data(),
-                         &nzmax, &info);  // double
+    /*void*/ mkl_dcsradd("N", &job, &sort, &size, &size, J.A.data(),
+                         J.ja.data(), J.ia.data(), &beta, m_M.A.data(),
+                         m_M.ja.data(), m_M.ia.data(), Jt.A.data(),
+                         Jt.ja.data(), Jt.ia.data(), &nzmax, &info);  // double
 
     // OUTPUT: new Jt and new x
 }
