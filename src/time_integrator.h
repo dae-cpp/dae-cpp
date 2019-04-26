@@ -6,7 +6,6 @@
 
 #include <iostream>
 
-#include <mkl_types.h>
 #include <mkl_spblas.h>
 
 #include "typedefs.h"

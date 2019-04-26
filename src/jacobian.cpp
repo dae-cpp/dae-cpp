@@ -3,14 +3,18 @@
  */
 
 #include <cmath>
+#include <mkl_spblas.h>
+
 #include "jacobian.h"
 
 namespace daecpp_namespace_name
 {
 
 /*
- * Numerical Jacobian
- * Calls rhs N times, hence O(N^2) operations
+ * Numerical Jacobian.
+ * Calls rhs N times, hence O(N^2) operations.
+ * Probably should hire MKL jacobi routine
+ * https://software.intel.com/en-us/mkl-developer-reference-c-jacobian-matrix-calculation-routines
  */
 void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
                           const double t)
@@ -59,6 +63,45 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
     }
 
     J.ia.push_back(cj + 1);  // FORTRAN style here
+
+    // The code above produces transposed Jacobian.
+    // The only way to transpose it I found so far is
+    // using mkl_dcsradd: add zero matrix and transpose.
+    // This needs to be improved...
+
+    // Create zero matrix A
+    sparse_matrix_holder A;
+    for(int i = 0; i < size; i++)
+    {
+        A.A.push_back(0.0);
+        A.ja.push_back(i + 1);
+        A.ia.push_back(i + 1);
+    }
+    A.ia.push_back(size + 1);
+
+    // Init mkl_dcsradd and perform matrix addition
+    int request = 0;
+    int sort = 0;
+    int nzmax = J.A.size();
+    int info;
+
+    double beta = 1.0;
+
+    sparse_matrix_holder Jt;
+    Jt.A.resize(nzmax);
+    Jt.ia.resize(size + 1);
+    Jt.ja.resize(nzmax);
+
+    // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
+
+    mkl_dcsradd("T", &request, &sort, &size, &size, A.A.data(),
+        A.ja.data(), A.ia.data(), &beta, J.A.data(),
+        J.ja.data(), J.ia.data(), Jt.A.data(),
+        Jt.ja.data(), Jt.ia.data(), &nzmax, &info);  // double
+
+    J.A = Jt.A;
+    J.ia = Jt.ia;
+    J.ja = Jt.ja;
 }
 
 }  // namespace daecpp_namespace_name

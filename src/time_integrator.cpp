@@ -42,7 +42,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     // Calculate full Jacobian
     // =======================
-    // J: = J - M*invdt
+    // Jt: = J - M*invdt
 
     sparse_matrix_holder J;
 
@@ -70,9 +70,9 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
         m_opt.max_size_mult *= (int)(mult + 1.001);
     }
 
-    int job   = 0;
-    int sort  = 0;
-    int nzmax = m_M.A.size() + J.A.size();
+    int request = 0;
+    int sort    = 0;
+    int nzmax   = m_M.A.size() + J.A.size();
     int info;
 
     double beta = -invdt;
@@ -83,7 +83,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
 
-    /*void*/ mkl_dcsradd("N", &job, &sort, &size, &size, J.A.data(),
+    /*void*/ mkl_dcsradd("N", &request, &sort, &size, &size, J.A.data(),
                          J.ja.data(), J.ia.data(), &beta, m_M.A.data(),
                          m_M.ja.data(), m_M.ia.data(), Jt.A.data(),
                          Jt.ja.data(), Jt.ia.data(), &nzmax, &info);  // double

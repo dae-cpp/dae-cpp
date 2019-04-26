@@ -2,3 +2,9 @@
 *.png
 .vs/
 .vscode/ipch/
+Debug/
+Release/
+x64/
+*.sln
+*.vcxproj
+*.vcxproj.filters

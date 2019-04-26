@@ -122,20 +122,5 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
         }
     }
 
-    J.ia[size] = c + 1;
-    /*
-        for(int i = 0; i < 5 * size; i++)
-        {
-            if(i <= size)
-            {
-                std::cout << i << ": " << J[i] << '\t' << ja[i] << '\t' << ia[i]
-       << '\n';
-            }
-            else
-            {
-                std::cout << i << ": " << J[i] << '\t' << ja[i] << '\n';
-            }
-        }
-        exit(0);
-    */
+    J.ia.push_back(c + 1);
 }
