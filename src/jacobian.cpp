@@ -9,8 +9,8 @@
 #include "jacobian.h"
 
 // clang-format off
-#define JACOBIAN_SCHEME 1  // 0 - Central differences: (f(x+h) - f(x-h)) / (2*h)
-                           // 1 - Almost twice faster scheme: (f(x+h) - f(x)) / h
+#define JACOBIAN_SCHEME 0  // 0 - Central differences: (f(x+h) - f(x-h)) / (2*h)
+                           // 1 - Faster but less accurate scheme: (f(x+h) - f(x)) / h
 // clang-format on
 
 namespace daecpp_namespace_name
@@ -28,7 +28,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     // Get max number of threads.
     // This can be set from the terminal using export OMP_NUM_THREADS=N,
     // where N is the number of threads
-    int nth = omp_get_max_threads();
+    const int nth = omp_get_max_threads();
 
     // Transposed Jacobian holder
     sparse_matrix_holder Jt;
@@ -42,21 +42,16 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 #pragma omp parallel for num_threads(nth) schedule(static, 1)
     for(int th = 0; th < nth; th++)
     {
-        int n = size;
         int start_th, end_th;
 
-        start_th = (n * th) / nth;
-        end_th   = (n * (th + 1)) / nth;
+        start_th = (size * th) / nth;
+        end_th   = (size * (th + 1)) / nth;
 
-        state_type f0(n);
-        state_type f1(n);
-        state_type x1(n);
+        state_type f0(size);
+        state_type f1(size);
+        state_type x1(size);
 
         x1 = x;
-
-        double jacd;
-        double tol  = m_tol;
-        double tol2 = 2.0 * tol;
 
         sparse_matrix_holder jac;
 
@@ -73,24 +68,28 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         for(int j = start_th; j < end_th; j++)
         {
 #if JACOBIAN_SCHEME == 0
-            x1[j] -= tol;
+            x1[j] -= m_tol;
             m_rhs(x1, f0, t);
-            x1[j] += tol2;
+            x1[j] += 2.0 * m_tol;
 #else
-            x1[j] += tol;
+            x1[j] += m_tol;
 #endif
             m_rhs(x1, f1, t);
 
             bool is_first = true;
 
-            for(int i = 0; i < n; i++)
+            double jacd;
+            double invtol  = 1.0 / m_tol;
+            double invtol2 = 0.5 * invtol;
+
+            for(int i = 0; i < size; i++)
             {
 #if JACOBIAN_SCHEME == 0
-                jacd = (f1[i] - f0[i]) / tol2;
+                jacd = (f1[i] - f0[i]) * invtol2;
 #else
-                jacd = (f1[i] - f0[i]) / tol;
+                jacd = (f1[i] - f0[i]) * invtol;
 #endif
-                if(std::abs(jacd) < tol)
+                if(std::abs(jacd) < m_tol)
                     continue;
 
                 jac.A.push_back(jacd);
@@ -105,24 +104,29 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 }
             }
 
-            x1[j] -= tol;
+            x1[j] -= m_tol;
         }
 
-        int ia_shift;
+        int  ia_shift;
+        bool is_finished = false;
 
         while(true)
         {
 #pragma omp critical
-            if(th == work_thread)
             {
-                ia_shift = Jt.A.size();
+                if(th == work_thread)
+                {
+                    ia_shift = Jt.A.size();
 
-                Jt.A.insert(Jt.A.end(), jac.A.begin(), jac.A.end());
-                Jt.ja.insert(Jt.ja.end(), jac.ja.begin(), jac.ja.end());
+                    Jt.A.insert(Jt.A.end(), jac.A.begin(), jac.A.end());
+                    Jt.ja.insert(Jt.ja.end(), jac.ja.begin(), jac.ja.end());
 
-                work_thread++;
+                    work_thread++;
+                }
+                if(th < work_thread)
+                    is_finished = true;
             }
-            if(th < work_thread)
+            if(is_finished)
                 break;
         }
 
@@ -132,16 +136,22 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             *it += ia_shift;
         }
 
+        is_finished = false;
+
         while(true)
         {
 #pragma omp critical
-            if(th == work_thread_ia)
             {
-                Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
+                if(th == work_thread_ia)
+                {
+                    Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
 
-                work_thread_ia++;
+                    work_thread_ia++;
+                }
+                if(th < work_thread_ia)
+                    is_finished = true;
             }
-            if(th < work_thread_ia)
+            if(is_finished)
                 break;
         }
     }  // Parallel section end
@@ -154,7 +164,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     sparse_matrix_holder A;
     for(int i = 0; i < size; i++)
     {
-        A.A.push_back(0.0);
+        A.A.push_back((float_type)(0.0));
         A.ja.push_back(i + 1);
         A.ia.push_back(i + 1);
     }
@@ -165,7 +175,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     int nzmax   = Jt.A.size();
     int info;
 
-    double beta = 1.0;
+    float_type beta = 1.0;
 
     J.A.resize(nzmax);
     J.ia.resize(size + 1);
