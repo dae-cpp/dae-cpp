@@ -14,20 +14,20 @@ namespace daecpp_namespace_name
 /*
  * Numerical Jacobian. Central difference scheme. Parallel version.
  * Calls rhs 2*N times, hence O(N^2) operations.
- *//*
+ */
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
     const int size = (int)(x.size());
 
     // Get max number of threads
-    unsigned int nth = std::thread::hardware_concurrency();
+    int nth = 1; // (int)std::thread::hardware_concurrency();
 
     // Transposed Jacobian holder
     sparse_matrix_holder Jt;
-    Jt.A.resize(J.A.capacity());
-    Jt.ia.resize(size + 1);
-    Jt.ja.resize(J.ja.capacity());
+    Jt.A.reserve(J.A.capacity());
+    Jt.ia.reserve(size + 1);
+    Jt.ja.reserve(J.ja.capacity());
 
     int work_thread = 0;
 
@@ -56,15 +56,18 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         jac.ia.reserve(size + 1);
         jac.ja.reserve(J.ja.capacity());
 
+        m_rhs(x1, f0, t); //
+
         int ci = 0;
 
         for(int j = start_th; j < end_th; j++)
         {
-            x1[j] -= tol;
+            //x1[j] -= tol;
 
-            m_rhs(x1, f0, t);
+            //m_rhs(x1, f0, t);
 
-            x1[j] += tol2;
+            //x1[j] += tol2;
+            x1[j] += tol;
 
             m_rhs(x1, f1, t);
 
@@ -72,7 +75,8 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
             for(int i = 0; i < n; i++)
             {
-                jacd = (f1[i] - f0[i]) / tol2;
+                //jacd = (f1[i] - f0[i]) / tol2;
+                jacd = (f1[i] - f0[i]) / tol;
 
                 if(std::abs(jacd) < tol)
                     continue;
@@ -92,20 +96,32 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             x1[j] -= tol;
         }
 
+        int ia_shift;
+
         while(true)
         {
             if(th == work_thread)
             {
+                ia_shift = Jt.ia.size();
+
                 Jt.A.insert(Jt.A.end(), jac.A.begin(), jac.A.end());
                 Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
                 Jt.ja.insert(Jt.ja.end(), jac.ja.begin(), jac.ja.end());
 
                 work_thread++;
             }
-            if(work_thread == nth)
+
+            if(th < work_thread)
                 break;
         }
-    }
+
+        //for(vector_type_int::iterator it = Jt.ia.begin(); it != Jt.ia.end(); ++it)
+        //{
+        //    *it += ia_shift;
+        //}
+    }  // Parallel section end
+
+    Jt.ia.push_back(Jt.A.size() + 1);
 
     // Transpose the matrix using mkl_dcsradd
     // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
@@ -135,7 +151,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 J.A.data(), J.ja.data(), J.ia.data(), &nzmax,
                 &info);  // double precision
 }
-*/
+
 
 
 /*
@@ -143,7 +159,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
  * Calls rhs N times, hence O(N^2) operations.
  * Probably should hire MKL jacobi routine
  * https://software.intel.com/en-us/mkl-developer-reference-c-jacobian-matrix-calculation-routines
- */
+ *//*
 void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
                           const double t)
 {
@@ -231,5 +247,5 @@ void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
     J.ia = Jt.ia;
     J.ja = Jt.ja;
 }
-
+*/
 }  // namespace daecpp_namespace_name

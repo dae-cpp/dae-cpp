@@ -13,7 +13,7 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
     const double invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
 
     // RHS for P = dFlux/dx
-#pragma omp parallel for
+//#pragma omp parallel for
     for(int i = 1; i < N - 1; i++)
     {
         // clang-format off
@@ -26,7 +26,7 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
     // clang-format on
 
     // RHS for Phi
-#pragma omp parallel for
+//#pragma omp parallel for
     for(int i = 1; i < N - 1; i++)
     {
         // clang-format off

@@ -29,7 +29,7 @@ public:
      * Can be overriden to provide analytical Jacobian.
      * x is not a constant here to avoid unnecessary array copying.
      */
-    virtual void operator()(sparse_matrix_holder &J, state_type &x, const double t);
+    virtual void operator()(sparse_matrix_holder &J, const state_type &x, const double t);
 
     /*
      * TODO: Helper function to print Jacobian

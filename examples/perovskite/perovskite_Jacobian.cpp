@@ -5,7 +5,7 @@
 #include "perovskite_Jacobian.h"
 
 void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
-                            daecpp::state_type &x, const double t)
+                            const daecpp::state_type &x, const double t)
 {
     // Locals
     const int    N       = m_p.N;

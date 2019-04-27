@@ -13,6 +13,6 @@ class MyJacobian : public daecpp::Jacobian
 
 public:
     MyJacobian(daecpp::RHS &rhs, MyParams p) : daecpp::Jacobian(rhs), m_p(p) {}
-    void operator()(daecpp::sparse_matrix_holder &J, daecpp::state_type &x,
+    void operator()(daecpp::sparse_matrix_holder &J, const daecpp::state_type &x,
                     const double t);
 };
