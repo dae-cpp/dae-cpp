@@ -2,17 +2,22 @@
  * TODO: Description
  */
 
+#include <omp.h>
 #include <cmath>
-#include <thread>
 #include <mkl_spblas.h>
 
 #include "jacobian.h"
+
+// clang-format off
+#define JACOBIAN_SCHEME 1  // 0 - Central differences: (f(x+h) - f(x-h)) / (2*h)
+                           // 1 - Almost twice faster scheme: (f(x+h) - f(x)) / h
+// clang-format on
 
 namespace daecpp_namespace_name
 {
 
 /*
- * Numerical Jacobian. Central difference scheme. Parallel version.
+ * Numerical Jacobian. Parallel version.
  * Calls rhs 2*N times, hence O(N^2) operations.
  */
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
@@ -20,8 +25,10 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 {
     const int size = (int)(x.size());
 
-    // Get max number of threads
-    int nth = 1; // (int)std::thread::hardware_concurrency();
+    // Get max number of threads.
+    // This can be set from the terminal using export OMP_NUM_THREADS=N,
+    // where N is the number of threads
+    int nth = omp_get_max_threads();
 
     // Transposed Jacobian holder
     sparse_matrix_holder Jt;
@@ -29,9 +36,10 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     Jt.ia.reserve(size + 1);
     Jt.ja.reserve(J.ja.capacity());
 
-    int work_thread = 0;
+    int work_thread    = 0;
+    int work_thread_ia = 0;
 
-#pragma omp parallel for num_threads(nth) schedule(static)
+#pragma omp parallel for num_threads(nth) schedule(static, 1)
     for(int th = 0; th < nth; th++)
     {
         int n = size;
@@ -56,28 +64,32 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         jac.ia.reserve(size + 1);
         jac.ja.reserve(J.ja.capacity());
 
-        m_rhs(x1, f0, t); //
+#if JACOBIAN_SCHEME == 1
+        m_rhs(x1, f0, t);
+#endif
 
         int ci = 0;
 
         for(int j = start_th; j < end_th; j++)
         {
-            //x1[j] -= tol;
-
-            //m_rhs(x1, f0, t);
-
-            //x1[j] += tol2;
+#if JACOBIAN_SCHEME == 0
+            x1[j] -= tol;
+            m_rhs(x1, f0, t);
+            x1[j] += tol2;
+#else
             x1[j] += tol;
-
+#endif
             m_rhs(x1, f1, t);
 
             bool is_first = true;
 
             for(int i = 0; i < n; i++)
             {
-                //jacd = (f1[i] - f0[i]) / tol2;
+#if JACOBIAN_SCHEME == 0
+                jacd = (f1[i] - f0[i]) / tol2;
+#else
                 jacd = (f1[i] - f0[i]) / tol;
-
+#endif
                 if(std::abs(jacd) < tol)
                     continue;
 
@@ -100,25 +112,38 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
         while(true)
         {
+#pragma omp critical
             if(th == work_thread)
             {
-                ia_shift = Jt.ia.size();
+                ia_shift = Jt.A.size();
 
                 Jt.A.insert(Jt.A.end(), jac.A.begin(), jac.A.end());
-                Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
                 Jt.ja.insert(Jt.ja.end(), jac.ja.begin(), jac.ja.end());
 
                 work_thread++;
             }
-
             if(th < work_thread)
                 break;
         }
 
-        //for(vector_type_int::iterator it = Jt.ia.begin(); it != Jt.ia.end(); ++it)
-        //{
-        //    *it += ia_shift;
-        //}
+        for(vector_type_int::iterator it = jac.ia.begin(); it != jac.ia.end();
+            ++it)
+        {
+            *it += ia_shift;
+        }
+
+        while(true)
+        {
+#pragma omp critical
+            if(th == work_thread_ia)
+            {
+                Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
+
+                work_thread_ia++;
+            }
+            if(th < work_thread_ia)
+                break;
+        }
     }  // Parallel section end
 
     Jt.ia.push_back(Jt.A.size() + 1);
@@ -152,100 +177,4 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 &info);  // double precision
 }
 
-
-
-/*
- * Numerical Jacobian.
- * Calls rhs N times, hence O(N^2) operations.
- * Probably should hire MKL jacobi routine
- * https://software.intel.com/en-us/mkl-developer-reference-c-jacobian-matrix-calculation-routines
- *//*
-void Jacobian::operator()(sparse_matrix_holder &J, state_type &x,
-                          const double t)
-{
-    const int size = (int)(x.size());
-
-    state_type f0(size);
-    state_type f1(size);
-
-    m_rhs(x, f0, t);
-
-    int cj = 0;
-
-    for(int j = 0; j < size; j++)
-    {
-        x[j] += m_tol;
-
-        m_rhs(x, f1, t);
-
-        bool is_first = true;  // first element in a row
-
-        for(int i = 0; i < size; i++)  // loop over columns
-        {
-            double der = (f1[i] - f0[i]) / m_tol;
-
-            if(std::abs(der) < m_tol)  // skip zero element
-            {
-                continue;
-            }
-            else
-            {
-                J.A.push_back(der);     // write derivative
-                J.ja.push_back(i + 1);  // write column number -- FORTRAN style
-                cj++;
-
-                if(is_first)
-                {
-                    J.ia.push_back(cj);  // write ID of the first element in a
-                                         // row -- FORTRAN style here
-                    is_first = false;
-                }
-            }
-        }
-
-        x[j] -= m_tol;
-    }
-
-    J.ia.push_back(cj + 1);  // FORTRAN style here
-
-    // The code above produces transposed Jacobian.
-    // The only way to transpose it I found so far is
-    // using mkl_dcsradd: add zero matrix and transpose.
-    // This needs to be improved...
-
-    // Create zero matrix A
-    sparse_matrix_holder A;
-    for(int i = 0; i < size; i++)
-    {
-        A.A.push_back(0.0);
-        A.ja.push_back(i + 1);
-        A.ia.push_back(i + 1);
-    }
-    A.ia.push_back(size + 1);
-
-    // Init mkl_dcsradd and perform matrix addition
-    int request = 0;
-    int sort    = 0;
-    int nzmax   = J.A.size();
-    int info;
-
-    double beta = 1.0;
-
-    sparse_matrix_holder Jt;
-    Jt.A.resize(nzmax);
-    Jt.ia.resize(size + 1);
-    Jt.ja.resize(nzmax);
-
-    // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
-
-    mkl_dcsradd("T", &request, &sort, &size, &size, A.A.data(), A.ja.data(),
-                A.ia.data(), &beta, J.A.data(), J.ja.data(), J.ia.data(),
-                Jt.A.data(), Jt.ja.data(), Jt.ia.data(), &nzmax,
-                &info);  // double
-
-    J.A  = Jt.A;
-    J.ia = Jt.ia;
-    J.ja = Jt.ja;
-}
-*/
 }  // namespace daecpp_namespace_name
