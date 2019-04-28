@@ -25,7 +25,7 @@ void Solver::operator()(state_type &x)
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
     // Initial time and time step
-    double t  = 0.0;
+    //double t  = 0.0;
     double dt = m_opt.dt_init;
 
     // Contains a few latest successful time steps for Time Integrator
@@ -37,8 +37,8 @@ void Solver::operator()(state_type &x)
     // Full RHS and solution vector
     state_type b(size), xk(size);
 
-    MKL_INT *ia;
-    MKL_INT *ja;
+    MKL_INT *ia = nullptr;
+    MKL_INT *ja = nullptr;
 
     float_type *mkl_a;
     float_type *mkl_b = b.data();

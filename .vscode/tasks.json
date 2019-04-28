@@ -9,6 +9,7 @@
             "command": "g++",
             "args": [
                 "-O3",
+                "-Wall",
                 //"-march=skylake",
                 "-std=c++11",
                 "-m64",
@@ -56,6 +57,7 @@
             "command": "g++",
             "args": [
                 "-g",
+                "-Wall",
                 //"-march=skylake",
                 "-std=c++11",
                 "-m64",

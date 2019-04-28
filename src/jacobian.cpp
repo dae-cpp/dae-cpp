@@ -107,7 +107,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             x1[j] -= m_tol;
         }
 
-        int  ia_shift;
+        int  ia_shift = 0;
         bool is_finished = false;
 
         while(true)
