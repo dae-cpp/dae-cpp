@@ -2,9 +2,9 @@
  * TODO: Description
  */
 
-#include <omp.h>
-#include <cmath>
-#include <mkl_spblas.h>
+#include <omp.h>      // to catch omp_get_max_threads() and OpenMP locks
+#include <cmath>      // fabs()
+#include <algorithm>  // for std::copy
 
 #include "jacobian.h"
 
@@ -18,7 +18,7 @@ namespace daecpp_namespace_name
 
 /*
  * Numerical Jacobian. Parallel version.
- * Calls rhs 2*N times, hence O(N^2) operations.
+ * Calls RHS up to 2*N times, hence O(N^2) operations.
  */
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
@@ -26,18 +26,24 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     const int size = (int)(x.size());
 
     // Get max number of threads.
-    // This can be set from the terminal using export OMP_NUM_THREADS=N,
+    // This can be defined using "export OMP_NUM_THREADS=N",
     // where N is the number of threads
     const int nth = omp_get_max_threads();
 
-    // Transposed Jacobian holder
-    sparse_matrix_holder Jt;
-    Jt.A.reserve(J.A.capacity());
-    Jt.ia.reserve(size + 1);
-    Jt.ja.reserve(J.ja.capacity());
+    std::vector<std::vector<float_type>> J_values(size,
+                                                  std::vector<float_type>(0));
+    std::vector<std::vector<int>>        J_rows(size, std::vector<int>(0));
 
-    int work_thread    = 0;
-    int work_thread_ia = 0;
+    std::vector<std::vector<int>> sizes_local(size, std::vector<int>(nth));
+    std::vector<std::vector<int>> shift_local(size, std::vector<int>(nth));
+
+    int th_barrier1 = 0;
+    int th_barrier2 = 0;
+
+    omp_lock_t writelock1, writelock2;
+
+    omp_init_lock(&writelock1);
+    omp_init_lock(&writelock2);
 
 #pragma omp parallel for num_threads(nth) schedule(static, 1)
     for(int th = 0; th < nth; th++)
@@ -53,20 +59,17 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
         x1 = x;
 
-        sparse_matrix_holder jac;
-
-        jac.A.reserve(J.A.capacity());
-        jac.ia.reserve(size + 1);
-        jac.ja.reserve(J.ja.capacity());
+        std::vector<std::vector<float_type>> values_local(
+            size, std::vector<float_type>(0));
+        std::vector<std::vector<int>> rows_local(size, std::vector<int>(0));
 
 #if JACOBIAN_SCHEME == 1
         m_rhs(x1, f0, t);
 #endif
 
-        int ci = 0;
-
         for(int j = start_th; j < end_th; j++)
         {
+
 #if JACOBIAN_SCHEME == 0
             x1[j] -= m_tol;
             m_rhs(x1, f0, t);
@@ -74,117 +77,114 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 #else
             x1[j] += m_tol;
 #endif
+
             m_rhs(x1, f1, t);
-
-            bool is_first = true;
-
-            double jacd;
-            double invtol  = 1.0 / m_tol;
-            double invtol2 = 0.5 * invtol;
 
             for(int i = 0; i < size; i++)
             {
+                double jacd;
+
 #if JACOBIAN_SCHEME == 0
-                jacd = (f1[i] - f0[i]) * invtol2;
+                jacd = (f1[i] - f0[i]) / (2.0 * m_tol);
 #else
-                jacd = (f1[i] - f0[i]) * invtol;
+                jacd = (f1[i] - f0[i]) / m_tol;
 #endif
-                if(std::abs(jacd) < m_tol)
+
+                if(std::fabs(jacd) < m_tol)
                     continue;
 
-                jac.A.push_back(jacd);
-                jac.ja.push_back(i + 1);
-
-                ci++;
-
-                if(is_first)
-                {
-                    jac.ia.push_back(ci);
-                    is_first = false;
-                }
+                values_local[i].push_back(jacd);
+                rows_local[i].push_back(j + 1);
+                sizes_local[i][th]++;
             }
 
             x1[j] -= m_tol;
         }
 
-        int  ia_shift = 0;
-        bool is_finished = false;
+        // Synchronise the threads and assemble local arrays into global
+        // Jacobian matrix
 
-        while(true)
+#pragma omp atomic
+        th_barrier1++;
+        while(true)  // Wait for all threads
         {
-#pragma omp critical
+            omp_set_lock(&writelock1);
+            if(th_barrier1 == nth)
             {
-                if(th == work_thread)
-                {
-                    ia_shift = Jt.A.size();
-
-                    Jt.A.insert(Jt.A.end(), jac.A.begin(), jac.A.end());
-                    Jt.ja.insert(Jt.ja.end(), jac.ja.begin(), jac.ja.end());
-
-                    work_thread++;
-                }
-                if(th < work_thread)
-                    is_finished = true;
-            }
-            if(is_finished)
+                omp_unset_lock(&writelock1);
                 break;
-        }
-
-        for(vector_type_int::iterator it = jac.ia.begin(); it != jac.ia.end();
-            ++it)
-        {
-            *it += ia_shift;
-        }
-
-        is_finished = false;
-
-        while(true)
-        {
-#pragma omp critical
+            }
+            else
             {
-                if(th == work_thread_ia)
-                {
-                    Jt.ia.insert(Jt.ia.end(), jac.ia.begin(), jac.ia.end());
-
-                    work_thread_ia++;
-                }
-                if(th < work_thread_ia)
-                    is_finished = true;
+                omp_unset_lock(&writelock1);
             }
-            if(is_finished)
-                break;
         }
+
+        for(int i = 0; i < size; i++)
+        {
+            if(th == 0)
+            {
+                int size_total = 0;
+                for(int k = 0; k < nth; k++)
+                {
+                    size_total += sizes_local[i][k];
+                }
+                J_values[i].resize(size_total);
+                J_rows[i].resize(size_total);
+            }
+            else
+            {
+                for(int k = 0; k < th; k++)
+                {
+                    shift_local[i][th] += sizes_local[i][k];
+                }
+            }
+        }
+
+        // Make sure the master thread resized the global arrays
+        if(th == 0)
+        {
+#pragma omp atomic
+            th_barrier2++;
+        }
+        while(true)  // Wait for master thread
+        {
+            omp_set_lock(&writelock2);
+            if(th_barrier2 > 0)
+            {
+                omp_unset_lock(&writelock2);
+                break;
+            }
+            else
+            {
+                omp_unset_lock(&writelock2);
+            }
+        }
+
+        for(int i = 0; i < size; i++)
+        {
+            std::copy(values_local[i].begin(), values_local[i].end(),
+                      J_values[i].begin() + shift_local[i][th]);
+            std::copy(rows_local[i].begin(), rows_local[i].end(),
+                      J_rows[i].begin() + shift_local[i][th]);
+        }
+
     }  // Parallel section end
 
-    Jt.ia.push_back(Jt.A.size() + 1);
+    // Unroll global array to CSR format and transpose Jacobian
 
-    // Transpose the matrix using mkl_dcsradd
-    // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
+    int ci = 1;
 
-    sparse_matrix_holder A;
     for(int i = 0; i < size; i++)
     {
-        A.A.push_back((float_type)(0.0));
-        A.ja.push_back(i + 1);
-        A.ia.push_back(i + 1);
+        J.A.insert(J.A.end(), J_values[i].begin(), J_values[i].end());
+        J.ja.insert(J.ja.end(), J_rows[i].begin(), J_rows[i].end());
+        J.ia.push_back(ci);
+
+        ci += J_values[i].size();
     }
-    A.ia.push_back(size + 1);
 
-    int request = 0;
-    int sort    = 0;
-    int nzmax   = Jt.A.size();
-    int info;
-
-    float_type beta = 1.0;
-
-    J.A.resize(nzmax);
-    J.ia.resize(size + 1);
-    J.ja.resize(nzmax);
-
-    mkl_dcsradd("T", &request, &sort, &size, &size, A.A.data(), A.ja.data(),
-                A.ia.data(), &beta, Jt.A.data(), Jt.ja.data(), Jt.ia.data(),
-                J.A.data(), J.ja.data(), J.ia.data(), &nzmax,
-                &info);  // double precision
+    J.ia.push_back(ci);
 }
 
 }  // namespace daecpp_namespace_name
