@@ -167,11 +167,14 @@ void Solver::operator()(state_type &x)
             }
 
             //std::cout << iter << ':' << tol << ' ';
-            std::wcout << "#";
+            std::cout << "#";
 
             if(tol < m_opt.atol)
                 break;
         }  // for iter
+
+        if(iter == m_opt.max_Newton_iter)
+            std::cout << "<";
 
         //std::cout << '=' << iter << "= dt: " << dt;
         //std::cout << iter << " iterations";
