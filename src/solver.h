@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <iostream>
+
 #include "typedefs.h"
 #include "RHS.h"
 #include "jacobian.h"
@@ -25,6 +27,8 @@ class Solver
     SolverOptions &m_opt;
 
     const double m_t1;
+
+    void check_pardiso_error(MKL_INT err);
 
 public:
     /*

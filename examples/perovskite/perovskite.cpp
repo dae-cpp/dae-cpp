@@ -5,7 +5,6 @@
  *
  */
 
-#include <cmath>
 #include <chrono>
 #include <iostream>
 
@@ -25,6 +24,8 @@ namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 #include "../../src/external/matplotlib-cpp/matplotlibcpp.h"
 namespace plt = matplotlibcpp;
 #endif
+
+void solution_check(dae::state_type &x);
 
 int main()
 {
@@ -78,7 +79,7 @@ int main()
     dae::Solver solve(rhs, jac, mass, opt, p.t1);
 
     // Now we are ready to solve the set of DAEs
-    std::cout << "Starting DAE solver...\n";
+    std::cout << "\nStarting DAE solver...\n";
 
     {
         auto tic0 = clock::now();
@@ -92,39 +93,9 @@ int main()
             << " sec." << '\n';
     }
 
-    std::cout << "Solution check:\n";
-
-    double err[7];
-
-    // MATLAB ode15s solution (Finite Elements), N = 4001 points.
-    // Note that Finite Volume method has to extrapolate values on the boundaries, that's why comparison FE - FV is not 100% accurate.
-    // Given here for reference.
-    const double P_FE_MATLAB[4] = {200.0, 121.2075, 73.512783, 0.0};
-    const double Phi_FE_MATLAB[3] = {-100.0, -0.17249617, 100.0};
-
-    std::cout << "Finite Elements (MATLAB ode15s)  <->  Finite Volumes (dae-cpp)" << '\n';
-    std::cout << P_FE_MATLAB[0] << "<->" << (3.0*x1[0] - x1[1])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[1] << "<->" << (x1[N/400-1] + x1[N/400])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[2] << "<->" << (x1[N/200-1] + x1[N/200])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[3] << "<->" << (3.0*x1[N - 1] - x1[N-2])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[0] << "<->" << (3.0*x1[N] - x1[N+1])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[1] << "<->" << (x1[N + N/2 - 2] + x1[N + N/2 - 1])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[2] << "<->" << (3.0*x1[2*N-1] - x1[2*N-2])/2.0 << '\n';
-
-    err[0] = std::fabs((3.0*x1[0] - x1[1])/2.0 - P_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
-    err[1] = std::fabs((x1[N/400-1] + x1[N/400])/2.0 - P_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
-    err[2] = std::fabs((x1[N/200-1] + x1[N/200])/2.0 - P_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
-    err[3] = std::fabs((3.0*x1[N - 1] - x1[N-2])/2.0);
-    err[4] = std::fabs((3.0*x1[N] - x1[N+1])/2.0 - Phi_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
-    err[5] = std::fabs((x1[N + N/2 - 2] + x1[N + N/2 - 1])/2.0 - Phi_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
-    err[6] = std::fabs((3.0*x1[2*N-1] - x1[2*N-2])/2.0 - Phi_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
-
-    for(int i = 0; i < 7; i++)
-    {
-        std::cout << err[i] << "% ";
-    }
-    std::cout << std::endl;
-
+    // Compare solution with an alternative solver (e.g. MATLAB)
+    solution_check(x1);
+    
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
     dae::Jacobian jac_est(rhs, 1.0e-6);
@@ -147,30 +118,8 @@ int main()
             << " sec." << '\n';
     }
 
-    std::cout << "Solution check:\n";
-
-    std::cout << "Finite Elements (MATLAB ode15s)  <->  Finite Volumes (dae-cpp)" << '\n';
-    std::cout << P_FE_MATLAB[0] << "<->" << (3.0*x2[0] - x2[1])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[1] << "<->" << (x2[N/400-1] + x2[N/400])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[2] << "<->" << (x2[N/200-1] + x2[N/200])/2.0 << ' ';
-    std::cout << P_FE_MATLAB[3] << "<->" << (3.0*x2[N - 1] - x2[N-2])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[0] << "<->" << (3.0*x2[N] - x2[N+1])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[1] << "<->" << (x2[N + N/2 - 2] + x2[N + N/2 - 1])/2.0 << ' ';
-    std::cout << Phi_FE_MATLAB[2] << "<->" << (3.0*x2[2*N-1] - x2[2*N-2])/2.0 << '\n';
-
-    err[0] = std::fabs((3.0*x2[0] - x2[1])/2.0 - P_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
-    err[1] = std::fabs((x2[N/400-1] + x2[N/400])/2.0 - P_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
-    err[2] = std::fabs((x2[N/200-1] + x2[N/200])/2.0 - P_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
-    err[3] = std::fabs((3.0*x2[N - 1] - x2[N-2])/2.0);
-    err[4] = std::fabs((3.0*x2[N] - x2[N+1])/2.0 - Phi_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
-    err[5] = std::fabs((x2[N + N/2 - 2] + x2[N + N/2 - 1])/2.0 - Phi_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
-    err[6] = std::fabs((3.0*x2[2*N-1] - x2[2*N-2])/2.0 - Phi_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
-
-    for(int i = 0; i < 7; i++)
-    {
-        std::cout << err[i] << "% ";
-    }
-    std::cout << std::endl;
+    // Compare solution
+    solution_check(x2);
 
 #ifdef PLOTTING
     state_type x_axis(N), p(N), phi(N), d2phi(N);
@@ -211,4 +160,46 @@ int main()
     std::cout << "...done\n\n";
 
     return 0;
+}
+
+
+void solution_check(dae::state_type &x)
+{
+    std::cout << "Solution check:\n";
+
+    double sol[7], err[7];
+
+    const int N = (int)(x.size()) / 2;
+
+    // MATLAB ode15s solution (Finite Elements), N = 4001 points.
+    // Note that Finite Volume method has to extrapolate values on the boundaries and interpolate solution to the nodes, that's why comparison FE - FV is not 100% accurate.
+    // Given here for reference.
+    const double P_FE_MATLAB[4] = {200.0, 121.2075, 1.3561148, 1e-23};
+    const double Phi_FE_MATLAB[3] = {-100.0, -20.11700, 100.0};
+
+    sol[0] = (3.0*x[0] - x[1])/2.0;  // P(x = 0)
+    sol[1] = (x[N/400-1] + x[N/400])/2.0;  // P(x = 1/400)
+    sol[2] = (x[N/40-1] + x[N/40])/2.0;  // P(x = 1/100)
+    sol[3] = (3.0*x[N - 1] - x[N-2])/2.0;  // P(x = 1)
+    sol[4] = (3.0*x[N] - x[N+1])/2.0;  // Phi(x = 0)
+    sol[5] = (x[N + 4*N/10 - 1] + x[N + 4*N/10])/2.0;  // Phi(x = 0.4)
+    sol[6] = (3.0*x[2*N-1] - x[2*N-2])/2.0;  // Phi(x = 1)
+
+    err[0] = (sol[0] - P_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
+    err[1] = (sol[1] - P_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
+    err[2] = (sol[2] - P_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
+    err[3] = (sol[3]);
+    err[4] = (sol[4] - Phi_FE_MATLAB[0])/Phi_FE_MATLAB[0]*100.0;
+    err[5] = (sol[5] - Phi_FE_MATLAB[1])/Phi_FE_MATLAB[1]*100.0;
+    err[6] = (sol[6] - Phi_FE_MATLAB[2])/Phi_FE_MATLAB[2]*100.0;
+
+    std::cout << "Finite Elements\t<-> Finite Volumes" << '\n';
+    std::cout << "(MATLAB ode15s)\t<-> (dae-cpp)" << '\n';
+    std::cout << "\t" << P_FE_MATLAB[0] << "\t<->  " << sol[0] << "\t(" << err[0] << "%)\n";
+    std::cout << "\t" << P_FE_MATLAB[1] << "\t<->  " << sol[1] << "\t(" << err[1] << "%)\n";
+    std::cout << "\t" << P_FE_MATLAB[2] << "\t<->  " << sol[2] << "\t(" << err[2] << "%)\n";
+    std::cout << "\t" << P_FE_MATLAB[3] << "\t<->  " << sol[3] << "\n";
+    std::cout << "\t" << Phi_FE_MATLAB[0] << "\t<->  " << sol[4] << "\t(" << err[4] << "%)\n";
+    std::cout << "\t" << Phi_FE_MATLAB[1] << "\t<->  " << sol[5] << "\t(" << err[5] << "%)\n";
+    std::cout << "\t" << Phi_FE_MATLAB[2] << "\t<->  " << sol[6] << "\t(" << err[6] << "%)\n";
 }

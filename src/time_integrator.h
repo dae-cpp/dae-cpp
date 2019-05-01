@@ -38,6 +38,11 @@ class TimeIntegrator
     // Structure with sparse mass matrix stored in CSR format
     sparse_matrix_t m_csrA;
 
+    /*
+    * Sparse matrix checker
+    */
+    int matrix_checker(sparse_matrix_holder &A, MKL_INT size);
+
 public:
     /*
      * TODO: Description
@@ -91,11 +96,6 @@ public:
      */
     void operator()(sparse_matrix_holder &Jt, state_type &b, state_type &x,
                     const state_type x_prev[], const double t, const double dt);
-
-    /*
-     * Sparse matrix checker
-     */
-    int matrix_checker(sparse_matrix_holder &A, MKL_INT size);
 };
 
 }  // namespace daecpp_namespace_name
