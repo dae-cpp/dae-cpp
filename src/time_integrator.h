@@ -51,9 +51,9 @@ public:
                    SolverOptions &opt, const MKL_INT size)
         : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
     {
-        // Reserve memory for at least 3-diagonal mass matrix
-        m_M.A.reserve(3 * size);
-        m_M.ja.reserve(3 * size);
+        // Reserve memory for at least 1-diagonal mass matrix
+        m_M.A.reserve(size);
+        m_M.ja.reserve(size);
         m_M.ia.reserve(size + 1);
 
         // Get static mass matrix
@@ -94,7 +94,7 @@ public:
     /*
      * x_prev is a C-style matrix containing history of the previous states
      */
-    void operator()(sparse_matrix_holder &Jt, state_type &b, state_type &x,
+    void operator()(sparse_matrix_holder &Jt, state_type &b, sparse_matrix_holder &J, state_type &x,
                     const state_type x_prev[], const double t, const double dt);
 };
 

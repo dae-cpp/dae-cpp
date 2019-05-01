@@ -33,6 +33,14 @@ void Solver::operator()(state_type &x)
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
 
+    // Temporary Jacobian matrix holder
+    sparse_matrix_holder J_tmp;
+
+    // Reserve memory for at least 3-diagonal temporary Jacobian
+    J_tmp.A.reserve(3 * size);
+    J_tmp.ia.reserve(size + 1);
+    J_tmp.ja.reserve(3 * size);
+
     // Full RHS and solution vector
     state_type b(size), xk(size);
 
@@ -101,7 +109,7 @@ void Solver::operator()(state_type &x)
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
             // estimate new numerical J only for inter == 0?
-            ti(J, b, x, x_prev, t, dt);
+            ti(J, b, J_tmp, x, x_prev, t, dt);
 
             // Jacobian can change its size and can be re-allocated.
             // Catch up new array addresses.

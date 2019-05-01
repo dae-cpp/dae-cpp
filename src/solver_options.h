@@ -26,7 +26,7 @@ public:
     // elements is more than enough, but if Mass or Jacobian matrices are not
     // very sparse a warning may be given. In this case
     // max_size_mult should be increased.
-    int max_size_mult = 10;  // TODO: Get rid of it!
+    //int max_size_mult = 10;  // TODO: Get rid of it!
 
     // Solver constants
 

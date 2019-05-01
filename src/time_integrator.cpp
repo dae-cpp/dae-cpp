@@ -7,7 +7,7 @@
 namespace daecpp_namespace_name
 {
 
-void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
+void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b, sparse_matrix_holder &J,
                                 state_type &x, const state_type x_prev[],
                                 const double t, const double dt)
 {
@@ -44,33 +44,15 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
     // =======================
     // Jt: = J - M*invdt
 
-    sparse_matrix_holder J;
-
-    J.A.reserve(m_opt.max_size_mult * size);
-    J.ia.reserve(size + 1);
-    J.ja.reserve(m_opt.max_size_mult * size);
-
-    state_type::size_type sza = J.A.capacity();
-    state_type::size_type szj = J.ja.capacity();
+    J.A.clear();
+    J.ia.clear();
+    J.ja.clear();
 
     m_jac(J, x, t);
 
     // Sparse matrix check
     if(matrix_checker(J, size))
         exit(1);
-
-    if(sza != J.A.capacity() || szj != J.ja.capacity())
-    {
-        // test this
-        double multa = (double)J.A.capacity() / (double)sza;
-        double multj = (double)J.ja.capacity() / (double)szj;
-        double mult  = multa > multj ? multa : multj;
-        std::cout << "\nWarning: Jacobian matrix capacity is bigger than "
-                     "expected. This may lead to performance degradation. "
-                     "Suggested multiplier max_size_mult should be at least "
-                  << mult * m_opt.max_size_mult << '\n';
-        m_opt.max_size_mult *= (int)(mult + 1.001);
-    }
 
     int request = 0;
     int sort    = 0;
@@ -79,9 +61,12 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     double beta = -invdt;
 
-    Jt.A.resize(nzmax);
-    Jt.ia.resize(size + 1);
-    Jt.ja.resize(nzmax);
+    if(Jt.A.size() != nzmax)
+        Jt.A.resize(nzmax);
+    if(Jt.ia.size() != size + 1)
+        Jt.ia.resize(size + 1);
+    if(Jt.ja.size() != nzmax)
+        Jt.ja.resize(nzmax);
 
     // https://scc.ustc.edu.cn/zlsc/sugon/intel/mkl/mkl_manual/GUID-46768951-3369-4425-AD16-643C0E445373.htm
 
