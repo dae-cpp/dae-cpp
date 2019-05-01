@@ -55,7 +55,9 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     m_jac(J, x, t);
 
-    // MKL sparse matrix check
+    // Sparse matrix check
+    if(matrix_checker(J, size))
+        exit(1);
 
     if(sza != J.A.capacity() || szj != J.ja.capacity())
     {

@@ -25,7 +25,7 @@ void Solver::operator()(state_type &x)
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
     // Initial time and time step
-    //double t  = 0.0;
+    double t  = 0.0;
     double dt = m_opt.dt_init;
 
     // Contains a few latest successful time steps for Time Integrator
@@ -125,10 +125,14 @@ void Solver::operator()(state_type &x)
     // Start timer here
 
     bool final_time_step = false;
+    int step_counter = 0;
 
-    for(double t = dt; t <= (m_t1 + dt * 0.5); t += dt)
+    while(t < (m_t1 + dt * 0.5))
     {
-        std::cout << "\nt = " << t << ": ";
+        t += dt;  // Time step lapse
+        step_counter++;
+
+        std::cout << "\nStep " << step_counter << ": \tt = " << t << " \t:: ";
 
         int iter;
 
@@ -196,13 +200,15 @@ void Solver::operator()(state_type &x)
                 x[i] -= mkl_x[i];
             }
 
-            std::cout << iter << ':' << tol << ' ';
+            //std::cout << iter << ':' << tol << ' ';
+            std::wcout << "#";
 
             if(tol < m_opt.atol)
                 break;
         }  // for iter
 
-        std::cout << '=' << iter << "= dt: " << dt;
+        //std::cout << '=' << iter << "= dt: " << dt;
+        //std::cout << iter << " iterations";
 
         if(final_time_step)
             break;

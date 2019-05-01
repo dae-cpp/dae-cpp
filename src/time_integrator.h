@@ -54,20 +54,34 @@ public:
         // Get static mass matrix
         m_mass(m_M);
 
-        // TODO: MKL sparse matrix check
+        // User defined sparse matrix check
+        if(matrix_checker(m_M, size))
+            exit(1);
 
+        // Init mass matrix descriptor for sparse solver
         m_descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
         m_descrA.mode = SPARSE_FILL_MODE_UPPER;
         m_descrA.diag = SPARSE_DIAG_NON_UNIT;
 
-        // TODO: check output
-        // double precision
-        mkl_sparse_d_create_csr(&m_csrA, SPARSE_INDEX_BASE_ONE, size, size,
+        // Create sparse matrix descriptor
+        sparse_status_t sp_status = mkl_sparse_d_create_csr(&m_csrA, SPARSE_INDEX_BASE_ONE, size, size,
                                 m_M.ia.data(), m_M.ia.data() + 1, m_M.ja.data(),
                                 m_M.A.data());
 
-        // TODO: Analyze sparse matrix; choose proper kernels and workload
-        // balancing strategy mkl_sparse_optimize(csrA);
+        if(sp_status != SPARSE_STATUS_SUCCESS)
+        {
+            std::cout << "ERROR: Could not create sparse matrix descriptor for Mass matrix.\n";
+            exit(1);
+        }
+
+        // Analyze sparse matrix, choose proper kernels and workload
+        // balancing strategy
+        sparse_status_t opt_status = mkl_sparse_optimize(m_csrA);
+
+        if(opt_status != SPARSE_STATUS_SUCCESS)
+        {
+            std::cout << "WARNING: Sparse matrix analysis and optimisation failed.\n";
+        }
     }
 
     ~TimeIntegrator() { mkl_sparse_destroy(m_csrA); }
@@ -77,6 +91,11 @@ public:
      */
     void operator()(sparse_matrix_holder &Jt, state_type &b, state_type &x,
                     const state_type x_prev[], const double t, const double dt);
+
+    /*
+     * Sparse matrix checker
+     */
+    int matrix_checker(sparse_matrix_holder &A, MKL_INT size);
 };
 
 }  // namespace daecpp_namespace_name
