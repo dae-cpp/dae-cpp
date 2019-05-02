@@ -80,16 +80,18 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
         }
         else if(i == N)
         {
-            J.ja.push_back(1);
-            J.A.push_back(invlam2);
+            //J.ja.push_back(1);
+            //J.A.push_back(invlam2);
 
             J.ja.push_back(N + 1);
-            J.A.push_back(-3.0 * invh2);
+            //J.A.push_back(-3.0 * invh2);
+            J.A.push_back(1.0);
 
-            J.ja.push_back(N + 2);
-            J.A.push_back(invh2);
+            //J.ja.push_back(N + 2);
+            //J.A.push_back(invh2);
 
-            c += 3;
+            //c += 3;
+            c += 1;
         }
         else if(i < 2 * N - 1)
         {
@@ -109,16 +111,18 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
         }
         else  // i == 2*N-1
         {
-            J.ja.push_back(N);
-            J.A.push_back(invlam2);
+            //J.ja.push_back(N);
+            //J.A.push_back(invlam2);
 
-            J.ja.push_back(2 * N - 1);
-            J.A.push_back(invh2);
+            //J.ja.push_back(2 * N - 1);
+            //J.A.push_back(invh2);
 
             J.ja.push_back(2 * N);
-            J.A.push_back(-3.0 * invh2);
+            //J.A.push_back(-3.0 * invh2);
+            J.A.push_back(1.0);
 
-            c += 3;
+            //c += 3;
+            c += 1;
         }
     }
 

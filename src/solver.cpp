@@ -102,7 +102,7 @@ void Solver::operator()(state_type &x)
         t += dt;  // Time step lapse
         step_counter++;
 
-        std::cout << "\nStep " << step_counter << ": \tt = " << t << " \t:: ";
+        std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
 
         int iter;
 

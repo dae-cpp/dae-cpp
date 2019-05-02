@@ -5,8 +5,9 @@
  *
  */
 
-#include <chrono>
 #include <iostream>
+#include <chrono>
+#include <cmath>
 
 #include "../../src/solver.h"  // dae-cpp library solver
 
@@ -31,10 +32,10 @@ int main()
 {
     // These parameters can be obtained from a parameter file or
     // as command line options. Here for simplicity we define them as constants.
-    const int    N      = 4000;   // Number of cells
-    const double L      = 1.0;    // Space interval length
-    const double lambda = 1.0;    // Lambda parameter
-    const double t1     = 100.0;  // Integration time (0 < t < t1)
+    const int    N      = 4000;  // Number of cells
+    const double L      = 1.0;   // Space interval length
+    const double lambda = 1.0;   // Lambda parameter
+    const double t1     = 10.0;  // Integration time (0 < t < t1)
 
     // Pass the parameters to the container
     MyParams p(N, L, lambda, t1);
@@ -95,7 +96,7 @@ int main()
 
     // Compare solution with an alternative solver (e.g. MATLAB)
     solution_check(x1);
-    
+
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
     dae::Jacobian jac_est(rhs, 1.0e-6);
@@ -162,44 +163,45 @@ int main()
     return 0;
 }
 
-
 void solution_check(dae::state_type &x)
 {
     std::cout << "Solution check:\n";
 
-    double sol[7], err[7];
+    const int N     = (int)(x.size()) / 2;
+    const int N_sol = 9;
 
-    const int N = (int)(x.size()) / 2;
+    double sol[N_sol];
 
     // MATLAB ode15s solution (Finite Elements), N = 4001 points.
-    // Note that Finite Volume method has to extrapolate values on the boundaries and interpolate solution to the nodes, that's why comparison FE - FV is not 100% accurate.
-    // Given here for reference.
-    const double P_FE_MATLAB[4] = {200.0, 121.2075, 1.3561148, 1e-23};
-    const double Phi_FE_MATLAB[3] = {-100.0, -20.11700, 100.0};
+    // Note that Finite Volume method has to extrapolate values on the
+    // boundaries and interpolate solution to the nodes, that's why comparison
+    // FE - FV is not 100% accurate. Given here for reference.
+    const double ode15s_MATLAB[N_sol] = {19.9949,    2.72523, 0.382148,
+                                         0.00101573, -10.0,   -6.04056,
+                                         -2.08970,   1.90021, 5.93011};
+    // clang-format off
+    sol[0] = x[0];                                           // P(x = 0)
+    sol[1] = x[(N-1)/10] * 0.1 + x[(N-1)/10+1] * 0.9;        // P(x = 0.1)
+    sol[2] = x[(N-1)/5] * 0.2 + x[(N-1)/5+1] * 0.8;          // P(x = 0.2)
+    sol[3] = (x[N/2-1] + x[N/2]) / 2.0;                      // P(x = 0.5)
+    sol[4] = x[N];                                           // Phi(x = 0)
+    sol[5] = x[N+(N-1)/5*1] * 0.2 + x[N+(N-1)/5*1+1] * 0.8;  // Phi(x = 0.2)
+    sol[6] = x[N+(N-1)/5*2] * 0.4 + x[N+(N-1)/5*2+1] * 0.6;  // Phi(x = 0.4)
+    sol[7] = x[N+(N-1)/5*3] * 0.6 + x[N+(N-1)/5*3+1] * 0.4;  // Phi(x = 0.6)
+    sol[8] = x[N+(N-1)/5*4] * 0.8 + x[N+(N-1)/5*4+1] * 0.2;  // Phi(x = 0.8)
+    // clang-format on
 
-    sol[0] = (3.0*x[0] - x[1])/2.0;  // P(x = 0)
-    sol[1] = (x[N/400-1] + x[N/400])/2.0;  // P(x = 1/400)
-    sol[2] = (x[N/40-1] + x[N/40])/2.0;  // P(x = 1/100)
-    sol[3] = (3.0*x[N - 1] - x[N-2])/2.0;  // P(x = 1)
-    sol[4] = (3.0*x[N] - x[N+1])/2.0;  // Phi(x = 0)
-    sol[5] = (x[N + 4*N/10 - 1] + x[N + 4*N/10])/2.0;  // Phi(x = 0.4)
-    sol[6] = (3.0*x[2*N-1] - x[2*N-2])/2.0;  // Phi(x = 1)
+    std::cout << "  MATLAB ode15s\t<->  dae-cpp\t(rel. error)\n";
 
-    err[0] = (sol[0] - P_FE_MATLAB[0])/P_FE_MATLAB[0]*100.0;
-    err[1] = (sol[1] - P_FE_MATLAB[1])/P_FE_MATLAB[1]*100.0;
-    err[2] = (sol[2] - P_FE_MATLAB[2])/P_FE_MATLAB[2]*100.0;
-    err[3] = (sol[3]);
-    err[4] = (sol[4] - Phi_FE_MATLAB[0])/Phi_FE_MATLAB[0]*100.0;
-    err[5] = (sol[5] - Phi_FE_MATLAB[1])/Phi_FE_MATLAB[1]*100.0;
-    err[6] = (sol[6] - Phi_FE_MATLAB[2])/Phi_FE_MATLAB[2]*100.0;
+    double err_max = 0;
 
-    std::cout << "Finite Elements\t<-> Finite Volumes" << '\n';
-    std::cout << "(MATLAB ode15s)\t<-> (dae-cpp)" << '\n';
-    std::cout << "\t" << P_FE_MATLAB[0] << "\t<->  " << sol[0] << "\t(" << err[0] << "%)\n";
-    std::cout << "\t" << P_FE_MATLAB[1] << "\t<->  " << sol[1] << "\t(" << err[1] << "%)\n";
-    std::cout << "\t" << P_FE_MATLAB[2] << "\t<->  " << sol[2] << "\t(" << err[2] << "%)\n";
-    std::cout << "\t" << P_FE_MATLAB[3] << "\t<->  " << sol[3] << "\n";
-    std::cout << "\t" << Phi_FE_MATLAB[0] << "\t<->  " << sol[4] << "\t(" << err[4] << "%)\n";
-    std::cout << "\t" << Phi_FE_MATLAB[1] << "\t<->  " << sol[5] << "\t(" << err[5] << "%)\n";
-    std::cout << "\t" << Phi_FE_MATLAB[2] << "\t<->  " << sol[6] << "\t(" << err[6] << "%)\n";
+    for(int i = 0; i < N_sol; i++)
+    {
+        double error = (sol[i] - ode15s_MATLAB[i]) / ode15s_MATLAB[i] * 100.0;
+        if(std::fabs(error) > err_max)
+            err_max = std::fabs(error);
+        std::cout << "     " << ode15s_MATLAB[i] << "\t<->  " << sol[i] << "\t("
+                  << error << "%)\n";
+    }
+    std::cout << "Maximum relative error: " << err_max << "%\n";
 }
