@@ -39,9 +39,16 @@ class TimeIntegrator
     sparse_matrix_t m_csrA;
 
     /*
-    * Sparse matrix checker
-    */
+     * Sparse matrix checker
+     */
     int matrix_checker(sparse_matrix_holder &A, MKL_INT size);
+
+    /*
+     * Performs matrix-matrix addition: C = alpha*A + B.
+     * Replaces deprecated Intel MKL mkl_dcsradd() function.
+     */
+    void matrix_add(const double alpha, const sparse_matrix_holder &A,
+                    const sparse_matrix_holder &B, sparse_matrix_holder &C);
 
 public:
     /*
@@ -61,7 +68,10 @@ public:
 
         // User defined sparse matrix check
         if(matrix_checker(m_M, size))
+        {
+            std::cout << "Error in Mass matrix.\n";
             exit(1);
+        }
 
         // Init mass matrix descriptor for sparse solver
         m_descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
@@ -69,13 +79,14 @@ public:
         m_descrA.diag = SPARSE_DIAG_NON_UNIT;
 
         // Create sparse matrix descriptor
-        sparse_status_t sp_status = mkl_sparse_d_create_csr(&m_csrA, SPARSE_INDEX_BASE_ONE, size, size,
-                                m_M.ia.data(), m_M.ia.data() + 1, m_M.ja.data(),
-                                m_M.A.data());
+        sparse_status_t sp_status = mkl_sparse_d_create_csr(
+            &m_csrA, SPARSE_INDEX_BASE_ONE, size, size, m_M.ia.data(),
+            m_M.ia.data() + 1, m_M.ja.data(), m_M.A.data());
 
         if(sp_status != SPARSE_STATUS_SUCCESS)
         {
-            std::cout << "ERROR: Could not create sparse matrix descriptor for Mass matrix.\n";
+            std::cout << "ERROR: Could not create sparse matrix descriptor for "
+                         "Mass matrix.\n";
             exit(1);
         }
 
@@ -85,7 +96,8 @@ public:
 
         if(opt_status != SPARSE_STATUS_SUCCESS)
         {
-            std::cout << "WARNING: Sparse matrix analysis and optimisation failed.\n";
+            std::cout
+                << "WARNING: Sparse matrix analysis and optimisation failed.\n";
         }
     }
 
@@ -94,7 +106,8 @@ public:
     /*
      * x_prev is a C-style matrix containing history of the previous states
      */
-    void operator()(sparse_matrix_holder &Jt, state_type &b, sparse_matrix_holder &J, state_type &x,
+    void operator()(sparse_matrix_holder &Jt, state_type &b,
+                    sparse_matrix_holder &J, state_type &x,
                     const state_type x_prev[], const double t, const double dt);
 };
 

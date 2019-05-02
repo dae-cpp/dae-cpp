@@ -172,10 +172,7 @@ void solution_check(dae::state_type &x)
 
     double sol[N_sol];
 
-    // MATLAB ode15s solution (Finite Elements), N = 4001 points.
-    // Note that Finite Volume method has to extrapolate values on the
-    // boundaries and interpolate solution to the nodes, that's why comparison
-    // FE - FV is not 100% accurate. Given here for reference.
+    // MATLAB ode15s solution (Finite Elements), N = 4000 points.
     const double ode15s_MATLAB[N_sol] = {19.9949,    2.72523, 0.382148,
                                          0.00101573, -10.0,   -6.04056,
                                          -2.08970,   1.90021, 5.93011};
