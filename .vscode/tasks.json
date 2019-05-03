@@ -10,7 +10,6 @@
             "args": [
                 "-O3",
                 "-Wall",
-                //"-march=skylake",
                 "-std=c++11",
                 "-m64",
                 "-fopenmp",
@@ -18,14 +17,11 @@
                 "./src/*.cpp",
                 "-o",
                 "a.exe",
-                //"-Wno-deprecated-declarations",
-
                 "-I/opt/intel/mkl/include",
                 "-I./src/external",
                 //"-I/usr/include/python3.6m",
                 //"-I/usr/local/lib/python3.6/dist-packages/numpy/core/include",
                 //"-lpython3.6m",
-
                 "-L/opt/intel/mkl/lib/intel64",
                 "-Wl,--no-as-needed",
                 "-lmkl_intel_lp64",
@@ -35,17 +31,39 @@
                 "-lpthread",
                 "-lm",
                 "-ldl"
-
-                //"-L/opt/intel/mkl/lib/intel64",
-                //"-L/opt/intel/lib/intel64",
-                //"-Wl,--no-as-needed",
-                //"-lmkl_intel_lp64",
-                //"-lmkl_intel_thread",
-                //"-lmkl_core",
-                //"-liomp5",
-                //"-lpthread",
-                //"-lm",
-                //"-ldl"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build-intel-omp",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-O3",
+                "-Wall",
+                "-std=c++11",
+                "-m64",
+                "./examples/perovskite/*.cpp",
+                "./src/*.cpp",
+                "-o",
+                "a.exe",
+                "-I/opt/intel/mkl/include",
+                "-I./src/external",
+                //"-I/usr/include/python3.6m",
+                //"-I/usr/local/lib/python3.6/dist-packages/numpy/core/include",
+                //"-lpython3.6m",
+                "-L/opt/intel/mkl/lib/intel64",
+                "-L/opt/intel/lib/intel64",
+                "-Wl,--no-as-needed",
+                "-lmkl_intel_lp64",
+                "-lmkl_intel_thread",
+                "-lmkl_core",
+                "-liomp5",
+                "-lpthread",
+                "-lm",
+                "-ldl"
             ],
             "problemMatcher": [
                 "$gcc"
@@ -58,7 +76,6 @@
             "args": [
                 "-g",
                 "-Wall",
-                //"-march=skylake",
                 "-std=c++11",
                 "-m64",
                 "-fopenmp",
@@ -66,14 +83,42 @@
                 "./src/*.cpp",
                 "-o",
                 "dbg.exe",
-                //"-Wno-deprecated-declarations",
-
                 "-I/opt/intel/mkl/include",
                 "-I./src/external",
                 //"-I/usr/include/python3.6m",
                 //"-I/usr/local/lib/python3.6/dist-packages/numpy/core/include",
                 //"-lpython3.6m",
-
+                "-L/opt/intel/mkl/lib/intel64",
+                "-Wl,--no-as-needed",
+                "-lmkl_intel_lp64",
+                "-lmkl_gnu_thread",
+                "-lmkl_core",
+                "-lgomp",
+                "-lpthread",
+                "-lm",
+                "-ldl"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build-int-64",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-O3",
+                "-Wall",
+                "-std=c++11",
+                "-DMKL_ILP64",
+                "-m64",
+                "-fopenmp",
+                "./examples/perovskite/*.cpp",
+                "./src/*.cpp",
+                "-o",
+                "a_int64.exe",
+                "-I/opt/intel/mkl/include",
+                "-I./src/external",
                 "-L/opt/intel/mkl/lib/intel64",
                 "-Wl,--no-as-needed",
                 "-lmkl_intel_lp64",
