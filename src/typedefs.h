@@ -16,6 +16,8 @@ typedef double                  float_type;
 typedef std::vector<float_type> state_type;
 typedef std::vector<MKL_INT>    vector_type_int;
 
+typedef std::vector<std::vector<float_type>> state_type_matrix;
+
 struct sparse_matrix_holder
 {
     state_type      A;   // Non-zero elements of the sparse matrix A

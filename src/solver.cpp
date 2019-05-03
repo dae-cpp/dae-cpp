@@ -10,7 +10,7 @@
 
 #include "solver.h"
 
-#define BDF_MAX_ORDER 1  // Max BDF scheme order currently implemented
+#define BDF_MAX_ORDER 6  // Max BDF scheme order currently implemented
 
 namespace daecpp_namespace_name
 {
@@ -27,8 +27,11 @@ void Solver::operator()(state_type &x)
     double t  = 0.0;
     double dt = m_opt.dt_init;
 
+    int current_scheme = 1;
+
     // Contains a few latest successful time steps for Time Integrator
-    state_type x_prev[BDF_MAX_ORDER];
+    // state_type x_prev[BDF_MAX_ORDER];
+    state_type_matrix x_prev(BDF_MAX_ORDER, state_type(size));
 
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
@@ -95,7 +98,7 @@ void Solver::operator()(state_type &x)
     // TODO: sStart timer here
 
     bool final_time_step = false;
-    int step_counter = 0;
+    int  step_counter    = 0;
 
     while(t < (m_t1 + dt * 0.5))
     {
@@ -105,6 +108,13 @@ void Solver::operator()(state_type &x)
         std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
 
         int iter;
+
+        ti.set_scheme(current_scheme);
+
+        if(current_scheme < BDF_MAX_ORDER)
+        {
+            current_scheme++;
+        }
 
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
@@ -132,9 +142,10 @@ void Solver::operator()(state_type &x)
                     exit(1);
                 }
 
-                // printf("\nReordering and symbolic factorization completed ... ");
-                // printf("\nNumber of nonzeros in factors = %d", iparm[17]);
-                // printf("\nNumber of factorization MFLOPS = %d", iparm[18]);
+                // printf("\nReordering and symbolic factorization completed ...
+                // "); printf("\nNumber of nonzeros in factors = %d",
+                // iparm[17]); printf("\nNumber of factorization MFLOPS = %d",
+                // iparm[18]);
 
                 // PHASE 2.
                 // Numerical factorization
@@ -174,8 +185,9 @@ void Solver::operator()(state_type &x)
                 x[i] -= mkl_x[i];
             }
 
-            //std::cout << iter << ':' << tol << ' ';
+            // std::cout << iter << ':' << tol << ' ';
             std::cout << "#";
+            std::cout.flush();
 
             if(tol < m_opt.atol)
                 break;
@@ -184,8 +196,8 @@ void Solver::operator()(state_type &x)
         if(iter == m_opt.max_Newton_iter)
             std::cout << "<";
 
-        //std::cout << '=' << iter << "= dt: " << dt;
-        //std::cout << iter << " iterations";
+        // std::cout << '=' << iter << "= dt: " << dt;
+        // std::cout << iter << " iterations";
 
         if(final_time_step)
             break;
@@ -203,6 +215,10 @@ void Solver::operator()(state_type &x)
             dt = m_t1 - t;
         }
 
+        for(int d = BDF_MAX_ORDER - 1; d > 0; d--)
+        {
+            x_prev[d] = x_prev[d - 1];
+        }
         x_prev[0] = x;
 
     }  // for t
@@ -214,7 +230,6 @@ void Solver::operator()(state_type &x)
     PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum, ia, ja, &idum,
             &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
 }
-
 
 void Solver::check_pardiso_error(MKL_INT err)
 {
@@ -238,7 +253,8 @@ void Solver::check_pardiso_error(MKL_INT err)
             std::cout << "reordering problem.\n";
             break;
         case -4:
-            std::cout << "zero pivot, numerical factorization or iterative refinement problem.\n";
+            std::cout << "zero pivot, numerical factorization or iterative "
+                         "refinement problem.\n";
             break;
         case -5:
             std::cout << "unclassified (internal) error.\n";
@@ -265,10 +281,13 @@ void Solver::check_pardiso_error(MKL_INT err)
             std::cout << "pardiso_64 called from 32-bit library.\n";
             break;
         case -13:
-            std::cout << "interrupted by the (user-defined) mkl_progress function.\n";
+            std::cout
+                << "interrupted by the (user-defined) mkl_progress function.\n";
             break;
         case -15:
-            std::cout << "internal error which can appear for iparm[23] (parallel_fact_control) = 10 and iparm[12] = 1. Try switch matching off (set iparm[12] = 0 and rerun).\n";
+            std::cout << "internal error which can appear for iparm[23] "
+                         "(parallel_fact_control) = 10 and iparm[12] = 1. Try "
+                         "switch matching off (set iparm[12] = 0 and rerun).\n";
             break;
         default:
             std::cout << "Unknown error.\n";

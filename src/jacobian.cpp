@@ -30,9 +30,9 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     // where N is the number of threads
     const int nth = omp_get_max_threads();
 
-    std::vector<std::vector<float_type>> J_values(size,
-                                                  std::vector<float_type>(0));
-    std::vector<std::vector<int>>        J_rows(size, std::vector<int>(0));
+    state_type_matrix J_values(size, state_type(0));
+
+    std::vector<std::vector<int>> J_rows(size, std::vector<int>(0));
 
     std::vector<std::vector<int>> sizes_local(size, std::vector<int>(nth));
     std::vector<std::vector<int>> shift_local(size, std::vector<int>(nth));
