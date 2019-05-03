@@ -10,7 +10,7 @@
 
 #include "solver.h"
 
-#define BDF_MAX_ORDER 6  // Max BDF scheme order currently implemented
+
 
 namespace daecpp_namespace_name
 {
@@ -20,6 +20,9 @@ void Solver::operator()(state_type &x)
     // Matrix size
     MKL_INT size = (MKL_INT)(x.size());
 
+    // Check user-defined solver options
+    m_opt.check_options();
+
     // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
@@ -27,11 +30,12 @@ void Solver::operator()(state_type &x)
     double t  = 0.0;
     double dt = m_opt.dt_init;
 
+    // Solver starts the first time step using BDF-1 method
+    // (since it doesn't have enough history yet)
     int current_scheme = 1;
 
     // Contains a few latest successful time steps for Time Integrator
-    // state_type x_prev[BDF_MAX_ORDER];
-    state_type_matrix x_prev(BDF_MAX_ORDER, state_type(size));
+    state_type_matrix x_prev(m_opt.bdf_order, state_type(size));
 
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
@@ -111,7 +115,7 @@ void Solver::operator()(state_type &x)
 
         ti.set_scheme(current_scheme);
 
-        if(current_scheme < BDF_MAX_ORDER)
+        if(current_scheme < m_opt.bdf_order)
         {
             current_scheme++;
         }
@@ -215,7 +219,7 @@ void Solver::operator()(state_type &x)
             dt = m_t1 - t;
         }
 
-        for(int d = BDF_MAX_ORDER - 1; d > 0; d--)
+        for(int d = m_opt.bdf_order - 1; d > 0; d--)
         {
             x_prev[d] = x_prev[d - 1];
         }
