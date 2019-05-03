@@ -2,9 +2,12 @@
  * TODO: Description
  */
 
-#include <omp.h>      // to catch omp_get_max_threads() and OpenMP locks
 #include <cmath>      // fabs()
 #include <algorithm>  // for std::copy
+
+#if defined(_OPENMP)
+#include <omp.h>      // to catch omp_get_max_threads() and OpenMP locks
+#endif
 
 #include "jacobian.h"
 
@@ -28,7 +31,11 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     // Get max number of threads.
     // This can be defined using "export OMP_NUM_THREADS=N",
     // where N is the number of threads
+#if defined(_OPENMP)
     const int nth = omp_get_max_threads();
+#else
+    const int nth = 1;
+#endif
 
     state_type_matrix J_values(size, state_type(0));
 
@@ -37,6 +44,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     std::vector<std::vector<int>> sizes_local(size, std::vector<int>(nth));
     std::vector<std::vector<int>> shift_local(size, std::vector<int>(nth));
 
+#if defined(_OPENMP)
     int th_barrier1 = 0;
     int th_barrier2 = 0;
 
@@ -44,6 +52,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
     omp_init_lock(&writelock1);
     omp_init_lock(&writelock2);
+#endif
 
 #pragma omp parallel for num_threads(nth) schedule(static, 1)
     for(int th = 0; th < nth; th++)
@@ -104,6 +113,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         // Synchronise the threads and assemble local arrays into global
         // Jacobian matrix
 
+#if defined(_OPENMP)
 #pragma omp atomic
         th_barrier1++;
         while(true)  // Wait for all threads
@@ -119,6 +129,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 omp_unset_lock(&writelock1);
             }
         }
+#endif
 
         for(int i = 0; i < size; i++)
         {
@@ -141,6 +152,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             }
         }
 
+#if defined(_OPENMP)
         // Make sure the master thread resized the global arrays
         if(th == 0)
         {
@@ -160,6 +172,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 omp_unset_lock(&writelock2);
             }
         }
+#endif
 
         for(int i = 0; i < size; i++)
         {
