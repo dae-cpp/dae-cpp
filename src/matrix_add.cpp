@@ -26,7 +26,10 @@ void TimeIntegrator::matrix_add(const double alpha,
     MKL_INT jc    = 0;
     MKL_INT c_row = -1;
 
-    while(ja < (MKL_INT)A.ja.size() && jb < (MKL_INT)B.ja.size())
+    const MKL_INT sizeA = A.ja.size();
+    const MKL_INT sizeB = B.ja.size();
+
+    while(ja < sizeA && jb < sizeB)
     {
         // ib and jb point to the element before
         if(b_row < a_row || (b_row == a_row && B.ja[jb] < A.ja[ja]))
@@ -108,7 +111,7 @@ void TimeIntegrator::matrix_add(const double alpha,
         }
     }
 
-    while(ja < (MKL_INT)A.ja.size())
+    while(ja < sizeA)
     {
         C.A[jc]  = alpha * A.A[ja];
         C.ja[jc] = A.ja[ja];
@@ -123,7 +126,7 @@ void TimeIntegrator::matrix_add(const double alpha,
         jc++;
     }
 
-    while(jb < (MKL_INT)B.ja.size())
+    while(jb < sizeB)
     {
         C.A[jc]  = B.A[jb];
         C.ja[jc] = B.ja[jb];

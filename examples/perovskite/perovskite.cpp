@@ -74,7 +74,8 @@ int main()
 
     // Update some of the solver options
     dae::SolverOptions opt;
-    opt.atol = 1.0e-6;  // Absolute tolerance
+    opt.atol            = 1.0e-6;  // Absolute tolerance
+    opt.fact_every_iter = false;   // Gain some speed
 
     // Create an instance of the solver
     dae::Solver solve(rhs, jac, mass, opt, p.t1);
@@ -173,19 +174,20 @@ void solution_check(dae::state_type &x)
     double sol[N_sol];
 
     // MATLAB ode15s solution (Finite Elements), N = 4000 points.
-    const double ode15s_MATLAB[N_sol] = {19.9949,    2.72523, 0.382148,
-                                         0.00101573, -10.0,   -6.04056,
-                                         -2.08970,   1.90021, 5.93011};
+    const double ode15s_MATLAB[N_sol] = {19.9949, 2.72523,  0.382148,
+                                         -10.0,   -6.04056, -2.08970,
+                                         1.90021, 5.93011,  10.0};
+
     // clang-format off
     sol[0] = x[0];                                           // P(x = 0)
     sol[1] = x[(N-1)/10] * 0.1 + x[(N-1)/10+1] * 0.9;        // P(x = 0.1)
     sol[2] = x[(N-1)/5] * 0.2 + x[(N-1)/5+1] * 0.8;          // P(x = 0.2)
-    sol[3] = (x[N/2-1] + x[N/2]) / 2.0;                      // P(x = 0.5)
-    sol[4] = x[N];                                           // Phi(x = 0)
-    sol[5] = x[N+(N-1)/5*1] * 0.2 + x[N+(N-1)/5*1+1] * 0.8;  // Phi(x = 0.2)
-    sol[6] = x[N+(N-1)/5*2] * 0.4 + x[N+(N-1)/5*2+1] * 0.6;  // Phi(x = 0.4)
-    sol[7] = x[N+(N-1)/5*3] * 0.6 + x[N+(N-1)/5*3+1] * 0.4;  // Phi(x = 0.6)
-    sol[8] = x[N+(N-1)/5*4] * 0.8 + x[N+(N-1)/5*4+1] * 0.2;  // Phi(x = 0.8)
+    sol[3] = x[N];                                           // Phi(x = 0)
+    sol[4] = x[N+(N-1)/5*1] * 0.2 + x[N+(N-1)/5*1+1] * 0.8;  // Phi(x = 0.2)
+    sol[5] = x[N+(N-1)/5*2] * 0.4 + x[N+(N-1)/5*2+1] * 0.6;  // Phi(x = 0.4)
+    sol[6] = x[N+(N-1)/5*3] * 0.6 + x[N+(N-1)/5*3+1] * 0.4;  // Phi(x = 0.6)
+    sol[7] = x[N+(N-1)/5*4] * 0.8 + x[N+(N-1)/5*4+1] * 0.2;  // Phi(x = 0.8)
+    sol[8] = x[2*N-1];                                       // Phi(x = 1)
     // clang-format on
 
     std::cout << "  MATLAB ode15s\t<->  dae-cpp\t(rel. error)\n";
@@ -197,8 +199,8 @@ void solution_check(dae::state_type &x)
         double error = (sol[i] - ode15s_MATLAB[i]) / ode15s_MATLAB[i] * 100.0;
         if(std::fabs(error) > err_max)
             err_max = std::fabs(error);
-        std::cout << "     " << ode15s_MATLAB[i] << "\t<->  " << sol[i] << "\t("
-                  << error << "%)\n";
+        std::cout << "      " << ode15s_MATLAB[i] << "\t<->  " << sol[i]
+                  << " \t(" << error << "%)\n";
     }
     std::cout << "Maximum relative error: " << err_max << "%\n";
 }

@@ -24,24 +24,30 @@ public:
     // speeding up. If MKL_NUM_THREADS is not defined, then the solver uses all
     // available processors.
 
-    // Perform symbolic and numericalfactorisation every Newton iteration
+    // Perform symbolic and numerical factorisation every Newton iteration
     // (changing to 'false' can increase speed but also can lead to instability)
     bool fact_every_iter = true;
 
     // Order of BDF implicit numerical integration method:
     // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
-    int bdf_order = 1;
+    int bdf_order = 6;
 
     // Maximum number of Newton iterations. If the Newton method fails to
     // converge after max_Newton_iter iterations, the solver reduces time step
     // and tries to make the current step again.
-    int max_Newton_iter = 10;
+    int max_Newton_iter = 15;
 
     // Absolute tolerance
     double atol = 1.0e-6;
 
     // Initial time step
     double dt_init = 0.1;
+
+    // Adaptive time stepping options
+    int    dt_increase_threshold = 3;
+    int    dt_decrease_threshold = 7;
+    double dt_increase_factor    = 1.4;
+    double dt_decrease_factor    = 1.4;
 
     // Intel MKL PARDISO parameters (iparam). More about iparam:
     // https://software.intel.com/en-us/mkl-developer-reference-c-pardiso-iparm-parameter

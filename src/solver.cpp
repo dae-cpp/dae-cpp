@@ -10,8 +10,6 @@
 
 #include "solver.h"
 
-
-
 namespace daecpp_namespace_name
 {
 
@@ -48,8 +46,11 @@ void Solver::operator()(state_type &x)
     J_tmp.ia.reserve(size + 1);
     J_tmp.ja.reserve(3 * size);
 
-    // Full RHS and solution vector
-    state_type b(size), xk(size);
+    // Full RHS vector
+    state_type b(size);
+
+    // Solution vector used for Newton iterations
+    state_type xk(size);
 
     MKL_INT *ia = nullptr;
     MKL_INT *ja = nullptr;
@@ -77,7 +78,7 @@ void Solver::operator()(state_type &x)
     // or void *pt[64] should be OK on both architectures
     void *pt[64];
 
-    // Initialize the internal solver memory pointer. This is only
+    // Initialise the internal solver memory pointer. This is only
     // necessary for the FIRST call of the PARDISO solver.
     for(MKL_INT i = 0; i < 64; i++)
     {
@@ -96,10 +97,10 @@ void Solver::operator()(state_type &x)
 
     /*
      * Start solver
-     * ================================================
+     * =========================================================================
      */
 
-    // TODO: sStart timer here
+    // TODO: Start timer here
 
     bool final_time_step = false;
     int  step_counter    = 0;
@@ -107,6 +108,7 @@ void Solver::operator()(state_type &x)
     while(t < (m_t1 + dt * 0.5))
     {
         t += dt;  // Time step lapse
+
         step_counter++;
 
         std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
@@ -122,7 +124,7 @@ void Solver::operator()(state_type &x)
 
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
-            // estimate new numerical J only for inter == 0?
+            // Time Integrator
             ti(J, b, J_tmp, x, x_prev, t, dt);
 
             // Jacobian can change its size and can be re-allocated.
@@ -181,9 +183,10 @@ void Solver::operator()(state_type &x)
             calls++;
 
             double tol = 0.0;
+
             for(int i = 0; i < size; i++)
             {
-                double adiff = std::abs(mkl_x[i]);
+                double adiff = std::fabs(mkl_x[i]);
                 if(adiff > tol)
                     tol = adiff;
                 x[i] -= mkl_x[i];
@@ -194,23 +197,45 @@ void Solver::operator()(state_type &x)
             std::cout.flush();
 
             if(tol < m_opt.atol)
+            {
                 break;
+            }
         }  // for iter
 
+        // Newton iterator failed to converge within max_Newton_iter iterations
         if(iter == m_opt.max_Newton_iter)
-            std::cout << "<";
+        {
+            std::cout << " <- redo";
+
+            // Decrease the time step, scrape the current time iteration and
+            // carry out it again.
+            t -= dt;
+            step_counter--;
+            final_time_step = false;
+            dt /= m_opt.dt_decrease_factor;
+            x = x_prev[0];
+            continue;
+        }
 
         // std::cout << '=' << iter << "= dt: " << dt;
         // std::cout << iter << " iterations";
 
         if(final_time_step)
+        {
             break;
+        }
 
-        // Temporary adaptive time stepping
-        if(iter <= 3)
-            dt *= 1.4;
-        else if(iter > 6)
-            dt /= 1.4;
+        // Simple yet efficient adaptive time stepping
+        if(iter < m_opt.dt_increase_threshold)
+        {
+            dt *= m_opt.dt_increase_factor;
+            std::cout << '>'; //"> dt = " << dt;
+        }
+        else if(iter >= m_opt.dt_decrease_threshold - 1)
+        {
+            dt /= m_opt.dt_decrease_factor;
+            std::cout << '<'; //"< dt = " << dt;
+        }
 
         if(t + dt > m_t1)
         {
@@ -219,13 +244,14 @@ void Solver::operator()(state_type &x)
             dt = m_t1 - t;
         }
 
+        // Rewrite solution history
         for(int d = m_opt.bdf_order - 1; d > 0; d--)
         {
             x_prev[d] = x_prev[d - 1];
         }
         x_prev[0] = x;
 
-    }  // for t
+    }  // while t
 
     std::cout << "\nLinear algebra solver calls: " << calls << '\n';
 
