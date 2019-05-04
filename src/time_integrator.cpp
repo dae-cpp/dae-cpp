@@ -59,7 +59,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
                                 const state_type_matrix &x_prev, const double t,
                                 const double dt)
 {
-    const int size = (int)(x.size());
+    const MKL_INT size = (MKL_INT)(x.size());
 
     const double invdt = 1.0 / dt;
 
@@ -68,7 +68,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     state_type dxdt(size);
 
-    for(int i = 0; i < size; i++)
+    for(MKL_INT i = 0; i < size; i++)
     {
         double val = 0;
         val += BDF_COEF[scheme][0] * x[i];

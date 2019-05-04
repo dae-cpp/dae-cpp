@@ -8,9 +8,10 @@
 
 class MyMassMatrix : public daecpp::MassMatrix
 {
-    const int m_N;
+    const MKL_INT m_N;
 
 public:
-    MyMassMatrix(const int N) : daecpp::MassMatrix(), m_N(N) {}
+    MyMassMatrix(const MKL_INT N) : daecpp::MassMatrix(), m_N(N) {}
+
     void operator()(daecpp::sparse_matrix_holder &M);
 };

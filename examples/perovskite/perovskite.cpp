@@ -32,12 +32,12 @@ int main()
 {
     // These parameters can be obtained from a parameter file or
     // as command line options. Here for simplicity we define them as constants.
-    const int    N      = 4000;  // Number of cells
-    const double L      = 1.0;   // Space interval length
-    const double lambda = 1.0;   // Lambda parameter
-    const double t1     = 10.0;  // Integration time (0 < t < t1)
+    const MKL_INT N      = 4000;  // Number of cells
+    const double  L      = 1.0;   // Space interval length
+    const double  lambda = 1.0;   // Lambda parameter
+    const double  t1     = 10.0;  // Integration time (0 < t < t1)
 
-    // Pass the parameters to the container
+    // Pass the parameters to the user-defined container
     MyParams p(N, L, lambda, t1);
 
     std::cout << "N = " << p.N << "; lambda = " << p.lambda << "; t = " << p.t1
@@ -53,7 +53,7 @@ int main()
     dae::state_type x2(2 * N);
 
     // Initial conditions
-    for(int i = 0; i < N; i++)
+    for(MKL_INT i = 0; i < N; i++)
     {
         x1[i]     = 1.0;  // for P - ion concentration
         x1[i + N] = 0.0;  // for Phi - potential
@@ -124,8 +124,9 @@ int main()
     solution_check(x2);
 
 #ifdef PLOTTING
+    // This needs to be reworked
     state_type x_axis(N), p(N), phi(N), d2phi(N);
-    for(int i = 0; i < N; i++)
+    for(MKL_INT i = 0; i < N; i++)
     {
         x_axis[i] = (0.5 + i) / N;
         p[i]      = x[i];
@@ -168,7 +169,8 @@ void solution_check(dae::state_type &x)
 {
     std::cout << "Solution check:\n";
 
-    const int N     = (int)(x.size()) / 2;
+    const MKL_INT N = (MKL_INT)(x.size()) / 2;
+
     const int N_sol = 9;
 
     double sol[N_sol];

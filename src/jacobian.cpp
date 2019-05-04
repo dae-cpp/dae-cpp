@@ -6,7 +6,7 @@
 #include <algorithm>  // for std::copy
 
 #if defined(_OPENMP)
-#include <omp.h>      // to catch omp_get_max_threads() and OpenMP locks
+#include <omp.h>  // to catch omp_get_max_threads() and OpenMP locks
 #endif
 
 #include "jacobian.h"
@@ -26,7 +26,7 @@ namespace daecpp_namespace_name
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
-    const int size = (int)(x.size());
+    const MKL_INT size = (MKL_INT)(x.size());
 
     // Get max number of threads.
     // This can be defined using "export OMP_NUM_THREADS=N",
@@ -39,10 +39,12 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
     state_type_matrix J_values(size, state_type(0));
 
-    std::vector<std::vector<int>> J_rows(size, std::vector<int>(0));
+    std::vector<std::vector<MKL_INT>> J_rows(size, std::vector<MKL_INT>(0));
 
-    std::vector<std::vector<int>> sizes_local(size, std::vector<int>(nth));
-    std::vector<std::vector<int>> shift_local(size, std::vector<int>(nth));
+    std::vector<std::vector<MKL_INT>> sizes_local(size,
+                                                  std::vector<MKL_INT>(nth));
+    std::vector<std::vector<MKL_INT>> shift_local(size,
+                                                  std::vector<MKL_INT>(nth));
 
 #if defined(_OPENMP)
     int th_barrier1 = 0;
@@ -70,13 +72,14 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
         std::vector<std::vector<float_type>> values_local(
             size, std::vector<float_type>(0));
-        std::vector<std::vector<int>> rows_local(size, std::vector<int>(0));
+        std::vector<std::vector<MKL_INT>> rows_local(size,
+                                                     std::vector<MKL_INT>(0));
 
 #if JACOBIAN_SCHEME == 1
         m_rhs(x1, f0, t);
 #endif
 
-        for(int j = start_th; j < end_th; j++)
+        for(MKL_INT j = start_th; j < end_th; j++)
         {
 
 #if JACOBIAN_SCHEME == 0
@@ -89,7 +92,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
             m_rhs(x1, f1, t);
 
-            for(int i = 0; i < size; i++)
+            for(MKL_INT i = 0; i < size; i++)
             {
                 double jacd;
 
@@ -131,12 +134,12 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         }
 #endif
 
-        for(int i = 0; i < size; i++)
+        for(MKL_INT i = 0; i < size; i++)
         {
             if(th == 0)
             {
-                int size_total = 0;
-                for(int k = 0; k < nth; k++)
+                MKL_INT size_total = 0;
+                for(MKL_INT k = 0; k < nth; k++)
                 {
                     size_total += sizes_local[i][k];
                 }
@@ -174,7 +177,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         }
 #endif
 
-        for(int i = 0; i < size; i++)
+        for(MKL_INT i = 0; i < size; i++)
         {
             std::copy(values_local[i].begin(), values_local[i].end(),
                       J_values[i].begin() + shift_local[i][th]);
@@ -186,9 +189,9 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
     // Unroll global array to CSR format and transpose Jacobian
 
-    int ci = 1;
+    MKL_INT ci = 1;
 
-    for(int i = 0; i < size; i++)
+    for(MKL_INT i = 0; i < size; i++)
     {
         J.A.insert(J.A.end(), J_values[i].begin(), J_values[i].end());
         J.ja.insert(J.ja.end(), J_rows[i].begin(), J_rows[i].end());

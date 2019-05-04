@@ -184,7 +184,7 @@ void Solver::operator()(state_type &x)
 
             double tol = 0.0;
 
-            for(int i = 0; i < size; i++)
+            for(MKL_INT i = 0; i < size; i++)
             {
                 double adiff = std::fabs(mkl_x[i]);
                 if(adiff > tol)
@@ -229,12 +229,12 @@ void Solver::operator()(state_type &x)
         if(iter < m_opt.dt_increase_threshold)
         {
             dt *= m_opt.dt_increase_factor;
-            std::cout << '>'; //"> dt = " << dt;
+            std::cout << '>';
         }
         else if(iter >= m_opt.dt_decrease_threshold - 1)
         {
             dt /= m_opt.dt_decrease_factor;
-            std::cout << '<'; //"< dt = " << dt;
+            std::cout << '<';
         }
 
         if(t + dt > m_t1)

@@ -8,14 +8,14 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
                        const double t)
 {
     // Locals
-    const int    N       = m_p.N;
-    const double invh2   = m_p.invh * m_p.invh;
-    const double invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
+    const MKL_INT N       = m_p.N;
+    const double  invh2   = m_p.invh * m_p.invh;
+    const double  invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
 
     // clang-format off
 
     // RHS for ion concentration P = dFlux/dx
-    for(int i = 1; i < N - 1; i++)
+    for(MKL_INT i = 1; i < N - 1; i++)
     {
         f[i] = (x[i+1] - 2.0*x[i] + x[i-1] + 0.5*((x[i+1] + x[i])*(x[N+i+1] - x[N+i]) - (x[i] + x[i-1])*(x[N+i] - x[N+i-1])))*invh2;
     }
@@ -23,7 +23,7 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
     f[N-1] = -(x[N-1] - x[N-2] + 0.5*(x[N-1] + x[N-2])*(x[2*N-1] - x[2*N-2]))*invh2;  // Right BC
 
     // RHS for the potential Phi
-    for(int i = 1; i < N - 1; i++)
+    for(MKL_INT i = 1; i < N - 1; i++)
     {
         f[i+N] = (x[i+1+N] - 2.0*x[i+N] + x[i-1+N])*invh2 - (1.0 - x[i])*invlam2;
     }

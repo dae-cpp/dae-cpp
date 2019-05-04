@@ -8,14 +8,14 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
                             const daecpp::state_type &x, const double t)
 {
     // Locals
-    const int    N       = m_p.N;
-    const int    size    = (int)(x.size());
-    const double invh2   = m_p.invh * m_p.invh;
-    const double invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
+    const MKL_INT N       = m_p.N;
+    const MKL_INT size    = (MKL_INT)(x.size());
+    const double  invh2   = m_p.invh * m_p.invh;
+    const double  invlam2 = 1.0 / (m_p.lambda * m_p.lambda);
 
-    int c = 0;
+    MKL_INT c = 0;
 
-    for(int i = 0; i < size; i++)
+    for(MKL_INT i = 0; i < size; i++)
     {
         J.ia.push_back(c + 1);
 
@@ -80,17 +80,9 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
         }
         else if(i == N)
         {
-            //J.ja.push_back(1);
-            //J.A.push_back(invlam2);
-
             J.ja.push_back(N + 1);
-            //J.A.push_back(-3.0 * invh2);
             J.A.push_back(1.0);
 
-            //J.ja.push_back(N + 2);
-            //J.A.push_back(invh2);
-
-            //c += 3;
             c += 1;
         }
         else if(i < 2 * N - 1)
@@ -111,17 +103,9 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
         }
         else  // i == 2*N-1
         {
-            //J.ja.push_back(N);
-            //J.A.push_back(invlam2);
-
-            //J.ja.push_back(2 * N - 1);
-            //J.A.push_back(invh2);
-
             J.ja.push_back(2 * N);
-            //J.A.push_back(-3.0 * invh2);
             J.A.push_back(1.0);
 
-            //c += 3;
             c += 1;
         }
     }

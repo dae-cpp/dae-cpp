@@ -6,9 +6,9 @@
 
 void MyMassMatrix::operator()(daecpp::sparse_matrix_holder &M)
 {
-    const int N = m_N;
+    const MKL_INT N = m_N;
 
-    for(int i = 0; i < 2 * N; i++)
+    for(MKL_INT i = 0; i < 2 * N; i++)
     {
         if(i < N)
         {
