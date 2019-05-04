@@ -102,6 +102,8 @@ void Solver::operator()(state_type &x)
 
     // TODO: Start timer here
 
+    double peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+
     bool final_time_step = false;
     int  step_counter    = 0;
 
@@ -152,6 +154,17 @@ void Solver::operator()(state_type &x)
                 // "); printf("\nNumber of nonzeros in factors = %d",
                 // iparm[17]); printf("\nNumber of factorization MFLOPS = %d",
                 // iparm[18]);
+
+                if((double)iparm[14]/1024.0 > peak_mem1 || (double)iparm[15]/1024.0 > peak_mem2 || (double)iparm[16]/1024.0 > peak_mem3)
+                {
+                    peak_mem1 = (double)iparm[14]/1024.0;
+                    peak_mem2 = (double)iparm[15]/1024.0;
+                    peak_mem3 = (double)iparm[16]/1024.0;
+
+                    std::cout << "\nPeak memory on symbolic factorization: " << peak_mem1 << " Mb";
+                    std::cout << "\nPermanent memory on symbolic factorization: " << peak_mem2 << " Mb";
+                    std::cout << "\nPeak memory on numerical factorization and solution: " << peak_mem3 << " Mb" << std::endl;
+                }
 
                 // PHASE 2.
                 // Numerical factorization
