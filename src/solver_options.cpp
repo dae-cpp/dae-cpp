@@ -33,7 +33,12 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
 
     iparm[7] = refinement_steps;  // Number of iterative refinement steps
 
+#ifdef DAE_SINGLE
+    iparm[9]  = 6;  // Perturb the pivot elements with 1.0E-6 (single precision)
+#else
     iparm[9]  = 13;  // Perturb the pivot elements with 1.0E-13 (default)
+#endif
+
     iparm[10] = 1;   // Enable scaling. Default for nonsymmetric matrices.
     iparm[11] = 0;   // Conjugate transposed/transpose solve
     iparm[12] = 1;   // Maximum weighted matching algorithm is switched-on
@@ -58,8 +63,15 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
                                          // control
 
     iparm[26] = 0;  // Matrix checker
+
+#ifdef DAE_SINGLE
+    iparm[27] = 1;  // Single or double precision Intel MKL PARDISO:
+                    // 0 - double, 1 - single
+#else
     iparm[27] = 0;  // Single or double precision Intel MKL PARDISO:
                     // 0 - double, 1 - single
+#endif
+
     iparm[29] = 0;  // Number of zero or negative pivots
     iparm[30] = 0;  // Partial solve and computing selected components
     iparm[33] = 0;  // Because iparm[1] = 3;

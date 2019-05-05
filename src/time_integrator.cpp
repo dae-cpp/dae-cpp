@@ -38,9 +38,15 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
 #endif
 
     // Create sparse matrix descriptor
+#ifdef DAE_SINGLE
+    sparse_status_t sp_status =
+        mkl_sparse_s_create_csr(&m_csrA, style, size, size, m_M.ia.data(),
+                                m_M.ia.data() + 1, m_M.ja.data(), m_M.A.data());
+#else
     sparse_status_t sp_status =
         mkl_sparse_d_create_csr(&m_csrA, style, size, size, m_M.ia.data(),
                                 m_M.ia.data() + 1, m_M.ja.data(), m_M.A.data());
+#endif
 
     if(sp_status != SPARSE_STATUS_SUCCESS)
     {
@@ -93,8 +99,13 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     // TODO: check output
     // b := -M * dxdt + b
+#ifdef DAE_SINGLE
+    mkl_sparse_s_mv(SPARSE_OPERATION_NON_TRANSPOSE, -1.0, m_csrA, m_descrA,
+                    dxdt.data(), 1.0, b.data());
+#else
     mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, -1.0, m_csrA, m_descrA,
                     dxdt.data(), 1.0, b.data());
+#endif
 
     J.A.clear();
     J.ia.clear();

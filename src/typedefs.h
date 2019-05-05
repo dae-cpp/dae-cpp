@@ -12,12 +12,20 @@
 // This line will be removed to the makefile.
 // #define DAE_FORTRAN_STYLE
 
+// Single or Double precision. This line will be removed to the makefile.
+// #define DAE_SINGLE
+
 #define daecpp_namespace_name daecpp
 
 namespace daecpp_namespace_name
 {
 
-typedef double                  float_type;
+#ifdef DAE_SINGLE
+typedef float float_type;
+#else
+typedef double float_type;
+#endif
+
 typedef std::vector<float_type> state_type;
 typedef std::vector<MKL_INT>    vector_type_int;
 

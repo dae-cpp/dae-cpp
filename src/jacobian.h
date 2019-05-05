@@ -15,7 +15,11 @@ class Jacobian
 
     RHS &m_rhs;
 
+#ifdef DAE_SINGLE
+    double m_tol = 1.0e-3;
+#else
     double m_tol = 1.0e-6;
+#endif
 
 public:
     /*

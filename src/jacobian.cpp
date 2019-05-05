@@ -94,7 +94,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
             for(MKL_INT i = 0; i < size; i++)
             {
-                double jacd;
+                float_type jacd;
 
 #if JACOBIAN_SCHEME == 0
                 jacd = (f1[i] - f0[i]) / (2.0 * m_tol);

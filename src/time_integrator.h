@@ -60,7 +60,7 @@ class TimeIntegrator
      * Performs matrix-matrix addition: C = alpha*A + B.
      * Replaces deprecated Intel MKL mkl_dcsradd() function.
      */
-    void matrix_add(const double alpha, const sparse_matrix_holder &A,
+    void matrix_add(const float_type alpha, const sparse_matrix_holder &A,
                     const sparse_matrix_holder &B, sparse_matrix_holder &C);
 
 public:
