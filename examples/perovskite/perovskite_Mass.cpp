@@ -18,9 +18,9 @@ void MyMassMatrix::operator()(daecpp::sparse_matrix_holder &M)
         {
             M.A.push_back(0.0);
         }
-        M.ja.push_back(i + 1);
-        M.ia.push_back(i + 1);
+        M.ja.push_back(i);
+        M.ia.push_back(i);
     }
 
-    M.ia.push_back(2 * N + 1);
+    M.ia.push_back(2 * N);
 }
