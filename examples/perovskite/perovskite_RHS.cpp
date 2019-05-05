@@ -27,9 +27,7 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
     {
         f[i+N] = (x[i+1+N] - 2.0*x[i+N] + x[i-1+N])*invh2 - (1.0 - x[i])*invlam2;
     }
-    //f[N] = (x[N+1] - 3.0*x[N] - 2.0*t)*invh2 - (1.0 - x[0])*invlam2;  // Left BC
     f[N] = x[N] + t;  // Left BC
-    //f[2*N-1] = (2.0*t - 3.0*x[2*N-1] + x[2*N-2])*invh2 - (1.0 - x[N-1])*invlam2;  // Right BC
     f[2*N-1] = x[2*N-1] - t;  // Right BC
 
     // clang-format on

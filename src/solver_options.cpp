@@ -63,8 +63,15 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
     iparm[29] = 0;  // Number of zero or negative pivots
     iparm[30] = 0;  // Partial solve and computing selected components
     iparm[33] = 0;  // Because iparm[1] = 3;
+
+#ifdef DAE_FORTRAN_STYLE
     iparm[34] = 0;  // One- or zero-based indexing of columns and rows:
                     // 0 - one-based, 1 - zero-based
+#else
+    iparm[34] = 1;  // One- or zero-based indexing of columns and rows:
+                    // 0 - one-based, 1 - zero-based
+#endif
+
     iparm[59] = 0;  // Intel MKL PARDISO mode - in-core
 }
 
@@ -75,7 +82,7 @@ void SolverOptions::check_options()
 {
     if(bdf_order < 1 || bdf_order > BDF_MAX_ORDER)
     {
-        // print warning
+        // TODO: print warning
         // fall back to BDF-1
         bdf_order = 1;
     }

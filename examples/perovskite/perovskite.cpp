@@ -26,12 +26,19 @@ namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 namespace plt = matplotlibcpp;
 #endif
 
-void solution_check(dae::state_type &x);
+// To compare dae-cpp solution with an alternative solver
+int solution_check(dae::state_type &x);
 
+/*
+ * MAIN FUNCTION
+ * =============================================================================
+ * Returns '0' if solution comparison is OK or '1' if the error is above
+ * acceptable tolerance.
+ */
 int main()
 {
-    // These parameters can be obtained from a parameter file or
-    // as command line options. Here for simplicity we define them as constants.
+    // These parameters can be obtained from a parameter file or as command line
+    // options. Here for simplicity we define them as constants.
     const MKL_INT N      = 4000;  // Number of cells
     const double  L      = 1.0;   // Space interval length
     const double  lambda = 1.0;   // Lambda parameter
@@ -72,12 +79,14 @@ int main()
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass(N);
 
-    // Update some of the solver options
+    // Create an instance of the solver options and update some of the solver
+    // parameters defined in solver_options.h
     dae::SolverOptions opt;
     opt.atol            = 1.0e-6;  // Absolute tolerance
     opt.fact_every_iter = false;   // Gain some speed
 
-    // Create an instance of the solver
+    // Create an instance of the solver with particular RHS, Mass matrix,
+    // Jacobian and solver options
     dae::Solver solve(rhs, jac, mass, opt, p.t1);
 
     // Now we are ready to solve the set of DAEs
@@ -96,7 +105,7 @@ int main()
     }
 
     // Compare solution with an alternative solver (e.g. MATLAB)
-    solution_check(x1);
+    int check_result = solution_check(x1);
 
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
@@ -121,33 +130,23 @@ int main()
     }
 
     // Compare solution
-    solution_check(x2);
+    check_result = solution_check(x2);
 
+    // Plot the results
 #ifdef PLOTTING
-    // This needs to be reworked
-    state_type x_axis(N), p(N), phi(N), d2phi(N);
+    dae::state_type x_axis(N), P(N), Phi(N);
+
     for(MKL_INT i = 0; i < N; i++)
     {
-        x_axis[i] = (0.5 + i) / N;
-        p[i]      = x[i];
-        phi[i]    = x[i + N];
-        if(i > 0 && i < (N - 1))
-            d2phi[i] =
-                1.0 - lambda * lambda *
-                          (x[i + 1 + N] - 2.0 * x[i + N] + x[i - 1 + N]) *
-                          ((double)(N) * (double)(N));
+        x_axis[i] = (double)(i) / (N - 1);
+        P[i]      = x1[i];
+        Phi[i]    = x1[i + N];
     }
-    d2phi[0] = 1.0 - lambda * lambda * (x[N + 1] - 3.0 * x[N] - 2.0 * t1) *
-                         ((double)(N) * (double)(N));
-    d2phi[N - 1] = 1.0 - lambda * lambda *
-                             (2.0 * t1 - 3.0 * x[2 * N - 1] + x[2 * N - 2]) *
-                             ((double)(N) * (double)(N));
 
     plt::figure();
     plt::figure_size(800, 600);
-    plt::named_plot("1 - lambda^2 * d2Phi/dx2", x_axis, d2phi, "k.");
-    plt::named_plot("P(x)", x_axis, p, "b-");
-    plt::named_plot("Phi(x)", x_axis, phi, "r-");
+    plt::named_plot("P(x)", x_axis, P, "b.");
+    plt::named_plot("Phi(x)", x_axis, Phi, "r-");
     plt::xlabel("x");
     plt::ylabel("P and Phi");
     plt::xlim(0.0, 1.0);
@@ -160,12 +159,19 @@ int main()
     plt::save(filename);
 #endif
 
-    std::cout << "...done\n\n";
+    if(check_result)
+        std::cout << "...Test FAILED\n\n";
+    else
+        std::cout << "...done\n\n";
 
-    return 0;
+    return check_result;
 }
 
-void solution_check(dae::state_type &x)
+/*
+ * Returns '0' if solution comparison is OK or '1' if the error is above
+ * acceptable tolerance
+ */
+int solution_check(dae::state_type &x)
 {
     std::cout << "Solution check:\n";
 
@@ -199,10 +205,20 @@ void solution_check(dae::state_type &x)
     for(int i = 0; i < N_sol; i++)
     {
         double error = (sol[i] - ode15s_MATLAB[i]) / ode15s_MATLAB[i] * 100.0;
+
         if(std::fabs(error) > err_max)
+        {
             err_max = std::fabs(error);
+        }
+
         std::cout << "      " << ode15s_MATLAB[i] << "\t<->  " << sol[i]
                   << " \t(" << error << "%)\n";
     }
+
     std::cout << "Maximum relative error: " << err_max << "%\n";
+
+    if(err_max < 1.0)
+        return 0;
+    else
+        return 1;
 }

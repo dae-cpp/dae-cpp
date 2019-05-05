@@ -106,7 +106,11 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                     continue;
 
                 values_local[i].push_back(jacd);
+#ifdef DAE_FORTRAN_STYLE
                 rows_local[i].push_back(j + 1);
+#else
+                rows_local[i].push_back(j);
+#endif
                 sizes_local[i][th]++;
             }
 
@@ -189,7 +193,11 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
     // Unroll global array to CSR format and transpose Jacobian
 
+#ifdef DAE_FORTRAN_STYLE
     MKL_INT ci = 1;
+#else
+    MKL_INT ci = 0;
+#endif
 
     for(MKL_INT i = 0; i < size; i++)
     {

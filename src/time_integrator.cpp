@@ -31,10 +31,16 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     m_descrA.mode = SPARSE_FILL_MODE_UPPER;
     m_descrA.diag = SPARSE_DIAG_NON_UNIT;
 
+#ifdef DAE_FORTRAN_STYLE
+    sparse_index_base_t style = SPARSE_INDEX_BASE_ONE;
+#else
+    sparse_index_base_t style = SPARSE_INDEX_BASE_ZERO;
+#endif
+
     // Create sparse matrix descriptor
-    sparse_status_t sp_status = mkl_sparse_d_create_csr(
-        &m_csrA, SPARSE_INDEX_BASE_ONE, size, size, m_M.ia.data(),
-        m_M.ia.data() + 1, m_M.ja.data(), m_M.A.data());
+    sparse_status_t sp_status =
+        mkl_sparse_d_create_csr(&m_csrA, style, size, size, m_M.ia.data(),
+                                m_M.ia.data() + 1, m_M.ja.data(), m_M.A.data());
 
     if(sp_status != SPARSE_STATUS_SUCCESS)
     {

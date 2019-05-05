@@ -14,7 +14,11 @@ void TimeIntegrator::matrix_add(const double alpha,
                                 sparse_matrix_holder &C)
 {
 // For compatibility with mkl_dcsradd()
+#ifdef DAE_FORTRAN_STYLE
 #define FORTRAN_STYLE 1
+#else
+#define FORTRAN_STYLE 0
+#endif
 
     MKL_INT ia    = 1;
     MKL_INT ja    = 0;
