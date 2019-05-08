@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <iostream>
-
 #include "typedefs.h"
 #include "RHS.h"
 #include "jacobian.h"

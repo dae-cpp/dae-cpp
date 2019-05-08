@@ -2,6 +2,7 @@
  * TODO: Description
  */
 
+#include <iostream>
 #include <cmath>
 
 #include <mkl_types.h>

@@ -82,7 +82,12 @@ int main()
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
-    opt.atol            = 1.0e-6;  // Absolute tolerance
+
+#ifdef DAE_SINGLE
+    opt.atol            = 1.0e-3;  // Absolute tolerance for single precision
+#else
+    opt.atol            = 1.0e-6;  // Absolute tolerance for double precision
+#endif
     opt.fact_every_iter = false;   // Gain some speed
 
     // Create an instance of the solver with particular RHS, Mass matrix,
@@ -109,7 +114,7 @@ int main()
 
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
-    dae::Jacobian jac_est(rhs, 1.0e-6);
+    dae::Jacobian jac_est(rhs, opt.atol);
 
     // Create a new instance of the solver for estimated Jacobian
     dae::Solver solve_slow(rhs, jac_est, mass, opt, p.t1);

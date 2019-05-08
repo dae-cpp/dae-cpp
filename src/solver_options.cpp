@@ -34,22 +34,22 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
     iparm[7] = refinement_steps;  // Number of iterative refinement steps
 
 #ifdef DAE_SINGLE
-    iparm[9]  = 6;  // Perturb the pivot elements with 1.0E-6 (single precision)
+    iparm[9] = 6;   // Perturb the pivot elements with 1.0E-6 (single precision)
 #else
-    iparm[9]  = 13;  // Perturb the pivot elements with 1.0E-13 (default)
+    iparm[9] = 13;  // Perturb the pivot elements with 1.0E-13 (default)
 #endif
 
-    iparm[10] = 1;   // Enable scaling. Default for nonsymmetric matrices.
-    iparm[11] = 0;   // Conjugate transposed/transpose solve
-    iparm[12] = 1;   // Maximum weighted matching algorithm is switched-on
-    iparm[13] = 0;   // Output: Number of perturbed pivots
-    iparm[14] = 0;   // Output: Peak memory on symbolic factorization
-    iparm[15] = 0;   // Output: Permanent memory on symbolic factorization
-    iparm[16] = 0;   // Output: Size of factors/Peak memory on numerical
-                     // factorization and solution
-    iparm[17] = 0;   // Report the number of nonzeros in the factor LU
-    iparm[18] = 0;   // Report Mflops for LU factorization
-    iparm[19] = 0;   // Output: Numbers of CG Iterations
+    iparm[10] = 1;  // Enable scaling. Default for nonsymmetric matrices.
+    iparm[11] = 0;  // Conjugate transposed/transpose solve
+    iparm[12] = 1;  // Maximum weighted matching algorithm is switched-on
+    iparm[13] = 0;  // Output: Number of perturbed pivots
+    iparm[14] = 0;  // Output: Peak memory on symbolic factorization
+    iparm[15] = 0;  // Output: Permanent memory on symbolic factorization
+    iparm[16] = 0;  // Output: Size of factors/Peak memory on numerical
+                    // factorization and solution
+    iparm[17] = 0;  // Report the number of nonzeros in the factor LU
+    iparm[18] = 0;  // Report Mflops for LU factorization
+    iparm[19] = 0;  // Output: Numbers of CG Iterations
 
     iparm[23] = parallel_fact_control;  // Parallel factorization control
 
@@ -65,11 +65,9 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
     iparm[26] = 0;  // Matrix checker
 
 #ifdef DAE_SINGLE
-    iparm[27] = 1;  // Single or double precision Intel MKL PARDISO:
-                    // 0 - double, 1 - single
+    iparm[27] = 1;  // Single precision Intel MKL PARDISO
 #else
-    iparm[27] = 0;  // Single or double precision Intel MKL PARDISO:
-                    // 0 - double, 1 - single
+    iparm[27] = 0;  // Double precision Intel MKL PARDISO
 #endif
 
     iparm[29] = 0;  // Number of zero or negative pivots
@@ -77,11 +75,9 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
     iparm[33] = 0;  // Because iparm[1] = 3;
 
 #ifdef DAE_FORTRAN_STYLE
-    iparm[34] = 0;  // One- or zero-based indexing of columns and rows:
-                    // 0 - one-based, 1 - zero-based
+    iparm[34] = 0;  // One-based indexing of columns and rows
 #else
-    iparm[34] = 1;  // One- or zero-based indexing of columns and rows:
-                    // 0 - one-based, 1 - zero-based
+    iparm[34] = 1;  // Zero-based indexing of columns and rows
 #endif
 
     iparm[59] = 0;  // Intel MKL PARDISO mode - in-core
