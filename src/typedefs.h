@@ -7,13 +7,7 @@
 #include <mkl_types.h>
 #include <vector>
 
-// Matrices will be defined using FORTRAN style (the first index starts from 1
-// instead of 0).
-// This line will be removed to the makefile.
-// #define DAE_FORTRAN_STYLE
-
-// Single or Double precision. This line will be removed to the makefile.
-// #define DAE_SINGLE
+#include "cmake_config.h"
 
 #define daecpp_namespace_name daecpp
 
