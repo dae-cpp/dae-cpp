@@ -43,6 +43,10 @@ public:
     // Initial time step
     double dt_init = 0.1;
 
+    // Verbosity level of the solver:
+    // 0 - be silent, 1 - prints some basic information, 2 - chatterbox
+    int verbosity = 1;
+
     // Adaptive time stepping options
     int    dt_increase_threshold = 3;
     int    dt_decrease_threshold = 7;

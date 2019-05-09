@@ -1,8 +1,24 @@
 /*
- * TODO: Description of the problem
- * Keywords: perovskite solar cell, potential, ion concentration,
- * singular mass matrix
+ * This example solves the system of DAEs that describe potential distribution
+ * and ion concentration in a perovskite solar cell:
  *
+ * dP/dt = d/dx(dP/dx + P * dPhi/dx),
+ * d^2(Phi)/dx^2 = (1 - P)/lambda^2,
+ *
+ * where P is the ion concentration (dimensionless),
+ * Phi is the potential (dimensionless) along axis x, 0 <= x <= 1,
+ * depending on time t. Lambda parameter is a constant.
+ * Initial conditions are: P(t=0) = 1, Phi(t=0) = 0.
+ * Boundary conditions: (dP/dx + P * dPhi/dx) = 0 for x = 0 and x = 1,
+ *                      Phi(t,x=0) = -t, Phi(t,x=1) = t.
+ *
+ * The system will be resolved using Finite Difference approach on the time
+ * interval 0 <= t <= 10, and compared with the reference solution obtained
+ * in MATLAB using Finite Element method and ode15s solver on a uniform
+ * spatial grid (4000 points).
+ *
+ * Keywords: perovskite solar cell, potential, ion concentration,
+ * singular mass matrix.
  */
 
 #include <iostream>
@@ -19,7 +35,7 @@
 namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 
 // python3 + numpy + matplotlib should be installed in order to enable plotting
-//#define PLOTTING
+// #define PLOTTING
 
 #ifdef PLOTTING
 #include "../../src/external/matplotlib-cpp/matplotlibcpp.h"
@@ -32,7 +48,7 @@ int solution_check(dae::state_type &x);
 /*
  * MAIN FUNCTION
  * =============================================================================
- * Returns '0' if solution comparison is OK or '1' if the error is above
+ * Returns '0' if solution comparison is OK or '1' if solution error is above
  * acceptable tolerance.
  */
 int main()
@@ -88,7 +104,8 @@ int main()
 #else
     opt.atol            = 1.0e-6;  // Absolute tolerance for double precision
 #endif
-    opt.fact_every_iter = false;   // Gain some speed
+    opt.fact_every_iter = false;   // Gain some speed. The matrices will be
+                                   // factorized only once each time step.
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
@@ -135,7 +152,7 @@ int main()
     }
 
     // Compare solution
-    check_result = solution_check(x2);
+    check_result += solution_check(x2);
 
     // Plot the results
 #ifdef PLOTTING
@@ -150,7 +167,7 @@ int main()
 
     plt::figure();
     plt::figure_size(800, 600);
-    plt::named_plot("P(x)", x_axis, P, "b.");
+    plt::named_plot("P(x)", x_axis, P, "b-");
     plt::named_plot("Phi(x)", x_axis, Phi, "r-");
     plt::xlabel("x");
     plt::ylabel("P and Phi");
@@ -186,11 +203,12 @@ int solution_check(dae::state_type &x)
 
     double sol[N_sol];
 
-    // MATLAB ode15s solution (Finite Elements), N = 4000 points.
+    // MATLAB ode15s solution at different x, Finite Elements, N = 4000 points
     const double ode15s_MATLAB[N_sol] = {19.9949, 2.72523,  0.382148,
                                          -10.0,   -6.04056, -2.08970,
                                          1.90021, 5.93011,  10.0};
 
+    // dae-cpp solution at the same coordinates x:
     // clang-format off
     sol[0] = x[0];                                           // P(x = 0)
     sol[1] = x[(N-1)/10] * 0.1 + x[(N-1)/10+1] * 0.9;        // P(x = 0.1)

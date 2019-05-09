@@ -29,6 +29,15 @@ void Solver::operator()(state_type &x)
     double t  = 0.0;
     double dt = m_opt.dt_init;
 
+    // Initial output
+    if(m_opt.verbosity > 0)
+    {
+        std::cout << "Number of equations: " << size << std::endl;
+        std::cout << "Float precision:     " << 8 * sizeof(float_type) << " bit\n";
+        std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
+        std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order  << std::endl;
+    }
+
     // Solver starts the first time step using BDF-1 method
     // (since it doesn't have enough history yet)
     int current_scheme = 1;
@@ -103,7 +112,7 @@ void Solver::operator()(state_type &x)
 
     // TODO: Start timer here
 
-    double peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+    int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
 
     bool final_time_step = false;
     int  step_counter    = 0;
@@ -114,7 +123,11 @@ void Solver::operator()(state_type &x)
 
         step_counter++;
 
-        std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
+        if(m_opt.verbosity > 0)
+        {
+            std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
+            std::cout.flush();
+        }
 
         int iter;
 
@@ -151,20 +164,18 @@ void Solver::operator()(state_type &x)
                     exit(1);
                 }
 
-                // printf("\nReordering and symbolic factorization completed ...
-                // "); printf("\nNumber of nonzeros in factors = %d",
-                // iparm[17]); printf("\nNumber of factorization MFLOPS = %d",
-                // iparm[18]);
-
-                if((double)iparm[14]/1024.0 > peak_mem1 || (double)iparm[15]/1024.0 > peak_mem2 || (double)iparm[16]/1024.0 > peak_mem3)
+                if(m_opt.verbosity > 1)
                 {
-                    peak_mem1 = (double)iparm[14]/1024.0;
-                    peak_mem2 = (double)iparm[15]/1024.0;
-                    peak_mem3 = (double)iparm[16]/1024.0;
+                    if(iparm[14] > peak_mem1 || iparm[15] > peak_mem2 || iparm[16] > peak_mem3)
+                    {
+                        peak_mem1 = iparm[14];
+                        peak_mem2 = iparm[15];
+                        peak_mem3 = iparm[16];
 
-                    std::cout << "\nPeak memory on symbolic factorization: " << peak_mem1 << " Mb";
-                    std::cout << "\nPermanent memory on symbolic factorization: " << peak_mem2 << " Mb";
-                    std::cout << "\nPeak memory on numerical factorization and solution: " << peak_mem3 << " Mb" << std::endl;
+                        std::cout << "\nPeak memory on symbolic factorization: " << (double)peak_mem1/1024.0 << " Mb";
+                        std::cout << "\nPermanent memory on symbolic factorization: " << (double)peak_mem2/1024.0 << " Mb";
+                        std::cout << "\nPeak memory on numerical factorization and solution: " << (double)peak_mem3/1024.0 << " Mb" << std::endl;
+                    }
                 }
 
                 // PHASE 2.
@@ -178,8 +189,6 @@ void Solver::operator()(state_type &x)
                     check_pardiso_error(error);
                     exit(2);
                 }
-
-                // printf("\nFactorization completed ... ");
             }
 
             // PHASE 3.
@@ -206,9 +215,11 @@ void Solver::operator()(state_type &x)
                 x[i] -= mkl_x[i];
             }
 
-            // std::cout << iter << ':' << tol << ' ';
-            std::cout << "#";
-            std::cout.flush();
+            if(m_opt.verbosity > 0)
+            {
+                std::cout << "#";
+                std::cout.flush();
+            }
 
             if(tol < m_opt.atol)
             {
@@ -219,7 +230,8 @@ void Solver::operator()(state_type &x)
         // Newton iterator failed to converge within max_Newton_iter iterations
         if(iter == m_opt.max_Newton_iter)
         {
-            std::cout << " <- redo";
+            if(m_opt.verbosity > 0)
+                std::cout << " <- redo";
 
             // Decrease the time step, scrape the current time iteration and
             // carry out it again.
@@ -243,12 +255,14 @@ void Solver::operator()(state_type &x)
         if(iter < m_opt.dt_increase_threshold)
         {
             dt *= m_opt.dt_increase_factor;
-            std::cout << '>';
+            if(m_opt.verbosity > 0)
+                std::cout << '>';
         }
         else if(iter >= m_opt.dt_decrease_threshold - 1)
         {
             dt /= m_opt.dt_decrease_factor;
-            std::cout << '<';
+            if(m_opt.verbosity > 0)
+                std::cout << '<';
         }
 
         if(t + dt > m_t1)
@@ -267,7 +281,8 @@ void Solver::operator()(state_type &x)
 
     }  // while t
 
-    std::cout << "\nLinear algebra solver calls: " << calls << '\n';
+    if(m_opt.verbosity > 0)
+        std::cout << "\nLinear algebra solver calls: " << calls << '\n';
 
     // Termination and release of memory
     phase = -1;
