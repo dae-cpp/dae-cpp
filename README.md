@@ -179,4 +179,14 @@ solve(x);
 
 Here *t1* is the integration time (0 < *t* < *t1*).
 
-Solution at time *t1* will be written into vector **x** (initial conditions will be overwritten). That's it!
+Solution at time *t1* will be written into vector **x** (initial conditions will be overwritten).
+
+### Step 7 (optional). Plot results
+
+Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:
+
+<p align="center">
+  <img src="http://korotkin.ru/public/figure.png">
+</p>
+
+That's it!
