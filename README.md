@@ -74,7 +74,8 @@ The easiest way to install the library and compile all examples is just to creat
 ```bash
 cd dae-cpp
 mkdir build
-cmake -DCMAKE_INSTALL_PREFIX=/install/path .. 
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/install/path ..
 make
 make install
 ```
@@ -83,13 +84,26 @@ where `/install/path` is the user-defined path where the package should be insta
 
 Note that `cmake` will try to find Intel MKL at its default location: `/opt/intel/mkl`. If the installation path is different, please provide it with the following `cmake` option: `-DDAE_MKL_DIR=/path/to/intel/mkl/root/dir`.
 
+Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider to use `ccmake ..`. This is a GUI for `cmake` that will allow you to see all the options available before building the solver.
+
+#### Test
+
+Once installed with `DAE_TEST=ON` (it is ON by default), the solver can perform a quick self test:
+
+```bash
+ctest
+```
+
+During this test the solver will solve DAE systems from `examples` directory using both analytical and numerical Jacobians, and then compare the results with the reference solutions.
+
 **TODO:**
-- Describe more `cmake` options available (`DAE_SINGLE`, `DAE_FORTRAN_STYLE`, `DAE_TEST`, etc.)
-- Mention `ccmake`
-- Mention about tests (`ctest`)
-- Windows installation (Microsoft Visual Studio 2017)
-- Plotting with `matplotlib`
+- Describe more `cmake` options available (`DAE_SINGLE`, `DAE_FORTRAN_STYLE`, `DAE_TEST`, `DAE_LONG_INT`, `DAE_BUILD_EXAMPLES`)
 - What installation directory contains
+
+### Windows
+
+Setting up the solver in Microsoft Visual Studio 2017. This has been tested but needs to be described...
+
 
 ## How to use
 
@@ -125,7 +139,7 @@ We can access to each element of the state vector **x** as to `std::vector` from
 
 ### Step 2. Set up the RHS
 
-Create MyRHS class that inherits the abstract RHS class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator **()**), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
+Create MyRHS class that inherits the abstract `dae::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
@@ -135,7 +149,7 @@ MyRHS rhs(p);
 
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract MassMatrix class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator **()**), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
+Create MyMassMatrix class that inherits the abstract `dae::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -145,7 +159,7 @@ MyMassMatrix mass(N);
 
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding Jacobian class from the dae-cpp library ([example](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
+We can provide analytical Jacobian by overriding `dae::Jacobian` class from the dae-cpp library ([example](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
@@ -179,7 +193,7 @@ solve(x);
 
 Here *t1* is the integration time (0 < *t* < *t1*).
 
-Solution at time *t1* will be written into vector **x** (initial conditions will be overwritten).
+Solution at time *t1* will be written into vector **x** (initial conditions will be overwritten). That's it!
 
 ### Step 7 (optional). Plot results
 
@@ -189,4 +203,7 @@ Solution can be visualised using a simple [C++ interface](https://github.com/lav
   <img src="http://korotkin.ru/public/figure.png">
 </p>
 
-That's it!
+## Licensing
+
+- dae-cpp is fully open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
+- Intel MKL is free for use and redistribution under [Intel Simplified Software License](https://software.intel.com/en-us/license/intel-simplified-software-license).
