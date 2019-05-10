@@ -12,7 +12,7 @@
  * Boundary conditions: (dP/dx + P * dPhi/dx) = 0 for x = 0 and x = 1,
  *                      Phi(t,x=0) = -t, Phi(t,x=1) = t.
  *
- * The system will be resolved using Finite Difference approach on the time
+ * The system will be resolved using Finite Difference approach in the time
  * interval 0 <= t <= 10, and compared with the reference solution obtained
  * in MATLAB using Finite Element method and ode15s solver on a uniform
  * spatial grid (4000 points).
@@ -25,7 +25,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "../../src/solver.h"  // dae-cpp library solver
+#include "../../src/solver.h"  // the main header of dae-cpp library solver
 
 #include "perovskite_RHS.h"         // RHS of the problem
 #include "perovskite_Mass.h"        // Mass Matrix definition
@@ -100,12 +100,12 @@ int main()
     dae::SolverOptions opt;
 
 #ifdef DAE_SINGLE
-    opt.atol            = 1.0e-3;  // Absolute tolerance for single precision
+    opt.atol = 1.0e-3;  // Absolute tolerance for single precision
 #else
-    opt.atol            = 1.0e-6;  // Absolute tolerance for double precision
+    opt.atol = 1.0e-6;  // Absolute tolerance for double precision
 #endif
-    opt.fact_every_iter = false;   // Gain some speed. The matrices will be
-                                   // factorized only once each time step.
+    opt.fact_every_iter = false;  // Gain some speed. The matrices will be
+                                  // factorized only once each time step.
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options

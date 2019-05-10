@@ -1,5 +1,5 @@
 /*
- * TODO: Description of the class
+ * Mass matrix definition
  */
 
 #pragma once

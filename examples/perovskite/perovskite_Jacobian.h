@@ -1,5 +1,5 @@
 /*
- * TODO: Description of the class
+ * Analytical Jacobian definition
  */
 
 #pragma once

@@ -1,5 +1,6 @@
 /*
- * TODO: Description of the class
+ * Mass matrix in three array sparse format:
+ * https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format
  */
 
 #include "perovskite_Mass.h"

@@ -1,5 +1,7 @@
 /*
- * TODO: Description of the class
+ * Parameter container for the perovskite problem.
+ * For simplicity all parameters in this example are public. Generally, they
+ * should be private with getters/setters.
  */
 
 #pragma once
@@ -7,8 +9,6 @@
 class MyParams
 {
 public:
-    // For simplicity all parameters in this example are public.
-    // Generally, they should be private with getters/setters.
     MKL_INT N;       // Number of cells
     double  L;       // Space interval length
     double  lambda;  // Lambda parameter

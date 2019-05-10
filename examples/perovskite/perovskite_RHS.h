@@ -1,5 +1,5 @@
 /*
- * TODO: Description of the class
+ * The RHS definition
  */
 
 #pragma once
@@ -13,6 +13,7 @@ class MyRHS : public daecpp::RHS
 
 public:
     MyRHS(MyParams p) : daecpp::RHS(), m_p(p) {}
+
     void operator()(const daecpp::state_type &x, daecpp::state_type &f,
                     const double t);
 };
