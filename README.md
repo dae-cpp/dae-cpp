@@ -25,7 +25,7 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 - Utilises all the available cores on the machine for better performance (this can be overridden by a user).
 - Allows a user to adjust a lot of parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
 - The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
-- Easy-to-follow examples (for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
+- Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
 
 ## Installation
 
@@ -79,29 +79,29 @@ make
 make install
 ```
 
-where `/install/path` is a user-defined path where the package should be installed.
+where `/install/path` is the user-defined path where the package should be installed.
 
 Note that `cmake` will try to find Intel MKL at its default location: `/opt/intel/mkl`. If the installation path is different, please provide it with the following `cmake` option: `-DDAE_MKL_DIR=/path/to/intel/mkl/root/dir`.
 
 **TODO:**
-- Describe more `cmake` options available (DAE_SINGLE, DAE_FORTRAN_STYLE, DAE_TEST, etc.)
+- Describe more `cmake` options available (`DAE_SINGLE`, `DAE_FORTRAN_STYLE`, `DAE_TEST`, etc.)
 - Mention `ccmake`
 - Mention about tests (`ctest`)
 - Windows installation (Microsoft Visual Studio 2017)
 - Plotting with `matplotlib`
-- What installation dir contains
+- What installation directory contains
 
 ## How to use
 
 Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) as an example.
 
-The main usage algorithm can be the following. Consider we have a DAE system written in a matrix-vector form, with some Mass matrix, the RHS, and some initial conditions.
+The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
 ### Step 0. Include dae-cpp into the project
 
 Include the solver's main header to the project. A shortcut to the solver's namespace (`daecpp`) can be added as well:
 
-```
+```cpp
 #include "path/to/dae-cpp/include/solver.h"
 namespace dae = daecpp;
 ```
@@ -110,7 +110,7 @@ namespace dae = daecpp;
 
 For example, for *N* equations we should define the state vector with the size *N* and initialise it in accordance with the initial conditions:
 
-```
+```cpp
 // State vector
 dae::state_type x(N);
 
@@ -121,7 +121,7 @@ for(MKL_INT i = 0; i < N; i++)
 }
 ```
 
-We can access to each element of the state vector **x** as to `std::vector` from STL. Also note that instead of `int` or any other integer types we should use MKL_INT type. This gives us possibility to re-compile the project with DAE_LONG_INT option, so the code will work fine even for extremely huge systems (with *N* more than 10<sup>7</sup>).
+We can access to each element of the state vector **x** as to `std::vector` from STL. Also note that instead of `int` or any other integer types we should use `MKL_INT` type. This gives us possibility to re-compile the project with `DAE_LONG_INT` option, so the code will work fine even for extremely huge systems (with *N* more than 10<sup>7</sup>).
 
 ### Step 2. Set up the RHS
 
@@ -129,7 +129,7 @@ Create MyRHS class that inherits the abstract RHS class from dae-cpp library. Th
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
-```
+```cpp
 MyRHS rhs(p);
 ```
 
@@ -139,7 +139,7 @@ Create MyMassMatrix class that inherits the abstract MassMatrix class from dae-c
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
-```
+```cpp
 MyMassMatrix mass(N);
 ```
 
@@ -149,7 +149,7 @@ We can provide analytical Jacobian by overriding Jacobian class from the dae-cpp
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
-```
+```cpp
 dae::Jacobian jac(rhs, 1.0e-6);
 ```
 
@@ -157,9 +157,9 @@ Note that we should pass an instance of the user-defined RHS in order to estimat
 
 ### Step 5. Set the solver options
 
-The solver has a lot of options. They all have some default values but they can be overridden by a user:
+The solver has a lot of options. They all have some default values (defined in [solver_options.h](https://github.com/ikorotkin/dae-cpp/blob/master/src/solver_options.h)) but they can be overridden by a user:
 
-```
+```cpp
 // Create an instance of the solver options and update some of the solver
 // parameters defined in solver_options.h
 dae::SolverOptions opt;
@@ -172,7 +172,7 @@ opt.atol = 1.0e-6;
 
 Now we are ready to create an instance of the solver with particular RHS, Mass matrix, Jacobian and the solver options, and then start the solver:
 
-```
+```cpp
 dae::Solver solve(rhs, jac, mass, opt, t1);
 solve(x);
 ```
