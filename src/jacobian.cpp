@@ -1,5 +1,6 @@
 /*
- * TODO: Description
+ * Performs numerical differentiation of the RHS with the given tolerance to
+ * estimate numerical Jacobian matrix
  */
 
 #include <cmath>      // fabs()

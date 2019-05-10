@@ -1,7 +1,6 @@
 /*
- * TODO: Description of the class
- * This class is abstract
- *
+ * Mass matrix class.
+ * This class is abstract and must be inherited.
  */
 
 #pragma once
@@ -15,9 +14,14 @@ class MassMatrix
 {
 public:
     /*
-     * TODO: Operator description
-     * Sparse matrix format
-     * Static Mass matrix, does not depend on t and vector x
+     * The matrix should be defined in sparse format,
+     * see three array sparse format decription on
+     * https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format
+     *
+     * The Mass matrix is static, i.e. it does not depend on time t and
+     * the vector x
+     *
+     * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix_holder &M) = 0;
 

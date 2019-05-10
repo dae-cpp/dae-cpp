@@ -1,6 +1,8 @@
 /*
- * TODO: Description
+ * Numerical time integrator. BDF method.
  */
+
+#include <iostream>
 
 #include "time_integrator.h"
 
@@ -97,7 +99,6 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
     // Calculate RHS
     m_rhs(x, b, t);
 
-    // TODO: check output
     // b := -M * dxdt + b
 #ifdef DAE_SINGLE
     mkl_sparse_s_mv(SPARSE_OPERATION_NON_TRANSPOSE, -1.0, m_csrA, m_descrA,

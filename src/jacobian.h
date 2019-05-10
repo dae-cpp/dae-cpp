@@ -1,5 +1,7 @@
 /*
- * TODO: Description of the class
+ * Calculates Jacobian matrix.
+ * If not overridden by a user, performs numerical differentiation of the RHS
+ * with the given tolerance to estimate numerical Jacobian matrix.
  */
 
 #pragma once
@@ -22,21 +24,17 @@ class Jacobian
 #endif
 
 public:
-    /*
-     * TODO: Description
-     */
     Jacobian(RHS &rhs) : m_rhs(rhs) {}
     Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol) {}
 
     /*
-     * TODO: Numerical differentiation of RHS with the given tolerance.
      * Can be overriden to provide analytical Jacobian.
-     * x is not a constant here to avoid unnecessary array copying.
      */
-    virtual void operator()(sparse_matrix_holder &J, const state_type &x, const double t);
+    virtual void operator()(sparse_matrix_holder &J, const state_type &x,
+                            const double t);
 
     /*
-     * TODO: Helper function to print Jacobian
+     * TODO: Helper function to show Jacobian structure
      */
 };
 

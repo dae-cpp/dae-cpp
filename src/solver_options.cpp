@@ -1,5 +1,5 @@
 /*
- * TODO: Description
+ * Defines Intel MKL PARDISO iparm parameters
  */
 
 #include "solver_options.h"
@@ -94,6 +94,8 @@ void SolverOptions::check_options()
         // fall back to BDF-1
         bdf_order = 1;
     }
+
+    // TODO: add more checks
 }
 
 }  // namespace daecpp_namespace_name

@@ -1,10 +1,8 @@
 /*
- * TODO: Description of the class
+ * Numerical time integrator class
  */
 
 #pragma once
-
-#include <iostream>
 
 #include <mkl_spblas.h>
 
@@ -40,6 +38,7 @@ class TimeIntegrator
         {1.0, 1.5, 11.0/6.0, 25.0/12.0, 137.0/60.0, 2.45};
     // clang-format on
 
+    // The first time step will be performed using BDF-1
     int m_scheme = 1;
 
     // Mass matrix container
@@ -64,9 +63,6 @@ class TimeIntegrator
                     const sparse_matrix_holder &B, sparse_matrix_holder &C);
 
 public:
-    /*
-     * TODO: Description
-     */
     TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
                    SolverOptions &opt, const MKL_INT size);
 
@@ -74,9 +70,6 @@ public:
 
     void set_scheme(int scheme) { m_scheme = scheme; }
 
-    /*
-     * x_prev is a C-style matrix containing history of the previous states
-     */
     void operator()(sparse_matrix_holder &Jt, state_type &b,
                     sparse_matrix_holder &J, state_type &x,
                     const state_type_matrix &x_prev, const double t,

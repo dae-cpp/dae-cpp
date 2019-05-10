@@ -1,5 +1,5 @@
 /*
- * TODO: Description of the class
+ * The main solver class
  */
 
 #pragma once
@@ -30,15 +30,18 @@ class Solver
 
 public:
     /*
-     * TODO: Description
+     * Receives user-defined RHS, Jacobian, Mass matrix, solver options and the
+     * integration time t1.
      */
-    Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt, const double t1)
+    Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt,
+           const double t1)
         : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt), m_t1(t1)
     {
     }
 
     /*
-     * TODO: Description
+     * Solves the system of DAEs and returns result in the array x. The data
+     * stored in x (initial conditions) will be overwritten.
      */
     void operator()(state_type &x);
 };

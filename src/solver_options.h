@@ -1,5 +1,5 @@
 /*
- * TODO: Description of the class
+ * Contains public solver parameters
  */
 
 #pragma once

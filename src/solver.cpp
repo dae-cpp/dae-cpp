@@ -1,5 +1,5 @@
 /*
- * TODO: Description
+ * The main solver
  */
 
 #include <iostream>
@@ -33,9 +33,11 @@ void Solver::operator()(state_type &x)
     if(m_opt.verbosity > 0)
     {
         std::cout << "Number of equations: " << size << std::endl;
-        std::cout << "Float precision:     " << 8 * sizeof(float_type) << " bit\n";
+        std::cout << "Float precision:     " << 8 * sizeof(float_type)
+                  << " bit\n";
         std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
-        std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order  << std::endl;
+        std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order
+                  << std::endl;
     }
 
     // Solver starts the first time step using BDF-1 method
@@ -96,7 +98,7 @@ void Solver::operator()(state_type &x)
     }
 
     // Auxiliary variables
-    double  ddum;  // Double dummy -- shouldn't be 'float_type'?
+    double  ddum;  // Double dummy
     MKL_INT idum;  // Integer dummy
 
     // Intel MKL PARDISO iparm parameter
@@ -106,7 +108,7 @@ void Solver::operator()(state_type &x)
     m_opt.set_iparm_for_pardiso(iparm);
 
     /*
-     * Start solver
+     * Start the solver
      * =========================================================================
      */
 
@@ -125,7 +127,8 @@ void Solver::operator()(state_type &x)
 
         if(m_opt.verbosity > 0)
         {
-            std::cout << "\nStep " << step_counter << ": \tt = " << t << "   \t:: ";
+            std::cout << "\nStep " << step_counter << ": \tt = " << t
+                      << "   \t:: ";
             std::cout.flush();
         }
 
@@ -166,15 +169,22 @@ void Solver::operator()(state_type &x)
 
                 if(m_opt.verbosity > 1)
                 {
-                    if(iparm[14] > peak_mem1 || iparm[15] > peak_mem2 || iparm[16] > peak_mem3)
+                    if(iparm[14] > peak_mem1 || iparm[15] > peak_mem2 ||
+                       iparm[16] > peak_mem3)
                     {
                         peak_mem1 = iparm[14];
                         peak_mem2 = iparm[15];
                         peak_mem3 = iparm[16];
 
-                        std::cout << "\nPeak memory on symbolic factorization: " << (double)peak_mem1/1024.0 << " Mb";
-                        std::cout << "\nPermanent memory on symbolic factorization: " << (double)peak_mem2/1024.0 << " Mb";
-                        std::cout << "\nPeak memory on numerical factorization and solution: " << (double)peak_mem3/1024.0 << " Mb" << std::endl;
+                        std::cout << "\nPeak memory on symbolic factorization: "
+                                  << (double)peak_mem1 / 1024.0 << " Mb";
+                        std::cout
+                            << "\nPermanent memory on symbolic factorization: "
+                            << (double)peak_mem2 / 1024.0 << " Mb";
+                        std::cout << "\nPeak memory on numerical factorization "
+                                     "and solution: "
+                                  << (double)peak_mem3 / 1024.0 << " Mb"
+                                  << std::endl;
                     }
                 }
 
@@ -242,9 +252,6 @@ void Solver::operator()(state_type &x)
             x = x_prev[0];
             continue;
         }
-
-        // std::cout << '=' << iter << "= dt: " << dt;
-        // std::cout << iter << " iterations";
 
         if(final_time_step)
         {

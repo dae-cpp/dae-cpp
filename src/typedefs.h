@@ -1,5 +1,5 @@
 /*
- * TODO: Description
+ * The main types and definitions of the solver
  */
 
 #pragma once

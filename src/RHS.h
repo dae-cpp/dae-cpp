@@ -1,7 +1,6 @@
 /*
- * TODO: Description of the class
- * This class is abstract
- *
+ * The RHS class.
+ * This class is abstract and must be inherited.
  */
 
 #pragma once
@@ -15,7 +14,8 @@ class RHS
 {
 public:
     /*
-     * TODO: Description
+     * Takes vector x and time t and returns vector f.
+     * This function is pure virtual and must be overriden.
      */
     virtual void operator()(const state_type &x, state_type &f,
                             const double t) = 0;
