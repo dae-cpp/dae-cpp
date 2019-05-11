@@ -11,7 +11,7 @@
  * Boundary conditions: dC/dx = dC/dy = 0 on the boundaries.
  *
  * The system will be resolved using Finite Volume approach in the time
- * interval 0 <= t <= 10, and compared with the analytical solution.
+ * interval 0 <= t <= 0.01, and compared with the analytical solution.
  * Since the scheme is conservative and there are no sources in the domain,
  * the total concentration in the domain should be constant and equal to 1.
  *
@@ -108,10 +108,10 @@ int main()
             << " sec." << '\n';
     }
 
-    // Compare solution with an alternative solver (e.g. MATLAB)
+    // Compare result with the analytical solution
     int check_result = solution_check(x, N, t1, D);
 
-    // Plot the results
+    // Plot the solution
 #ifdef PLOTTING
     const double h = 1.0 / (double)N;
 
@@ -152,7 +152,7 @@ int main()
 }
 
 /*
- * Return analytical solution
+ * Returns analytical solution
  */
 double analyt(double x, double y, double t, double D)
 {
