@@ -38,7 +38,11 @@ public:
     int max_Newton_iter = 15;
 
     // Absolute tolerance
-    double atol = 1.0e-6;
+#ifdef DAE_SINGLE
+    double atol = 1.0e-3;  // Absolute tolerance for single precision
+#else
+    double atol = 1.0e-6;  // Absolute tolerance for double precision
+#endif
 
     // Initial time step
     double dt_init = 0.1;

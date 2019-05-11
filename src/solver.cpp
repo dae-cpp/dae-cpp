@@ -160,12 +160,6 @@ void Solver::operator()(state_type &x)
                 phase = 11;
                 PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
                         ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-                if(error != 0)
-                {
-                    std::cout << "\nERROR during symbolic factorization...\n";
-                    check_pardiso_error(error);
-                    exit(1);
-                }
 
                 if(m_opt.verbosity > 1)
                 {
@@ -188,11 +182,19 @@ void Solver::operator()(state_type &x)
                     }
                 }
 
+                if(error != 0)
+                {
+                    std::cout << "\nERROR during symbolic factorization...\n";
+                    check_pardiso_error(error);
+                    exit(1);
+                }
+
                 // PHASE 2.
                 // Numerical factorization
                 phase = 22;
                 PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
                         ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
+
                 if(error != 0)
                 {
                     std::cout << "\nERROR during numerical factorization...\n";
@@ -206,6 +208,7 @@ void Solver::operator()(state_type &x)
             phase = 33;
             PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia, ja,
                     &idum, &nrhs, iparm, &msglvl, mkl_b, mkl_x, &error);
+
             if(error != 0)
             {
                 std::cout << "\nERROR during solution...\n";
