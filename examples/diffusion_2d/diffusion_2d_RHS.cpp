@@ -9,7 +9,7 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
 {
     // Locals
     const MKL_INT N     = m_N;
-    const double  invh2 = 1.0 / (double)(N * N);
+    const double  invh2 = (double)(N * N);
 
     daecpp::float_type Fr, Fl, Fu, Fd;
 

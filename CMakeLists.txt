@@ -46,7 +46,7 @@ add_subdirectory(src)
 
 if(DAE_BUILD_EXAMPLES)
 
-  set(EXAMPLE_LIST "perovskite")  # "a;b;c"
+  set(EXAMPLE_LIST "perovskite" "diffusion_2d")
   
   unset(LIB_MKL_INTEL_LP64 CACHE)
 

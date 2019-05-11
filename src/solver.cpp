@@ -22,6 +22,22 @@ void Solver::operator()(state_type &x)
     // Check user-defined solver options
     m_opt.check_options();
 
+    // Check the initial time step
+    if(m_opt.dt_init > m_t1 / 10.0)
+    {
+        std::cout << "WARNING: Initial time step might be too big: "
+                  << m_opt.dt_init << std::endl;
+    }
+    else if(m_opt.dt_init > m_t1)
+    {
+        double new_dt = m_t1 / 10.0;
+        std::cout << "WARNING: Initial time step is bigger than the integration time t1: "
+                  << m_opt.dt_init
+                  << "\n         The solver will use dt = t1/10 = " << new_dt
+                  << std::endl;
+        m_opt.dt_init = new_dt;
+    }
+
     // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 

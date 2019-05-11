@@ -94,7 +94,7 @@ Once installed with `DAE_TEST=ON` (it is ON by default), the solver can perform 
 ctest
 ```
 
-During this test the solver will solve DAE systems from `examples` directory using both analytical and numerical Jacobians, and then compare the results with the reference solutions.
+During this test the solver will solve DAE systems from `examples` directory using analytical (if available) and numerical Jacobians, and then compare the results with the reference solutions.
 
 #### More building options
 
@@ -143,7 +143,7 @@ We can access to each element of the state vector **x** as to `std::vector` from
 
 ### Step 2. Set up the RHS
 
-Create MyRHS class that inherits the abstract `dae::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
+Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
@@ -153,7 +153,7 @@ MyRHS rhs(p);
 
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract `dae::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
+Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -161,9 +161,11 @@ Create an instance of the child MyMassMatrix class with the given size *N*:
 MyMassMatrix mass(N);
 ```
 
+If the Mass matrix is a simple identity matrix, one can use `daecpp::MassMatrixIdentity` class instead of inheriting `daecpp::MassMatrix`. This will create identity Mass matrix with the given size *N*.
+
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding `dae::Jacobian` class from the dae-cpp library ([example](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
+We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library ([example](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
