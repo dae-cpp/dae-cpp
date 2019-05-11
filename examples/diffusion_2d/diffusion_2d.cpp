@@ -111,29 +111,36 @@ int main()
     // Compare solution with an alternative solver (e.g. MATLAB)
     int check_result = solution_check(x, N, t1, D);
 
-    // TODO: Plot the results
+    // Plot the results
 #ifdef PLOTTING
-    dae::state_type x_axis(N), P(N), Phi(N);
+    const double h = 1.0 / (double)N;
+
+    dae::state_type_matrix x, y, z;
 
     for(MKL_INT i = 0; i < N; i++)
     {
-        x_axis[i] = (double)(i) / (N - 1);
-        P[i]      = x1[i];
-        Phi[i]    = x1[i + N];
+        dae::state_type x_row, y_row, z_row;
+
+        for(MKL_INT j = 0; j < N; j++)
+        {
+            x_row.push_back((double)j * h + h * 0.5);
+            y_row.push_back((double)i * h + h * 0.5);
+            z_row.push_back(x[j + i * N]);
+        }
+
+        x.push_back(x_row);
+        y.push_back(y_row);
+        z.push_back(z_row);
     }
 
     plt::figure();
     plt::figure_size(800, 600);
-    plt::named_plot("P(x)", x_axis, P, "b-");
-    plt::named_plot("Phi(x)", x_axis, Phi, "r-");
     plt::xlabel("x");
-    plt::ylabel("P and Phi");
-    plt::xlim(0.0, 1.0);
-    plt::grid(true);
-    plt::legend();
+    plt::ylabel("y");
+    plt::plot_surface(x, y, z);
 
     // Save figure
-    const char *filename = "figure.png";
+    const char *filename = "diffusion_2d.png";
     std::cout << "Saving result to " << filename << "...\n";
     plt::save(filename);
 #endif

@@ -176,7 +176,7 @@ int main()
     plt::legend();
 
     // Save figure
-    const char *filename = "figure.png";
+    const char *filename = "perovskite.png";
     std::cout << "Saving result to " << filename << "...\n";
     plt::save(filename);
 #endif
