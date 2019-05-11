@@ -115,7 +115,7 @@ int main()
 #ifdef PLOTTING
     const double h = 1.0 / (double)N;
 
-    dae::state_type_matrix x, y, z;
+    dae::state_type_matrix x_axis, y_axis, z_axis;
 
     for(MKL_INT i = 0; i < N; i++)
     {
@@ -128,16 +128,14 @@ int main()
             z_row.push_back(x[j + i * N]);
         }
 
-        x.push_back(x_row);
-        y.push_back(y_row);
-        z.push_back(z_row);
+        x_axis.push_back(x_row);
+        y_axis.push_back(y_row);
+        z_axis.push_back(z_row);
     }
 
     plt::figure();
     plt::figure_size(800, 600);
-    plt::xlabel("x");
-    plt::ylabel("y");
-    plt::plot_surface(x, y, z);
+    plt::plot_surface(x_axis, y_axis, z_axis);
 
     // Save figure
     const char *filename = "diffusion_2d.png";
@@ -159,7 +157,7 @@ int main()
 double analyt(double x, double y, double t, double D)
 {
     double Dt4 = 1.0 / (D * t * 4.0);
-    return Dt4 / M_PI *
+    return Dt4 / 3.1415926535897932384626433832795 *
            exp(-((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5)) * Dt4);
 }
 
