@@ -69,7 +69,7 @@ Then download dae-cpp library:
 git clone https://github.com/ikorotkin/dae-cpp.git
 ```
 
-The easiest way to install the library and compile all examples is just to create a new directory and execute `cmake`:
+The easiest way to install the library and compile all examples is just to create a new directory and then execute `cmake` and `make`:
 
 ```bash
 cd dae-cpp
@@ -84,17 +84,17 @@ where `/install/path` is the user-defined path where the package should be insta
 
 Note that `cmake` will try to find Intel MKL at its default location: `/opt/intel/mkl`. If the installation path is different, please provide it with the following `cmake` option: `-DDAE_MKL_DIR=/path/to/intel/mkl/root/dir`.
 
-Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider using `ccmake ..`. This is a GUI for `cmake` that will allow you to see all the options available before building the solver.
+Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
 
 #### Test the solver
 
-Once installed with `DAE_TEST=ON` (it is ON by default), the solver can perform a quick self test:
+The solver can perform a quick self test. To build the test, dae-cpp should be installed with `DAE_TEST=ON` option (it is ON by default). To start the test, from the build directory execute `ctest`:
 
 ```bash
 ctest
 ```
 
-During this test the solver will solve DAE systems from `examples` directory using analytical (if available) and numerical Jacobians, and then compare the results with the reference solutions.
+During this test the solver will solve DAE systems from [examples](https://github.com/ikorotkin/dae-cpp/tree/master/examples) directory using analytical (if available) and numerical Jacobians, and then compare the results with the reference solutions.
 
 #### More building options
 
@@ -111,7 +111,7 @@ Setting up the solver in Microsoft Visual Studio 2017. This has been tested but 
 
 ## How to use
 
-Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) as an example.
+Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) and [diffusion_2d](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
@@ -139,11 +139,11 @@ for(MKL_INT i = 0; i < N; i++)
 }
 ```
 
-We can access to each element of the state vector **x** as to `std::vector` from STL. Also note that instead of `int` or any other integer types we should use `MKL_INT` type. This gives us possibility to re-compile the project with `DAE_LONG_INT` option, so the code will work fine even for extremely huge systems (with *N* more than 10<sup>7</sup>).
+We can get access to each element of the state vector **x** as to `std::vector` from STL. Also note that instead of `int` or any other integer types we should use `MKL_INT` type. This gives us possibility to re-compile the project with `DAE_LONG_INT` option, so the code will work fine even for extremely huge systems (with *N* more than 10<sup>7</sup>).
 
 ### Step 2. Set up the RHS
 
-Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
+Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp) or [diffusion_2d_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d_RHS.cpp).
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
@@ -161,7 +161,11 @@ Create an instance of the child MyMassMatrix class with the given size *N*:
 MyMassMatrix mass(N);
 ```
 
-If the Mass matrix is a simple identity matrix, one can use `daecpp::MassMatrixIdentity` class instead of inheriting `daecpp::MassMatrix`. This will create identity Mass matrix with the given size *N*.
+If the Mass matrix is a simple identity matrix, one can use `daecpp::MassMatrixIdentity` class from dae-cpp library instead of inheriting `daecpp::MassMatrix`. This will create identity Mass matrix in sparse format with the given size *N*:
+
+```cpp
+dae::MassMatrixIdentity mass(N);
+```
 
 ### Step 4. Set up Jacobian matrix
 
@@ -206,7 +210,15 @@ Solution at time *t*<sub>1</sub> will be written into vector **x** (initial cond
 Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:
 
 <p align="center">
-  <img src="http://korotkin.ru/public/figure.png">
+  <img src="http://korotkin.ru/public/perovskite.png">
+</p>
+
+Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
+
+The second example, [diffusion_2d](https://github.com/ikorotkin/dae-cpp/tree/master/examples/diffusion_2d) will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
+
+<p align="center">
+  <img src="http://korotkin.ru/public/diffusion_2d.png">
 </p>
 
 ## Licensing
