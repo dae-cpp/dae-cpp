@@ -1,6 +1,5 @@
 /*
- * Mass matrix class.
- * This class is abstract and must be inherited.
+ * Mass matrix classes
  */
 
 #pragma once
@@ -10,6 +9,9 @@
 namespace daecpp_namespace_name
 {
 
+/*
+ * Parent class. This class is abstract and must be inherited.
+ */
 class MassMatrix
 {
 public:
@@ -24,10 +26,19 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix_holder &M) = 0;
+};
 
-    /*
-     * TODO: Helper function(s) to create mass matrices in sparse format
-     */
+/*
+ * Helper child class to create identity Mass matrix of size N
+ */
+class MassMatrixIdentity : public MassMatrix
+{
+    const MKL_INT m_N;
+
+public:
+    MassMatrixIdentity(const MKL_INT N) : daecpp::MassMatrix(), m_N(N) {}
+
+    void operator()(daecpp::sparse_matrix_holder &M);
 };
 
 }  // namespace daecpp_namespace_name

@@ -84,9 +84,9 @@ where `/install/path` is the user-defined path where the package should be insta
 
 Note that `cmake` will try to find Intel MKL at its default location: `/opt/intel/mkl`. If the installation path is different, please provide it with the following `cmake` option: `-DDAE_MKL_DIR=/path/to/intel/mkl/root/dir`.
 
-Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider to use `ccmake ..`. This is a GUI for `cmake` that will allow you to see all the options available before building the solver.
+Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider using `ccmake ..`. This is a GUI for `cmake` that will allow you to see all the options available before building the solver.
 
-#### Test
+#### Test the solver
 
 Once installed with `DAE_TEST=ON` (it is ON by default), the solver can perform a quick self test:
 
@@ -96,9 +96,13 @@ ctest
 
 During this test the solver will solve DAE systems from `examples` directory using both analytical and numerical Jacobians, and then compare the results with the reference solutions.
 
-**TODO:**
-- Describe more `cmake` options available (`DAE_SINGLE`, `DAE_FORTRAN_STYLE`, `DAE_TEST`, `DAE_LONG_INT`, `DAE_BUILD_EXAMPLES`)
-- What installation directory contains
+#### More building options
+
+- `DAE_LONG_INT` - Use long integer representation for huge systems (more than ~10<sup>7</sup> equations). This option is OFF by default. For relatively small systems it is recommended to leave it OFF.
+- `DAE_FORTRAN_STYLE` - If ON, the matrices will be defined using FORTRAN style (one-based indexing of columns and rows). By default it is OFF (zero-based indexing).
+- `DAE_SINGLE` - If ON, the single precision will be used in the solver instead of double. Single precision may ruin the accuracy. It is highly recommended to leave this option OFF. This option exists for the future compatibility with CUDA implementations of the solver.
+- `DAE_BUILD_EXAMPLES` - Build all the examples, ON by default.
+- `DAE_TEST` - Build automatic solver test, ON by default. The test can be executed by the command `ctest` from the building directory.
 
 ### Windows
 
@@ -191,9 +195,9 @@ dae::Solver solve(rhs, jac, mass, opt, t1);
 solve(x);
 ```
 
-Here *t1* is the integration time (0 < *t* < *t1*).
+Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>).
 
-Solution at time *t1* will be written into vector **x** (initial conditions will be overwritten). That's it!
+Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
 
 ### Step 7 (optional). Plot results
 
