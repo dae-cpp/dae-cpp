@@ -95,6 +95,13 @@ void SolverOptions::check_options()
         bdf_order = 1;
     }
 
+    if(time_stepping < 1 || time_stepping > 2)
+    {
+        // TODO: print warning
+        // fall back to S-SATS
+        time_stepping = 1;
+    }
+
     // TODO: add more checks
 }
 
