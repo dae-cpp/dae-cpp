@@ -36,7 +36,7 @@ public:
     // 1 - Stability-based Simple Adaptive Time Stepping (S-SATS),
     // 2 - Accuracy-based Simple Adaptive Time Stepping (A-SATS) from
     // https://www.sciencedirect.com/science/article/pii/S0377042705005534
-    int time_stepping = 2;
+    int time_stepping = 1;
 
     // Maximum number of Newton iterations. If the Newton method fails to
     // converge after max_Newton_iter iterations, the solver reduces time step

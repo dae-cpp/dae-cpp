@@ -311,19 +311,17 @@ void Solver::operator()(state_type &x)
         }
         else if(m_opt.time_stepping == 2)  // A-SATS
         {
-            double norm1 = 0;
-            double norm2 = 0;
+            double norm1 = 0.0;
+            double norm2 = 0.0;
 
             // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
             for(MKL_INT i = 0; i < size; i++)
             {
-                double a = std::fabs(x[i] - x_prev[0][i]);
-                double b = std::fabs(x_prev[0][i]);
-                if(a > norm1)
-                    norm1 = a;
-                if(b > norm2)
-                    norm2 = b;
+                norm1 += (x[i] - x_prev[0][i])*(x[i] - x_prev[0][i]);
+                norm2 += x_prev[0][i]*x_prev[0][i];
             }
+            norm1 = sqrt(norm1);
+            norm2 = sqrt(norm2);
 
             // Monitor function
             double eta = norm1 / (norm2 + m_opt.dt_eps_m);
@@ -343,7 +341,7 @@ void Solver::operator()(state_type &x)
             if(eta > m_opt.dt_eta_max)
             {
                 if(m_opt.verbosity > 0)
-                    std::cout << " <- redo";
+                    std::cout << " <- redo: eta = " << eta;
 
                 t -= dt;
                 step_counter--;
