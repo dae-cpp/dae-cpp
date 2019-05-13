@@ -271,6 +271,7 @@ void Solver::operator()(state_type &x)
             step_counter--;
             final_time_step = false;
             dt /= m_opt.dt_decrease_factor;
+            current_scheme = 1;
             if(dt < m_opt.dt_min)
             {
                 // This actually means solution error
@@ -295,6 +296,8 @@ void Solver::operator()(state_type &x)
             if(iter < m_opt.dt_increase_threshold)
             {
                 dt *= m_opt.dt_increase_factor;
+                if(m_opt.dt_increase_factor != 1.0)
+                    current_scheme = 1;
                 if(dt > m_opt.dt_max)
                     dt = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -303,6 +306,8 @@ void Solver::operator()(state_type &x)
             else if(iter >= m_opt.dt_decrease_threshold - 1)
             {
                 dt /= m_opt.dt_decrease_factor;
+                if(m_opt.dt_decrease_factor != 1.0)
+                    current_scheme = 1;
                 if(dt < m_opt.dt_min)
                     dt = m_opt.dt_min;
                 if(m_opt.verbosity > 0)
@@ -317,8 +322,8 @@ void Solver::operator()(state_type &x)
             // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
             for(MKL_INT i = 0; i < size; i++)
             {
-                norm1 += (x[i] - x_prev[0][i])*(x[i] - x_prev[0][i]);
-                norm2 += x_prev[0][i]*x_prev[0][i];
+                norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
+                norm2 += x_prev[0][i] * x_prev[0][i];
             }
             norm1 = sqrt(norm1);
             norm2 = sqrt(norm2);
@@ -330,6 +335,8 @@ void Solver::operator()(state_type &x)
             if(eta < m_opt.dt_eta_min)
             {
                 dt *= m_opt.dt_increase_factor;
+                if(m_opt.dt_increase_factor != 1.0)
+                    current_scheme = 1;
                 if(dt > m_opt.dt_max)
                     dt = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -347,6 +354,7 @@ void Solver::operator()(state_type &x)
                 step_counter--;
                 final_time_step = false;
                 dt /= m_opt.dt_decrease_factor;
+                current_scheme = 1;
                 if(dt < m_opt.dt_min)
                 {
                     // This actually means solution error

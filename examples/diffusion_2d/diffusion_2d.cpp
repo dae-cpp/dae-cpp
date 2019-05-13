@@ -212,7 +212,7 @@ int solution_check(dae::state_type &x, MKL_INT N, double t, double D)
               << "% deviation from the analytical value)\n";
     std::cout << "Maximum relative error: " << err_max << "%\n";
 
-    if(err_max < 1.0 && err_conc < 1.0e-6)
+    if(err_max < 2.0 && err_conc < 1.0e-6)
         return 0;
     else
         return 1;

@@ -99,13 +99,10 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-#ifdef DAE_SINGLE
-    opt.atol = 1.0e-3;  // Absolute tolerance for single precision
-#else
-    opt.atol = 1.0e-6;  // Absolute tolerance for double precision
-#endif
-    opt.fact_every_iter = false;  // Gain some speed. The matrices will be
-                                  // factorized only once each time step.
+    opt.dt_increase_factor = 1.4;  // Reduce time step increase factor to get
+                                   // better accuracy (default value is 2.0)
+    opt.fact_every_iter = false;   // Gain some speed. The matrices will be
+                                   // factorized only once each time step.
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options

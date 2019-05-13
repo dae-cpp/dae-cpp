@@ -74,10 +74,10 @@ public:
                                       // (S-SATS only)
     int dt_decrease_threshold = 7;    // Time stepreduction threshold
                                       // (S-SATS only)
-    double dt_increase_factor = 1.4;  // Time step amplification factor
-    double dt_decrease_factor = 1.4;  // Time step reduction factor
-    double dt_eta_min = 0.01;  // Monitor function lower threshold (A-SATS only)
-    double dt_eta_max = 0.1;  // Monitor function higher threshold (A-SATS only)
+    double dt_increase_factor = 2.0;  // Time step amplification factor
+    double dt_decrease_factor = 2.0;  // Time step reduction factor
+    double dt_eta_min = 0.05;  // Monitor function lower threshold (A-SATS only)
+    double dt_eta_max = 0.5;  // Monitor function higher threshold (A-SATS only)
 
     // Intel MKL PARDISO parameters (iparam). More about iparam:
     // https://software.intel.com/en-us/mkl-developer-reference-c-pardiso-iparm-parameter
