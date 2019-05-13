@@ -32,30 +32,52 @@ public:
     // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
     int bdf_order = 6;
 
+    // Time stepping algorithm:
+    // 1 - Stability-based Simple Adaptive Time Stepping (S-SATS),
+    // 2 - Accuracy-based Simple Adaptive Time Stepping (A-SATS) from
+    // https://www.sciencedirect.com/science/article/pii/S0377042705005534
+    int time_stepping = 2;
+
     // Maximum number of Newton iterations. If the Newton method fails to
     // converge after max_Newton_iter iterations, the solver reduces time step
     // and tries to make the current step again.
     int max_Newton_iter = 15;
 
-    // Absolute tolerance
+    // Absolute tolerance for the Newton algorithm
 #ifdef DAE_SINGLE
     double atol = 1.0e-3;  // Absolute tolerance for single precision
 #else
     double atol = 1.0e-6;  // Absolute tolerance for double precision
 #endif
 
+#ifdef DAE_SINGLE
+    double dt_eps_m =
+        1.0e-5;  // The order of the rounding unit for single precision
+#else
+    double dt_eps_m =
+        1.0e-10;  // The order of the rounding unit for double precision
+#endif
+
     // Initial time step
     double dt_init = 0.1;
+
+    // Minimum and maximum time steps
+    double dt_min = dt_eps_m;
+    double dt_max = 100.0;
 
     // Verbosity level of the solver:
     // 0 - be silent, 1 - prints some basic information, 2 - chatterbox
     int verbosity = 1;
 
-    // Adaptive time stepping options
-    int    dt_increase_threshold = 3;
-    int    dt_decrease_threshold = 7;
-    double dt_increase_factor    = 1.4;
-    double dt_decrease_factor    = 1.4;
+    // Simple Adaptive Time Stepping options
+    int dt_increase_threshold = 3;    // Time step amplification threshold
+                                      // (S-SATS only)
+    int dt_decrease_threshold = 7;    // Time stepreduction threshold
+                                      // (S-SATS only)
+    double dt_increase_factor = 1.4;  // Time step amplification factor
+    double dt_decrease_factor = 1.4;  // Time step reduction factor
+    double dt_eta_min = 0.01;  // Monitor function lower threshold (A-SATS only)
+    double dt_eta_max = 0.1;  // Monitor function higher threshold (A-SATS only)
 
     // Intel MKL PARDISO parameters (iparam). More about iparam:
     // https://software.intel.com/en-us/mkl-developer-reference-c-pardiso-iparm-parameter

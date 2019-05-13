@@ -31,7 +31,8 @@ void Solver::operator()(state_type &x)
     else if(m_opt.dt_init > m_t1)
     {
         double new_dt = m_t1 / 10.0;
-        std::cout << "WARNING: Initial time step is bigger than the integration time t1: "
+        std::cout << "WARNING: Initial time step is bigger than the "
+                     "integration time t1: "
                   << m_opt.dt_init
                   << "\n         The solver will use dt = t1/10 = " << new_dt
                   << std::endl;
@@ -130,6 +131,7 @@ void Solver::operator()(state_type &x)
 
     // TODO: Start timer here
 
+    // Memory control variables
     int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
 
     bool final_time_step = false;
@@ -254,6 +256,7 @@ void Solver::operator()(state_type &x)
             {
                 break;
             }
+
         }  // for iter
 
         // Newton iterator failed to converge within max_Newton_iter iterations
@@ -268,27 +271,96 @@ void Solver::operator()(state_type &x)
             step_counter--;
             final_time_step = false;
             dt /= m_opt.dt_decrease_factor;
+            if(dt < m_opt.dt_min)
+            {
+                // This actually means solution error
+                // TODO: stop the solver
+                std::cout << "\nERROR: The time step was reduced to " << dt
+                          << " but the Newton method failed to converge\n";
+                exit(4);
+            }
             x = x_prev[0];
             continue;
         }
 
+        // The solver reached the target time t1
         if(final_time_step)
         {
             break;
         }
 
         // Simple yet efficient adaptive time stepping
-        if(iter < m_opt.dt_increase_threshold)
+        if(m_opt.time_stepping == 1)  // S-SATS
         {
-            dt *= m_opt.dt_increase_factor;
-            if(m_opt.verbosity > 0)
-                std::cout << '>';
+            if(iter < m_opt.dt_increase_threshold)
+            {
+                dt *= m_opt.dt_increase_factor;
+                if(dt > m_opt.dt_max)
+                    dt = m_opt.dt_max;
+                if(m_opt.verbosity > 0)
+                    std::cout << '>';
+            }
+            else if(iter >= m_opt.dt_decrease_threshold - 1)
+            {
+                dt /= m_opt.dt_decrease_factor;
+                if(dt < m_opt.dt_min)
+                    dt = m_opt.dt_min;
+                if(m_opt.verbosity > 0)
+                    std::cout << '<';
+            }
         }
-        else if(iter >= m_opt.dt_decrease_threshold - 1)
+        else if(m_opt.time_stepping == 2)  // A-SATS
         {
-            dt /= m_opt.dt_decrease_factor;
-            if(m_opt.verbosity > 0)
-                std::cout << '<';
+            double norm1 = 0;
+            double norm2 = 0;
+
+            // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
+            for(MKL_INT i = 0; i < size; i++)
+            {
+                double a = std::fabs(x[i] - x_prev[0][i]);
+                double b = std::fabs(x_prev[0][i]);
+                if(a > norm1)
+                    norm1 = a;
+                if(b > norm2)
+                    norm2 = b;
+            }
+
+            // Monitor function
+            double eta = norm1 / (norm2 + m_opt.dt_eps_m);
+
+            // The time step can be increased
+            if(eta < m_opt.dt_eta_min)
+            {
+                dt *= m_opt.dt_increase_factor;
+                if(dt > m_opt.dt_max)
+                    dt = m_opt.dt_max;
+                if(m_opt.verbosity > 0)
+                    std::cout << '>';
+            }
+
+            // The time step should be reduced, scrape the current time
+            // iteration
+            if(eta > m_opt.dt_eta_max)
+            {
+                if(m_opt.verbosity > 0)
+                    std::cout << " <- redo";
+
+                t -= dt;
+                step_counter--;
+                final_time_step = false;
+                dt /= m_opt.dt_decrease_factor;
+                if(dt < m_opt.dt_min)
+                {
+                    // This actually means solution error
+                    // TODO: stop the solver
+                    std::cout << "\nERROR: The time step was reduced to " << dt
+                              << " but the relative error is still above the "
+                                 "threshold\n";
+                    exit(5);
+                }
+                x = x_prev[0];
+                continue;
+            }
         }
 
         if(t + dt > m_t1)
