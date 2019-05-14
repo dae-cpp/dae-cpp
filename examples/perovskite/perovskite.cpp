@@ -99,10 +99,9 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-    opt.dt_increase_factor = 1.4;  // Reduce time step increase factor to get
-                                   // better accuracy (default value is 2.0)
-    opt.fact_every_iter = false;   // Gain some speed. The matrices will be
-                                   // factorized only once each time step.
+    opt.time_stepping   = 1;      // Choose Stability-based time stepper
+    opt.fact_every_iter = false;  // Gain some speed. The matrices will be
+                                  // factorized only once each time step.
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options

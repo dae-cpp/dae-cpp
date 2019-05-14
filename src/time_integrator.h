@@ -73,7 +73,7 @@ public:
     void operator()(sparse_matrix_holder &Jt, state_type &b,
                     sparse_matrix_holder &J, state_type &x,
                     const state_type_matrix &x_prev, const double t,
-                    const double dt);
+                    const double dt[]);
 };
 
 }  // namespace daecpp_namespace_name

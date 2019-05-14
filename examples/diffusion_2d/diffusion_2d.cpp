@@ -80,10 +80,9 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-    opt.dt_init            = 0.0001;  // Change initial time step
-    opt.dt_increase_factor = 1.0;     // Do not increase the time step
-    opt.fact_every_iter    = false;   // Gain some speed. The matrices will be
-                                      // factorized only once each time step.
+    opt.dt_init          = 5.0e-5;  // Change initial time step
+    opt.fact_every_iter  = false;   // Gain some speed. The matrices will be
+                                    // factorized only once each time step.
 
     // We can override Jacobian class from dae-cpp library and provide
     // analytical Jacobian. But we will use numerically estimated one.
@@ -212,7 +211,7 @@ int solution_check(dae::state_type &x, MKL_INT N, double t, double D)
               << "% deviation from the analytical value)\n";
     std::cout << "Maximum relative error: " << err_max << "%\n";
 
-    if(err_max < 2.0 && err_conc < 1.0e-6)
+    if(err_max < 1.0 && err_conc < 1.0e-6)
         return 0;
     else
         return 1;

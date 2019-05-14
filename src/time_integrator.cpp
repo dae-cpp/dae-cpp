@@ -71,30 +71,41 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
 void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
                                 sparse_matrix_holder &J, state_type &x,
                                 const state_type_matrix &x_prev, const double t,
-                                const double dt)
+                                const double dt[])
 {
     const MKL_INT size = (MKL_INT)(x.size());
-
-    const double invdt = 1.0 / dt;
 
     double alpha  = 0;
     int    scheme = m_scheme - 1;
 
     state_type dxdt(size);
 
-    for(MKL_INT i = 0; i < size; i++)
+    if(m_scheme == 2 && m_opt.bdf_order == 2)  // Variable time stepper for BDF-2
     {
-        double val = 0;
-        val += BDF_COEF[scheme][0] * x[i];
-        for(int d = 1; d <= m_scheme; d++)
+        for(MKL_INT i = 0; i < size; i++)
         {
-            val += BDF_COEF[scheme][d] * x_prev[d - 1][i];
+            dxdt[i] = (2.0*dt[0] + dt[1])/(dt[0]*(dt[0] + dt[1])) * x[i] - (dt[0] + dt[1])/(dt[0]*dt[1]) * x_prev[0][i] + dt[0]/(dt[1]*(dt[0] + dt[1])) * x_prev[1][i];
         }
-        val *= invdt / BDF_COEF[scheme][7];
-        dxdt[i] = val;
-    }
 
-    alpha = invdt * ALPHA_COEF[scheme];
+        alpha = (2.0*dt[0] + dt[1])/(dt[0]*(dt[0] + dt[1]));
+    }
+    else  // Constant time stepper
+    {
+        const double invdt = 1.0 / dt[0];
+
+        for(MKL_INT i = 0; i < size; i++)
+        {
+            double val = BDF_COEF[scheme][0] * x[i];
+            for(int d = 1; d <= m_scheme; d++)
+            {
+                val += BDF_COEF[scheme][d] * x_prev[d - 1][i];
+            }
+            val *= invdt / BDF_COEF[scheme][7];
+            dxdt[i] = val;
+        }
+
+        alpha = invdt * ALPHA_COEF[scheme];
+    }
 
     // Calculate RHS
     m_rhs(x, b, t);
@@ -132,7 +143,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
         Jt.ja.resize(nzmax);
 
     // Replaces deprecated mkl_dcsradd()
-    // Jt: = J - M*invdt
+    // Jt: = J - M*alpha
     matrix_add(-alpha, m_M, J, Jt);
 }
 

@@ -42,9 +42,13 @@ void Solver::operator()(state_type &x)
     // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
-    // Initial time and time step
+    // Initial time
     double t  = 0.0;
-    double dt = m_opt.dt_init;
+
+    // Time step
+    double dt[2];
+    dt[0] = m_opt.dt_init;
+    dt[1] = 0.0;
 
     // Initial output
     if(m_opt.verbosity > 0)
@@ -118,6 +122,9 @@ void Solver::operator()(state_type &x)
     double  ddum;  // Double dummy
     MKL_INT idum;  // Integer dummy
 
+    // Memory control variables
+    int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+
     // Intel MKL PARDISO iparm parameter
     MKL_INT iparm[64];
 
@@ -131,16 +138,13 @@ void Solver::operator()(state_type &x)
 
     // TODO: Start timer here
 
-    // Memory control variables
-    int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+    t += dt[0];
 
     bool final_time_step = false;
     int  step_counter    = 0;
 
-    while(t < (m_t1 + dt * 0.5))
+    while(t < (m_t1 + dt[0] * 0.5))
     {
-        t += dt;  // Time step lapse
-
         step_counter++;
 
         if(m_opt.verbosity > 0)
@@ -267,24 +271,25 @@ void Solver::operator()(state_type &x)
 
             // Decrease the time step, scrape the current time iteration and
             // carry out it again.
-            t -= dt;
+            t -= dt[0];
             step_counter--;
             final_time_step = false;
-            dt /= m_opt.dt_decrease_factor;
-            current_scheme = 1;
-            if(dt < m_opt.dt_min)
+            dt[0] /= m_opt.dt_decrease_factor;
+            current_scheme = 1;  // Fall back to BDF-1 for better stability
+            if(dt[0] < m_opt.dt_min)
             {
                 // This actually means solution error
-                // TODO: stop the solver
-                std::cout << "\nERROR: The time step was reduced to " << dt
+                // TODO: Correctly stop the solver
+                std::cout << "\nERROR: The time step was reduced to " << dt[0]
                           << " but the Newton method failed to converge\n";
                 exit(4);
             }
             x = x_prev[0];
+            t += dt[0];
             continue;
         }
 
-        // The solver reached the target time t1
+        // The solver has reached the target time t1
         if(final_time_step)
         {
             break;
@@ -293,23 +298,25 @@ void Solver::operator()(state_type &x)
         // Simple yet efficient adaptive time stepping
         if(m_opt.time_stepping == 1)  // S-SATS
         {
+            dt[1] = dt[0];
+
             if(iter < m_opt.dt_increase_threshold)
             {
-                dt *= m_opt.dt_increase_factor;
+                dt[0] *= m_opt.dt_increase_factor;
                 if(m_opt.dt_increase_factor != 1.0)
-                    current_scheme = 1;
-                if(dt > m_opt.dt_max)
-                    dt = m_opt.dt_max;
+                    current_scheme = 2;
+                if(dt[0] > m_opt.dt_max)
+                    dt[0] = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
                     std::cout << '>';
             }
             else if(iter >= m_opt.dt_decrease_threshold - 1)
             {
-                dt /= m_opt.dt_decrease_factor;
+                dt[0] /= m_opt.dt_decrease_factor;
                 if(m_opt.dt_decrease_factor != 1.0)
-                    current_scheme = 1;
-                if(dt < m_opt.dt_min)
-                    dt = m_opt.dt_min;
+                    current_scheme = 2;
+                if(dt[0] < m_opt.dt_min)
+                    dt[0] = m_opt.dt_min;
                 if(m_opt.verbosity > 0)
                     std::cout << '<';
             }
@@ -331,18 +338,6 @@ void Solver::operator()(state_type &x)
             // Monitor function
             double eta = norm1 / (norm2 + m_opt.dt_eps_m);
 
-            // The time step can be increased
-            if(eta < m_opt.dt_eta_min)
-            {
-                dt *= m_opt.dt_increase_factor;
-                if(m_opt.dt_increase_factor != 1.0)
-                    current_scheme = 1;
-                if(dt > m_opt.dt_max)
-                    dt = m_opt.dt_max;
-                if(m_opt.verbosity > 0)
-                    std::cout << '>';
-            }
-
             // The time step should be reduced, scrape the current time
             // iteration
             if(eta > m_opt.dt_eta_max)
@@ -350,30 +345,48 @@ void Solver::operator()(state_type &x)
                 if(m_opt.verbosity > 0)
                     std::cout << " <- redo: eta = " << eta;
 
-                t -= dt;
+                t -= dt[0];
                 step_counter--;
                 final_time_step = false;
-                dt /= m_opt.dt_decrease_factor;
-                current_scheme = 1;
-                if(dt < m_opt.dt_min)
+                dt[0] /= m_opt.dt_decrease_factor;
+                if(step_counter && m_opt.bdf_order == 2)
+                    current_scheme = 2;
+                else
+                    current_scheme = 1;
+                if(dt[0] < m_opt.dt_min)
                 {
                     // This actually means solution error
-                    // TODO: stop the solver
-                    std::cout << "\nERROR: The time step was reduced to " << dt
-                              << " but the relative error is still above the "
-                                 "threshold\n";
+                    // TODO: Correctly stop the solver
+                    std::cout << "\nERROR: The time step was reduced to "
+                        << dt[0] << " but the relative error is still above the threshold\n";
                     exit(5);
                 }
                 x = x_prev[0];
+                t += dt[0];
                 continue;
+            }
+
+            dt[1] = dt[0];
+
+            // The time step can be increased
+            if(eta < m_opt.dt_eta_min)
+            {
+                dt[0] *= m_opt.dt_increase_factor;
+                if(m_opt.dt_increase_factor != 1.0)
+                    current_scheme = 2;
+                if(dt[0] > m_opt.dt_max)
+                    dt[0] = m_opt.dt_max;
+                if(m_opt.verbosity > 0)
+                    std::cout << '>';
             }
         }
 
-        if(t + dt > m_t1)
+        // Looks like the solver has reached the target time t1
+        if(t + dt[0] > m_t1)
         {
             final_time_step = true;
             // Adjust the last time step size
-            dt = m_t1 - t;
+            dt[0] = m_t1 - t;
         }
 
         // Rewrite solution history
@@ -382,6 +395,8 @@ void Solver::operator()(state_type &x)
             x_prev[d] = x_prev[d - 1];
         }
         x_prev[0] = x;
+
+        t += dt[0];  // Time step lapse
 
     }  // while t
 

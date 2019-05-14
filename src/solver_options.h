@@ -30,13 +30,14 @@ public:
 
     // Order of BDF implicit numerical integration method:
     // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
-    int bdf_order = 6;
+    // Default is BDF-2 since it fully supports variable time stepping
+    int bdf_order = 2;
 
     // Time stepping algorithm:
     // 1 - Stability-based Simple Adaptive Time Stepping (S-SATS),
     // 2 - Accuracy-based Simple Adaptive Time Stepping (A-SATS) from
     // https://www.sciencedirect.com/science/article/pii/S0377042705005534
-    int time_stepping = 1;
+    int time_stepping = 2;
 
     // Maximum number of Newton iterations. If the Newton method fails to
     // converge after max_Newton_iter iterations, the solver reduces time step
