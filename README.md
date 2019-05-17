@@ -1,6 +1,6 @@
 # dae-cpp
 
-A simple but powerful C++ Differential Algebraic Equation (DAE) solver.
+A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
 ## What is dae-cpp
 
@@ -16,20 +16,20 @@ For the numerical integration the solver uses implicit [BDF](https://en.wikipedi
 
 ### How does it work
 
-BDF time stepper reduces the original DAE system to a system of nonlinear equations that the solver resolves using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorisation of Jacobian matrix, then numerical factorisation, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
+BDF time stepper reduces the original DAE system to a system of nonlinear equations that the solver resolves using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorisation of Jacobian matrix, then numerical factorisation, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method, variability of the solution and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
 
 ### The main features of the solver
 
 - May resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the machine's RAM).
 - A user may provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
 - Utilises all the available cores on the machine for better performance (this can be overridden by a user).
-- Allows a user to adjust a lot of parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
+- Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
 - The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
-- Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
+- Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp)) to kick-start the user's project.
 
 ## Installation
 
-This is a cross-platform software that should work well on both Linux (e.g. Ubuntu) and Windows. It should work under macOS as well (but not tested yet). The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos).
+This is a cross-platform software that should work on both Linux (e.g. Ubuntu) and Windows. It should work under macOS as well (but not tested yet). The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos).
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -88,7 +88,7 @@ Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider us
 
 #### Test the solver
 
-The solver can perform a quick self test. To build the test, dae-cpp should be installed with `DAE_TEST=ON` option (it is ON by default). To start the test, from the build directory execute `ctest`:
+The DAE solver can perform a quick self test. To build the test, dae-cpp should be installed with `DAE_TEST=ON` option (it is ON by default). To start the test, from the build directory execute `ctest`:
 
 ```bash
 ctest
@@ -111,7 +111,7 @@ Setting up the solver in Microsoft Visual Studio 2017. This has been tested but 
 
 ## How to use
 
-Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) and [diffusion_2d](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
+Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
@@ -151,6 +151,8 @@ Once the RHS class is overridden, we can create an instance of the child class w
 MyRHS rhs(p);
 ```
 
+In the child MyRHS class the user can also override `stop_condition` virtual function. By default (if not overridden) the function always returns `false`. The user may override this behaviour and set up one or several stop conditions for the solver depending on the solution **x** at the current time *t*. As soon as the function returns `true`, the solver will finalise the current time step and return the current solution. A trivial example of the stop condition function can be found in [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
+
 ### Step 3. Set up the Mass matrix
 
 Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
@@ -181,7 +183,7 @@ Note that we should pass an instance of the user-defined RHS in order to estimat
 
 ### Step 5. Set the solver options
 
-The solver has a lot of options. They all have some default values (defined in [solver_options.h](https://github.com/ikorotkin/dae-cpp/blob/master/src/solver_options.h)) but they can be overridden by a user:
+The solver has lots of options related to the solution process. They all have some default values (defined in [solver_options.h](https://github.com/ikorotkin/dae-cpp/blob/master/src/solver_options.h)) but they can be overridden by a user:
 
 ```cpp
 // Create an instance of the solver options and update some of the solver
