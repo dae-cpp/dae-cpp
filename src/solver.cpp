@@ -210,19 +210,19 @@ void Solver::operator()(state_type &x)
                     check_pardiso_error(error);
                     exit(1);
                 }
+            }  // Reordering and Symbolic Factorization
 
-                // PHASE 2.
-                // Numerical factorization
-                phase = 22;
-                PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
-                        ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
+            // PHASE 2.
+            // Numerical factorization
+            phase = 22;
+            PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia, ja,
+                    &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
 
-                if(error != 0)
-                {
-                    std::cout << "\nERROR during numerical factorization...\n";
-                    check_pardiso_error(error);
-                    exit(2);
-                }
+            if(error != 0)
+            {
+                std::cout << "\nERROR during numerical factorization...\n";
+                check_pardiso_error(error);
+                exit(2);
             }
 
             // PHASE 3.

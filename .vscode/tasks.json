@@ -103,7 +103,7 @@
             ]
         },
         {
-            "label": "debug",
+            "label": "debug-diffusion_2d",
             "type": "shell",
             "command": "g++",
             "args": [
@@ -113,6 +113,39 @@
                 "-m64",
                 "-fopenmp",
                 "./examples/diffusion_2d/*.cpp",
+                "./src/*.cpp",
+                "-o",
+                "dbg.exe",
+                "-I/opt/intel/mkl/include",
+                "-I./src/external",
+                //"-I/usr/include/python3.6m",
+                //"-I/usr/local/lib/python3.6/dist-packages/numpy/core/include",
+                //"-lpython3.6m",
+                "-L/opt/intel/mkl/lib/intel64",
+                "-Wl,--no-as-needed",
+                "-lmkl_intel_lp64",
+                "-lmkl_gnu_thread",
+                "-lmkl_core",
+                "-lgomp",
+                "-lpthread",
+                "-lm",
+                "-ldl"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "debug-perovskite",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-Wall",
+                "-std=c++11",
+                "-m64",
+                "-fopenmp",
+                "./examples/perovskite/*.cpp",
                 "./src/*.cpp",
                 "-o",
                 "dbg.exe",

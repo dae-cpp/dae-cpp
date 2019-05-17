@@ -25,7 +25,7 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     if(matrix_checker(m_M, size))
     {
         std::cout << "Error in Mass matrix.\n";
-        exit(1);
+        exit(11);
     }
 
     // Init mass matrix descriptor for sparse solver
@@ -54,7 +54,7 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     {
         std::cout << "ERROR: Could not create sparse matrix descriptor for "
                      "Mass matrix.\n";
-        exit(1);
+        exit(11);
     }
 
     // Analyze sparse matrix, choose proper kernels and workload
@@ -80,14 +80,17 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     state_type dxdt(size);
 
-    if(m_scheme == 2 && m_opt.bdf_order == 2)  // Variable time stepper for BDF-2
+    // Variable time stepper for BDF-2
+    if(m_scheme == 2 && m_opt.bdf_order == 2)
     {
         for(MKL_INT i = 0; i < size; i++)
         {
-            dxdt[i] = (2.0*dt[0] + dt[1])/(dt[0]*(dt[0] + dt[1])) * x[i] - (dt[0] + dt[1])/(dt[0]*dt[1]) * x_prev[0][i] + dt[0]/(dt[1]*(dt[0] + dt[1])) * x_prev[1][i];
+            dxdt[i] = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1])) * x[i] -
+                      (dt[0] + dt[1]) / (dt[0] * dt[1]) * x_prev[0][i] +
+                      dt[0] / (dt[1] * (dt[0] + dt[1])) * x_prev[1][i];
         }
 
-        alpha = (2.0*dt[0] + dt[1])/(dt[0]*(dt[0] + dt[1]));
+        alpha = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1]));
     }
     else  // Constant time stepper
     {
@@ -130,7 +133,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
     if(matrix_checker(J, size))
     {
         std::cout << "Error in Jacobian matrix.\n";
-        exit(1);
+        exit(12);
     }
 
     size_t nzmax = m_M.A.size() + J.A.size();

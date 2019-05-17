@@ -24,7 +24,7 @@ public:
     // speeding up. If MKL_NUM_THREADS is not defined, then the solver uses all
     // available processors.
 
-    // Perform symbolic and numerical factorisation every Newton iteration
+    // Perform Reordering and Symbolic Factorization every Newton iteration
     // (changing to 'false' can increase speed but also can lead to instability)
     bool fact_every_iter = true;
 
