@@ -19,6 +19,15 @@ public:
      */
     virtual void operator()(const state_type &x, state_type &f,
                             const double t) = 0;
+
+    /*
+     * User-defined condition, when the solver should stop and return the
+     * solution at the current time step
+     */
+    virtual bool stop_condition(const state_type &x, const double t)
+    {
+        return false;
+    }
 };
 
 }  // namespace daecpp_namespace_name

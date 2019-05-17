@@ -32,3 +32,21 @@ void MyRHS::operator()(const daecpp::state_type &x, daecpp::state_type &f,
 
     // clang-format on
 }
+
+/*
+ * This is for the demonstration purpose.
+ * We can force the solver to stop earlier by overriding
+ * stop_condition(const daecpp::state_type &x, const double t) function.
+ */
+bool MyRHS::stop_condition(const daecpp::state_type &x, const double t)
+{
+    if(x[0] < 0)
+    {
+        return true;  // if x[0] is less than 0 (should never happen), then the
+                      // solver should stop
+    }
+    else
+    {
+        return false;
+    }
+}

@@ -43,7 +43,7 @@ void Solver::operator()(state_type &x)
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
     // Initial time
-    double t  = 0.0;
+    double t = 0.0;
 
     // Time step
     double dt[2];
@@ -289,8 +289,9 @@ void Solver::operator()(state_type &x)
             continue;
         }
 
-        // The solver has reached the target time t1
-        if(final_time_step)
+        // The solver has reached the target time t1 or the stop condition
+        // triggered.
+        if(final_time_step || m_rhs.stop_condition(x, t))
         {
             break;
         }
@@ -358,7 +359,9 @@ void Solver::operator()(state_type &x)
                     // This actually means solution error
                     // TODO: Correctly stop the solver
                     std::cout << "\nERROR: The time step was reduced to "
-                        << dt[0] << " but the relative error is still above the threshold\n";
+                              << dt[0]
+                              << " but the relative error is still above the "
+                                 "threshold\n";
                     exit(5);
                 }
                 x = x_prev[0];

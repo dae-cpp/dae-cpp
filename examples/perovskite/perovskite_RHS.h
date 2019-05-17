@@ -16,4 +16,7 @@ public:
 
     void operator()(const daecpp::state_type &x, daecpp::state_type &f,
                     const double t);
+
+    // Optional: override solver stop condition (it is always FALSE by default)
+    bool stop_condition(const daecpp::state_type &x, const double t);
 };
