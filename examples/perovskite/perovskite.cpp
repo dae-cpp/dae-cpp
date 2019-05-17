@@ -99,9 +99,7 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-    opt.time_stepping   = 1;      // Choose Stability-based time stepper
-    opt.fact_every_iter = false;  // Gain some speed. The matrices will be
-                                  // factorized only once each time step.
+    opt.time_stepping = 1;  // Choose Stability-based time stepper
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
