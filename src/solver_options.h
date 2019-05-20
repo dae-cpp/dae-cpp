@@ -45,19 +45,14 @@ public:
     // and tries to make the current step again.
     int max_Newton_iter = 15;
 
-    // Absolute tolerance for the Newton algorithm
 #ifdef DAE_SINGLE
-    double atol = 1.0e-3;  // Absolute tolerance for single precision
+    double atol      = 1.0e-3;  // Absolute tolerance for the Newton algorithm
+    double dt_eps_m  = 1.0e-5;  // The order of the rounding unit (A-SATS only)
+    double value_max = 1.0e20;  // Solution shouldn't be higher than this
 #else
-    double atol = 1.0e-6;  // Absolute tolerance for double precision
-#endif
-
-#ifdef DAE_SINGLE
-    double dt_eps_m =
-        1.0e-5;  // The order of the rounding unit for single precision
-#else
-    double dt_eps_m =
-        1.0e-10;  // The order of the rounding unit for double precision
+    double atol      = 1.0e-6;   // Absolute tolerance for the Newton algorithm
+    double dt_eps_m  = 1.0e-10;  // The order of the rounding unit (A-SATS only)
+    double value_max = 1.0e100;  // Solution shouldn't be higher than this
 #endif
 
     // Initial time step

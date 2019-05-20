@@ -13,7 +13,7 @@
 #include "jacobian.h"
 
 // clang-format off
-#define JACOBIAN_SCHEME 0  // 0 - Central differences: (f(x+h) - f(x-h)) / (2*h)
+#define JACOBIAN_SCHEME 1  // 0 - Central differences: (f(x+h) - f(x-h)) / (2*h)
                            // 1 - Faster but less accurate scheme: (f(x+h) - f(x)) / h
 // clang-format on
 
@@ -47,23 +47,17 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     std::vector<std::vector<MKL_INT>> shift_local(size,
                                                   std::vector<MKL_INT>(nth));
 
+    // Parallel section
+#pragma omp parallel num_threads(nth)
+    {
 #if defined(_OPENMP)
-    int th_barrier1 = 0;
-    int th_barrier2 = 0;
-
-    omp_lock_t writelock1, writelock2;
-
-    omp_init_lock(&writelock1);
-    omp_init_lock(&writelock2);
+        int th = omp_get_thread_num();
+#else
+        int th = 0;
 #endif
 
-#pragma omp parallel for num_threads(nth) schedule(static, 1)
-    for(int th = 0; th < nth; th++)
-    {
-        int start_th, end_th;
-
-        start_th = (size * th) / nth;
-        end_th   = (size * (th + 1)) / nth;
+        int start_th = (size * th) / nth;
+        int end_th   = (size * (th + 1)) / nth;
 
         state_type f0(size);
         state_type f1(size);
@@ -74,7 +68,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         std::vector<std::vector<float_type>> values_local(
             size, std::vector<float_type>(0));
         std::vector<std::vector<MKL_INT>> rows_local(size,
-                                                     std::vector<MKL_INT>(0));
+            std::vector<MKL_INT>(0));
 
 #if JACOBIAN_SCHEME == 1
         m_rhs(x1, f0, t);
@@ -82,11 +76,12 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
         for(MKL_INT j = start_th; j < end_th; j++)
         {
+            float_type x1_backup = x1[j];
 
 #if JACOBIAN_SCHEME == 0
-            x1[j] -= m_tol;
+            x1[j] -= (float_type)m_tol;
             m_rhs(x1, f0, t);
-            x1[j] += 2.0 * m_tol;
+            x1[j] = x1_backup + (float_type)m_tol;
 #else
             x1[j] += m_tol;
 #endif
@@ -115,36 +110,21 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                 sizes_local[i][th]++;
             }
 
-            x1[j] -= m_tol;
+            x1[j] = x1_backup;
         }
-
-        // Synchronise the threads and assemble local arrays into global
-        // Jacobian matrix
 
 #if defined(_OPENMP)
-#pragma omp atomic
-        th_barrier1++;
-        while(true)  // Wait for all threads
-        {
-            omp_set_lock(&writelock1);
-            if(th_barrier1 == nth)
-            {
-                omp_unset_lock(&writelock1);
-                break;
-            }
-            else
-            {
-                omp_unset_lock(&writelock1);
-            }
-        }
+#pragma omp flush
+#pragma omp barrier  // Synchronise the threads
 #endif
 
+        // Resize the global arrays
         for(MKL_INT i = 0; i < size; i++)
         {
             if(th == 0)
             {
                 MKL_INT size_total = 0;
-                for(MKL_INT k = 0; k < nth; k++)
+                for(int k = 0; k < nth; k++)
                 {
                     size_total += sizes_local[i][k];
                 }
@@ -161,27 +141,11 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         }
 
 #if defined(_OPENMP)
-        // Make sure the master thread resized the global arrays
-        if(th == 0)
-        {
-#pragma omp atomic
-            th_barrier2++;
-        }
-        while(true)  // Wait for master thread
-        {
-            omp_set_lock(&writelock2);
-            if(th_barrier2 > 0)
-            {
-                omp_unset_lock(&writelock2);
-                break;
-            }
-            else
-            {
-                omp_unset_lock(&writelock2);
-            }
-        }
+#pragma omp flush
+#pragma omp barrier  // Make sure the master thread resized the global arrays
 #endif
 
+        // Assemble local arrays into global Jacobian matrix
         for(MKL_INT i = 0; i < size; i++)
         {
             std::copy(values_local[i].begin(), values_local[i].end(),
@@ -192,14 +156,13 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
     }  // Parallel section end
 
-    // Unroll global array to CSR format and transpose Jacobian
-
 #ifdef DAE_FORTRAN_STYLE
     MKL_INT ci = 1;
 #else
     MKL_INT ci = 0;
 #endif
 
+    // Unroll global array to CSR format and transpose Jacobian
     for(MKL_INT i = 0; i < size; i++)
     {
         J.A.insert(J.A.end(), J_values[i].begin(), J_values[i].end());
