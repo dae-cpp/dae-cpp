@@ -43,7 +43,7 @@ bool MyRHS::stop_condition(const daecpp::state_type &x, const double t)
     if(x[0] < 0)
     {
         return true;  // if x[0] is less than 0 (should never happen), then the
-                      // solver should stop
+                      // solver will stop
     }
     else
     {

@@ -3,8 +3,8 @@
  * estimate numerical Jacobian matrix
  */
 
-#include <cmath>      // fabs()
-#include <algorithm>  // for std::copy
+#include <cmath>      // std::abs
+#include <algorithm>  // std::copy
 
 #if defined(_OPENMP)
 #include <omp.h>  // to catch omp_get_max_threads() and OpenMP locks
@@ -27,7 +27,8 @@ namespace daecpp_namespace_name
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
-    const MKL_INT size = (MKL_INT)(x.size());
+    const MKL_INT size   = (MKL_INT)(x.size());
+    const float_type tol = (float_type)m_tol;
 
     // Get max number of threads.
     // This can be defined using "export OMP_NUM_THREADS=N",
@@ -79,26 +80,24 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             float_type x1_backup = x1[j];
 
 #if JACOBIAN_SCHEME == 0
-            x1[j] -= (float_type)m_tol;
+            x1[j] -= tol;
             m_rhs(x1, f0, t);
-            x1[j] = x1_backup + (float_type)m_tol;
+            x1[j] = x1_backup + tol;
 #else
-            x1[j] += m_tol;
+            x1[j] += tol;
 #endif
 
             m_rhs(x1, f1, t);
 
             for(MKL_INT i = 0; i < size; i++)
             {
-                float_type jacd;
-
 #if JACOBIAN_SCHEME == 0
-                jacd = (f1[i] - f0[i]) / (2.0 * m_tol);
+                float_type jacd = (f1[i] - f0[i]) / (2.0 * tol);
 #else
-                jacd = (f1[i] - f0[i]) / m_tol;
+                float_type jacd = (f1[i] - f0[i]) / tol;
 #endif
 
-                if(std::fabs(jacd) < m_tol)
+                if(std::abs(jacd) < tol)
                     continue;
 
                 values_local[i].push_back(jacd);

@@ -99,6 +99,7 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
+    opt.bdf_order     = 6;  // Set BDF-6 time integrator
     opt.time_stepping = 1;  // Choose Stability-based time stepper
 
     // Create an instance of the solver with particular RHS, Mass matrix,
@@ -223,9 +224,9 @@ int solution_check(dae::state_type &x)
     {
         double error = (sol[i] - ode15s_MATLAB[i]) / ode15s_MATLAB[i] * 100.0;
 
-        if(std::fabs(error) > err_max)
+        if(std::abs(error) > err_max)
         {
-            err_max = std::fabs(error);
+            err_max = std::abs(error);
         }
 
         std::cout << "      " << ode15s_MATLAB[i] << "\t<->  " << sol[i]
