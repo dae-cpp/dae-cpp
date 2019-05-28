@@ -24,9 +24,9 @@ public:
     // speeding up. If MKL_NUM_THREADS is not defined, then the solver uses all
     // available processors.
 
-    // Perform Reordering, Symbolic and Numerical Factorization every Newton
-    // iteration. Changing to 'false' can increase speed but also can lead to
-    // instability.
+    // Perform Jacobian update, Reordering, Symbolic and Numerical Factorization
+    // every Newton iteration. Changing to 'false' can increase speed but also
+    // can lead to instability.
     bool fact_every_iter = true;
 
     // Order of BDF implicit numerical integration method:

@@ -165,17 +165,18 @@ void Solver::operator()(state_type &x)
 
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
-            // Time Integrator
-            ti(J, b, J_tmp, x, x_prev, t, dt);
-
-            // Jacobian can change its size and can be re-allocated.
-            // Catch up new array addresses.
-            mkl_a = J.A.data();
-            ia    = J.ia.data();
-            ja    = J.ja.data();
-
+            // Reordering, Symbolic and Numerical Factorization
             if(m_opt.fact_every_iter || iter == 0)
             {
+                // Time Integrator with updated Jacobian
+                ti(J, b, J_tmp, x, x_prev, t, dt, true);
+
+                // Jacobian can change its size and can be re-allocated.
+                // Catch up new array addresses.
+                mkl_a = J.A.data();
+                ia = J.ia.data();
+                ja = J.ja.data();
+
                 // PHASE 1.
                 // Reordering and Symbolic Factorization. This step also
                 // allocates all memory that is necessary for the factorization
@@ -231,7 +232,12 @@ void Solver::operator()(state_type &x)
                             &error);
                     exit(2);
                 }
-            }  // Reordering, Symbolic and Numerical Factorization
+            }
+            else
+            {
+                // Time Integrator with the previous Jacobian
+                ti(J, b, J_tmp, x, x_prev, t, dt, false);
+            }
 
             // PHASE 3.
             // Back substitution and iterative refinement

@@ -71,7 +71,7 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
 void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
                                 sparse_matrix_holder &J, state_type &x,
                                 const state_type_matrix &x_prev, const double t,
-                                const double dt[])
+                                const double dt[], const bool do_jac)
 {
     const MKL_INT size = (MKL_INT)(x.size());
 
@@ -122,32 +122,35 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
                     dxdt.data(), 1.0, b.data());
 #endif
 
-    J.A.clear();
-    J.ia.clear();
-    J.ja.clear();
-
-    // Calculate Jacobian
-    m_jac(J, x, t);
-
-    // Sparse matrix check
-    if(matrix_checker(J, size))
+    if(do_jac)
     {
-        std::cout << "Error in Jacobian matrix.\n";
-        exit(12);
+        J.A.clear();
+        J.ia.clear();
+        J.ja.clear();
+
+        // Calculate Jacobian
+        m_jac(J, x, t);
+
+        // Sparse matrix check
+        if(matrix_checker(J, size))
+        {
+            std::cout << "Error in Jacobian matrix.\n";
+            exit(12);
+        }
+
+        size_t nzmax = m_M.A.size() + J.A.size();
+
+        if(Jt.A.size() != nzmax)
+            Jt.A.resize(nzmax);
+        if(Jt.ia.size() != (size_t)(size)+1)
+            Jt.ia.resize(size + 1);
+        if(Jt.ja.size() != nzmax)
+            Jt.ja.resize(nzmax);
+
+        // Replaces deprecated mkl_dcsradd()
+        // Jt: = J - M*alpha
+        matrix_add(-alpha, m_M, J, Jt);
     }
-
-    size_t nzmax = m_M.A.size() + J.A.size();
-
-    if(Jt.A.size() != nzmax)
-        Jt.A.resize(nzmax);
-    if(Jt.ia.size() != (size_t)(size) + 1)
-        Jt.ia.resize(size + 1);
-    if(Jt.ja.size() != nzmax)
-        Jt.ja.resize(nzmax);
-
-    // Replaces deprecated mkl_dcsradd()
-    // Jt: = J - M*alpha
-    matrix_add(-alpha, m_M, J, Jt);
 }
 
 }  // namespace daecpp_namespace_name

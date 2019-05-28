@@ -99,8 +99,9 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-    opt.bdf_order     = 6;  // Set BDF-6 time integrator
-    opt.time_stepping = 1;  // Choose Stability-based time stepper
+    opt.bdf_order       = 6;      // Set BDF-6 time integrator
+    opt.fact_every_iter = false;  // Gain some speed (delay the update
+                                  // of Jacobian and the matrix factorisation)
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options

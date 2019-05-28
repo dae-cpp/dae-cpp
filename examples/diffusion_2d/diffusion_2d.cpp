@@ -80,7 +80,9 @@ int main()
     // parameters defined in solver_options.h
     dae::SolverOptions opt;
 
-    opt.dt_init = 5.0e-5;  // Change initial time step
+    opt.dt_init         = 5.0e-5;  // Change initial time step
+    opt.fact_every_iter = false;   // Gain some speed (delay the update
+                                   // of Jacobian and the matrix factorisation)
 
     // We can override Jacobian class from dae-cpp library and provide
     // analytical Jacobian. But we will use numerically estimated one.
