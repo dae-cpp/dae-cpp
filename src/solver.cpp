@@ -88,7 +88,7 @@ void Solver::operator()(state_type &x)
     MKL_INT *ia = nullptr;
     MKL_INT *ja = nullptr;
 
-    float_type *mkl_a;
+    float_type *mkl_a = nullptr;
     float_type *mkl_b = b.data();
     float_type *mkl_x = xk.data();
 

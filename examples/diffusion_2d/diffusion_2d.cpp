@@ -212,7 +212,7 @@ int solution_check(dae::state_type &x, MKL_INT N, double t, double D)
     std::cout << "Maximum relative error: " << err_max << "%\n";
 
 #ifdef DAE_SINGLE
-    if(err_max < 1.0 && err_conc < 1.0e-5)
+    if(err_max < 1.0 && err_conc < 2.0e-5)
 #else
     if(err_max < 1.0 && err_conc < 1.0e-10)
 #endif
