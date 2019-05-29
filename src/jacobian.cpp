@@ -7,7 +7,7 @@
 #include <algorithm>  // std::copy
 
 #if defined(_OPENMP)
-#include <omp.h>  // to catch omp_get_max_threads() and OpenMP locks
+#include <omp.h>  // to catch omp_get_max_threads()
 #endif
 
 #include "jacobian.h"
@@ -28,7 +28,9 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
     const MKL_INT size   = (MKL_INT)(x.size());
-    const float_type tol = (float_type)m_tol;
+    const double  tol    = m_tol;
+    const double  tol2   = tol * tol;
+    const double  invtol = 1.0 / tol;
 
     // Get max number of threads.
     // This can be defined using "export OMP_NUM_THREADS=N",
@@ -91,16 +93,18 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
 
             for(MKL_INT i = 0; i < size; i++)
             {
-#if JACOBIAN_SCHEME == 0
-                float_type jacd = (f1[i] - f0[i]) / (2.0 * tol);
-#else
-                float_type jacd = (f1[i] - f0[i]) / tol;
-#endif
+                double diff = f1[i] - f0[i];
 
-                if(std::abs(jacd) < tol)
+                if(std::abs(diff) < tol2)
                     continue;
 
-                values_local[i].push_back(jacd);
+#if JACOBIAN_SCHEME == 0
+                double jacd = diff * invtol * 0.5;
+#else
+                double jacd = diff * invtol;
+#endif
+
+                values_local[i].push_back((float_type)jacd);
 #ifdef DAE_FORTRAN_STYLE
                 rows_local[i].push_back(j + 1);
 #else
@@ -113,7 +117,6 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         }
 
 #if defined(_OPENMP)
-#pragma omp flush
 #pragma omp barrier  // Synchronise the threads
 #endif
 
@@ -140,7 +143,6 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         }
 
 #if defined(_OPENMP)
-#pragma omp flush
 #pragma omp barrier  // Make sure the master thread resized the global arrays
 #endif
 
