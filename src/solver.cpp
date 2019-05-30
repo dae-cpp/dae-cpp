@@ -44,15 +44,16 @@ void Solver::operator()(state_type &x)
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
 
     // Initial time
-    double t = 0.0;
+    double t = (m_t_last > 0) ? m_t_last : 0.0;
+    const double t0 = t;
 
     // Time step
     double dt[2];
-    dt[0] = m_opt.dt_init;
+    dt[0] = (m_dt_last > 0) ? m_dt_last : m_opt.dt_init;
     dt[1] = dt[0];
 
     // Initial output
-    if(m_opt.verbosity > 0)
+    if(m_opt.verbosity > 1)
     {
         std::cout << "Number of equations: " << size << std::endl;
         std::cout << "Float precision:     " << 8 * sizeof(float_type)
@@ -144,7 +145,7 @@ void Solver::operator()(state_type &x)
     bool final_time_step = false;
     int  step_counter    = 0;
 
-    while(t < (m_t1 + dt[0] * 0.5))
+    while(t < (t0 + m_t1 + dt[0] * 0.5))
     {
         step_counter++;
 
@@ -417,14 +418,14 @@ void Solver::operator()(state_type &x)
                 if(m_opt.verbosity > 0)
                     std::cout << '>';
             }
-        }
+        }  // SATS
 
         // Looks like the solver has reached the target time t1
-        if(t + dt[0] > m_t1)
+        if(t - t0 + dt[0] > m_t1)
         {
             final_time_step = true;
             // Adjust the last time step size
-            dt[0] = m_t1 - t;
+            dt[0] = m_t1 - (t - t0);
         }
 
         // Rewrite solution history
@@ -437,6 +438,9 @@ void Solver::operator()(state_type &x)
         t += dt[0];  // Time step lapse
 
     }  // while t
+
+    m_t_last  = t;
+    m_dt_last = dt[1];
 
     if(m_opt.verbosity > 0)
         std::cout << "\nLinear algebra solver calls: " << calls << '\n';

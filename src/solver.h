@@ -26,6 +26,9 @@ class Solver
 
     const double m_t1;
 
+    double m_dt_last = -1.0;  // Stores the last time step size
+    double m_t_last  = -1.0;  // Stores the final solution time
+
     void check_pardiso_error(MKL_INT err);
 
 public:
