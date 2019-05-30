@@ -3,6 +3,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 
 #include <mkl_types.h>
@@ -149,8 +150,9 @@ void Solver::operator()(state_type &x)
 
         if(m_opt.verbosity > 0)
         {
-            std::cout << "\nStep " << step_counter << ": \tt = " << t
-                      << "   \t:: ";
+            std::cout << std::left;
+            std::cout << "\nStep " << std::setw(7) << step_counter << " :: t = "
+                      << std::setw(12) << t << " :: ";
             std::cout.flush();
         }
 
@@ -374,7 +376,7 @@ void Solver::operator()(state_type &x)
             if(eta > m_opt.dt_eta_max)
             {
                 if(m_opt.verbosity > 0)
-                    std::cout << " <- redo: eta = " << eta;
+                    std::cout << " <- redo: dt_eta = " << eta;
 
                 t -= dt[0];
                 step_counter--;
