@@ -182,11 +182,9 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
  */
 void Jacobian::print(const state_type &x, const double t)
 {
-    const size_t size = x.size();
-
-    if(size > 1000)
+    if(x.size() > 1000)
     {
-        std::cout << "\nJacobian::print -- too much output\n";
+        std::cout << "\nJacobian::print -- too much output. Skipped.\n";
         return;
     }
 
@@ -203,8 +201,14 @@ void Jacobian::print(const state_type &x, const double t)
     for(std::size_t i = 0; i < J.A.size(); i++)
     {
         std::cout << std::setw(7) << i << ": " << std::setw(12) << J.A[i]
-                  << " | " << std::setw(7) << J.ja[i] << " | ";
-        if(i <= size)
+                  << " | ";
+
+        if(i < J.ja.size())
+            std::cout << std::setw(7) << J.ja[i] << " | ";
+        else
+            std::cout << std::setw(7) << "???" << " | ";  // Error in Jacobian
+                                                          // matrix structure
+        if(i < J.ia.size())
             std::cout << std::setw(7) << J.ia[i];
         std::cout << std::endl;
     }
