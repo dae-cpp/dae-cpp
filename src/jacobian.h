@@ -34,8 +34,9 @@ public:
                             const double t);
 
     /*
-     * TODO: Helper function to show Jacobian structure
+     * Helper function to show Jacobian structure
      */
+    void print(const state_type &x, const double t);
 };
 
 }  // namespace daecpp_namespace_name

@@ -91,6 +91,12 @@ int main()
     // and provide analytical Jacobian
     MyJacobian jac(rhs, p);
 
+    // It is also possible to print Jacobian out (for the given x and time t)
+    // in sparse format to make sure it is correct or to compare with
+    // the numerical Jacobian.
+    // Commented out since N is too big to print entire matrix:
+    // jac.print(x1, 0.0);
+
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass(N);
