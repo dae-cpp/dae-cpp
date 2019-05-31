@@ -134,6 +134,8 @@ int main()
         // the corresponding time t. Then it will be re-used as an initial
         // condition for the next solver call, so overall performance will be
         // almost the same as a single "solve(x1, 10.0);" call.
+        // Note that a better way to get intermediate results is to override
+        // observer function from daecpp::Solver class
 
         std::cout
             << "Solver execution time: "

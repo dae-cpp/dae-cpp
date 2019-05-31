@@ -100,7 +100,9 @@ int main()
         solve(x, t1 / 4);  // This line can be removed. It is given here just as
                            // an example. Here we produce an intermediate
                            // solution at time t = (t1 / 4). This solution
-                           // will be stored in the vector x.
+                           // will be stored in the vector x. Note that a better
+                           // way to get intermediate results is to override
+                           // observer function from daecpp::Solver class.
         solve(x, t1);      // Reuse vector x as an initial condition and get
                            // the final solution at time t = t1.
         auto tic1 = clock::now();

@@ -219,6 +219,8 @@ solve(x, t1);   // continues solving in the interval [t_c; t1], stores the final
 
 Every call the solver will take the previous solution **x** (if available from the previous call) and overwrite it with a new one at the given time.
 
+But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(daecpp::state_type &x, const double t)` function from `daecpp::Solver` class. This observer function receives solution vector **x** and the current time *t* every time step and allows a user to get access to the solution during the solving process at each time layer.
+
 ### Step 7 (optional). Plot results
 
 Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:

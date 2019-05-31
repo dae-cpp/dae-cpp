@@ -448,6 +448,9 @@ void Solver::operator()(state_type &x, const double t1)
         }
         x_prev[0] = x;
 
+        // Call Observer to provide a user with intermediate results
+        observer(x, t);
+
         t += dt[0];  // Time step lapse
 
     }  // while t

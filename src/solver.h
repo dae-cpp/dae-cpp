@@ -42,6 +42,17 @@ public:
      * The data stored in x (initial conditions) will be overwritten.
      */
     void operator()(state_type &x, const double t1);
+
+    /*
+     * Virtual Observer. Called by the solver every time step.
+     * Receives current solution vector and the current time.
+     * Can be overriden by a user to get intermediate results (for example,
+     * for plotting).
+     */
+    virtual void observer(state_type &x, const double t)
+    {
+        return;  // It does nothing by deafult
+    }
 };
 
 }  // namespace daecpp_namespace_name
