@@ -15,7 +15,7 @@
 namespace daecpp_namespace_name
 {
 
-void Solver::operator()(state_type &x)
+void Solver::operator()(state_type &x, const double t1)
 {
     // Matrix size
     MKL_INT size = (MKL_INT)(x.size());
@@ -23,34 +23,29 @@ void Solver::operator()(state_type &x)
     // Check user-defined solver options
     m_opt.check_options();
 
-    // Check the initial time step
-    if(m_opt.dt_init > m_t1 / 10.0)
+    // Assert t1 > t0
+    if(t1 <= m_opt.t0)
     {
-        std::cout << "WARNING: Initial time step might be too big: "
-                  << m_opt.dt_init << std::endl;
-    }
-    else if(m_opt.dt_init > m_t1)
-    {
-        double new_dt = m_t1 / 10.0;
-        std::cout << "WARNING: Initial time step is bigger than the "
-                     "integration time t1: "
-                  << m_opt.dt_init
-                  << "\n         The solver will use dt = t1/10 = " << new_dt
+        std::cout << "ERROR: Integration time t1 = " << t1
+                  << " cannot be less than the initial time t0 = " << m_opt.t0
                   << std::endl;
-        m_opt.dt_init = new_dt;
+        exit(7);
     }
+
+    // Check the initial time step
+    m_opt.dt_init = (m_opt.dt_init > (t1 - m_opt.t0)) ? (t1 - m_opt.t0) : m_opt.dt_init;
+
+    // Initial time
+    double t = m_opt.t0;
+    const double t0 = t;
+
+    // Initial time step
+    double dt[2];
+    dt[0] = m_opt.dt_init;
+    dt[1] = dt[0];
 
     // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
-
-    // Initial time
-    double t = (m_t_last > 0) ? m_t_last : 0.0;
-    const double t0 = t;
-
-    // Time step
-    double dt[2];
-    dt[0] = (m_dt_last > 0) ? m_dt_last : m_opt.dt_init;
-    dt[1] = dt[0];
 
     // Initial output
     if(m_opt.verbosity > 1)
@@ -87,13 +82,6 @@ void Solver::operator()(state_type &x)
     // Solution vector used for Newton iterations
     state_type xk(size);
 
-    MKL_INT *ia = nullptr;
-    MKL_INT *ja = nullptr;
-
-    float_type *mkl_a = nullptr;
-    float_type *mkl_b = b.data();
-    float_type *mkl_x = xk.data();
-
     // Copy current state vector into the history vector
     x_prev[0] = x;
 
@@ -107,6 +95,13 @@ void Solver::operator()(state_type &x)
     MKL_INT nrhs   = 1;   // Number of right hand sides
     MKL_INT msglvl = 0;   // Print statistical information
     MKL_INT error  = 0;   // Initialize error flag
+
+    MKL_INT *ia = nullptr;
+    MKL_INT *ja = nullptr;
+
+    float_type *mkl_a = nullptr;
+    float_type *mkl_b = b.data();
+    float_type *mkl_x = xk.data();
 
     // Internal solver memory pointer pt,
     // 32-bit: int pt[64]; 64-bit: long int pt[64]
@@ -145,7 +140,7 @@ void Solver::operator()(state_type &x)
     bool final_time_step = false;
     int  step_counter    = 0;
 
-    while(t < (t0 + m_t1 + dt[0] * 0.5))
+    while(t < (t1 + dt[0] * 0.5))
     {
         step_counter++;
 
@@ -155,6 +150,11 @@ void Solver::operator()(state_type &x)
             std::cout << "\nStep " << std::setw(7) << step_counter << " :: t = "
                       << std::setw(12) << t << " :: ";
             std::cout.flush();
+        }
+
+        if(m_opt.verbosity > 1)
+        {
+            std::cout << "BDF-" << current_scheme << ": ";
         }
 
         ti.set_scheme(current_scheme);
@@ -309,7 +309,6 @@ void Solver::operator()(state_type &x)
             current_scheme = 1;  // Fall back to BDF-1 for better stability
             if(dt[0] < m_opt.dt_min)
             {
-                // This actually means solution error
                 std::cout << "\nERROR: The time step was reduced to " << dt[0]
                           << " but the Newton method failed to converge\n";
                 phase = -1;  // Release memory
@@ -324,8 +323,13 @@ void Solver::operator()(state_type &x)
 
         // The solver has reached the target time t1 or the stop condition
         // triggered.
-        if(final_time_step || m_rhs.stop_condition(x, t))
+        if(final_time_step)
         {
+            break;
+        }
+        else if(m_rhs.stop_condition(x, t))
+        {
+            dt[1] = dt[0];
             break;
         }
 
@@ -350,7 +354,17 @@ void Solver::operator()(state_type &x)
                 if(m_opt.dt_decrease_factor != 1.0)
                     current_scheme = 2;
                 if(dt[0] < m_opt.dt_min)
-                    dt[0] = m_opt.dt_min;  // Probably should stop the solver
+                {
+                    std::cout << "\nERROR: The time step was reduced to "
+                              << dt[0]
+                              << " but the error is still above the "
+                                 "threshold\n";
+                    phase = -1;  // Release memory
+                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
+                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
+                            &error);
+                    exit(5);
+                }
                 if(m_opt.verbosity > 0)
                     std::cout << '<';
             }
@@ -389,7 +403,6 @@ void Solver::operator()(state_type &x)
                     current_scheme = 1;
                 if(dt[0] < m_opt.dt_min)
                 {
-                    // This actually means solution error
                     std::cout << "\nERROR: The time step was reduced to "
                               << dt[0]
                               << " but the relative error is still above the "
@@ -421,11 +434,12 @@ void Solver::operator()(state_type &x)
         }  // SATS
 
         // Looks like the solver has reached the target time t1
-        if(t - t0 + dt[0] > m_t1)
+        if(t + dt[0] >= t1)
         {
             final_time_step = true;
             // Adjust the last time step size
-            dt[0] = m_t1 - (t - t0);
+            dt[1] = dt[0];
+            dt[0] = t1 - t;
         }
 
         // Rewrite solution history
@@ -439,8 +453,8 @@ void Solver::operator()(state_type &x)
 
     }  // while t
 
-    m_t_last  = t;
-    m_dt_last = dt[1];
+    m_opt.t0      = t;
+    m_opt.dt_init = dt[1];
 
     if(m_opt.verbosity > 0)
         std::cout << "\nLinear algebra solver calls: " << calls << '\n';

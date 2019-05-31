@@ -90,14 +90,19 @@ int main()
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
-    dae::Solver solve(rhs, jac_est, mass, opt, t1);
+    dae::Solver solve(rhs, jac_est, mass, opt);
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
 
     {
         auto tic0 = clock::now();
-        solve(x);
+        solve(x, t1 / 4);  // This line can be removed. It is given here just as
+                           // an example. Here we produce an intermediate
+                           // solution at time t = (t1 / 4). This solution
+                           // will be stored in the vector x.
+        solve(x, t1);      // Reuse vector x as an initial condition and get
+                           // the final solution at time t = t1.
         auto tic1 = clock::now();
 
         std::cout
