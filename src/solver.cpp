@@ -37,7 +37,6 @@ void Solver::operator()(state_type &x, const double t1)
 
     // Initial time
     double t = m_opt.t0;
-    const double t0 = t;
 
     // Initial time step
     double dt[2];
