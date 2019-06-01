@@ -24,6 +24,9 @@ class Solver
 
     SolverOptions &m_opt;  // Solver options
 
+    size_t m_steps = 0;  // Internal time iteration counter
+    size_t m_calls = 0;  // Internal solver calls counter
+
     void check_pardiso_error(MKL_INT err);
 
 public:

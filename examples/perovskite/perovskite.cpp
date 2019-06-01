@@ -31,6 +31,7 @@
 #include "perovskite_Mass.h"        // Mass Matrix definition
 #include "perovskite_Jacobian.h"    // Jacobian of the problem
 #include "perovskite_parameters.h"  // Parameter container of the problem
+#include "perovskite_observer.h"    // Observer (optional)
 
 namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 
@@ -110,15 +111,23 @@ int main()
                                   // of Jacobian and the matrix factorisation)
 
     // Create an instance of the solver with particular RHS, Mass matrix,
-    // Jacobian and solver options
+    // Jacobian and solver options.
     dae::Solver solve(rhs, jac, mass, opt);
+
+    // In order to get access to the intermediate solution after every time
+    // step, we can override observer function in Solver class and, for example,
+    // print out some results while the solver solves the system.
+    // See perovskite_observer.h as an example.
+    // Instanse of the solver with the user-defined observer:
+    // MySolver solve_observer(rhs, jac, mass, opt);
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
 
     {
         auto tic0 = clock::now();
-        solve(x1, p.t1);
+        solve(x1, p.t1);  // Solve the system without observer
+        // solve_observer(x1, p.t1);  // Use observer
         auto tic1 = clock::now();
 
         // If we need to produce intermediate results, for example, for

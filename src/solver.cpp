@@ -33,7 +33,8 @@ void Solver::operator()(state_type &x, const double t1)
     }
 
     // Check the initial time step
-    m_opt.dt_init = (m_opt.dt_init > (t1 - m_opt.t0)) ? (t1 - m_opt.t0) : m_opt.dt_init;
+    m_opt.dt_init =
+        (m_opt.dt_init > (t1 - m_opt.t0)) ? (t1 - m_opt.t0) : m_opt.dt_init;
 
     // Initial time
     double t = m_opt.t0;
@@ -142,12 +143,13 @@ void Solver::operator()(state_type &x, const double t1)
     while(t < (t1 + dt[0] * 0.5))
     {
         step_counter++;
+        m_steps++;
 
         if(m_opt.verbosity > 0)
         {
             std::cout << std::left;
-            std::cout << "\nStep " << std::setw(7) << step_counter << " :: t = "
-                      << std::setw(12) << t << " :: ";
+            std::cout << "\nStep " << std::setw(7) << m_steps
+                      << " :: t = " << std::setw(12) << t << " :: ";
             std::cout.flush();
         }
 
@@ -176,8 +178,8 @@ void Solver::operator()(state_type &x, const double t1)
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
                 mkl_a = J.A.data();
-                ia = J.ia.data();
-                ja = J.ja.data();
+                ia    = J.ia.data();
+                ja    = J.ja.data();
 
                 // PHASE 1.
                 // Reordering and Symbolic Factorization. This step also
@@ -258,6 +260,7 @@ void Solver::operator()(state_type &x, const double t1)
             }
 
             calls++;
+            m_calls++;
 
             double tol = 0.0;
 
@@ -303,6 +306,7 @@ void Solver::operator()(state_type &x, const double t1)
             // carry out it again.
             t -= dt[0];
             step_counter--;
+            m_steps--;
             final_time_step = false;
             dt[0] /= m_opt.dt_decrease_factor;
             current_scheme = 1;  // Fall back to BDF-1 for better stability
@@ -394,6 +398,7 @@ void Solver::operator()(state_type &x, const double t1)
 
                 t -= dt[0];
                 step_counter--;
+                m_steps--;
                 final_time_step = false;
                 dt[0] /= m_opt.dt_decrease_factor;
                 if(step_counter && m_opt.bdf_order == 2)
@@ -459,7 +464,8 @@ void Solver::operator()(state_type &x, const double t1)
     m_opt.dt_init = dt[1];
 
     if(m_opt.verbosity > 0)
-        std::cout << "\nLinear algebra solver calls: " << calls << '\n';
+        std::cout << "\nLinear algebra solver calls: " << calls
+                  << " (total: " << m_calls << ")\n";
 
     // Termination and release of memory
     phase = -1;
