@@ -66,7 +66,7 @@ int main()
     {
         x[i] = 0.0;
     }
-    x[N * N / 2] = N * N;  // 1/(h*h)
+    x[N * N / 2] = N * N;  // 1/(h*h) -- numerical delta-function
 
     // Set up the RHS of the problem.
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -86,7 +86,7 @@ int main()
 
     // We can override Jacobian class from dae-cpp library and provide
     // analytical Jacobian. But we will use numerically estimated one.
-    dae::Jacobian jac_est(rhs, opt.atol);
+    dae::Jacobian jac_est(rhs);
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
