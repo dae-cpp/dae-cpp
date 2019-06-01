@@ -55,8 +55,11 @@ public:
     double value_max = 1.0e100;  // Solution shouldn't be higher than this
 #endif
 
-    // Initial time step
+    // Initial time step -- will store actual last time step after integration
     double dt_init = 0.1;
+
+    // Initial integration time t0 -- will be equal to t1 after integration
+    double t0 = 0.0;
 
     // Minimum and maximum time steps
     double dt_min = dt_eps_m;

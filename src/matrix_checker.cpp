@@ -21,13 +21,13 @@ int TimeIntegrator::matrix_checker(sparse_matrix_holder &A, MKL_INT size)
 
     sparse_matrix_checker_init(&pt);
 
-    pt.n                = size;
-    pt.csr_ia           = A.ia.data();
-    pt.csr_ja           = A.ja.data();
+    pt.n      = size;
+    pt.csr_ia = A.ia.data();
+    pt.csr_ja = A.ja.data();
 #ifdef DAE_FORTRAN_STYLE
-    pt.indexing         = MKL_ONE_BASED;
+    pt.indexing = MKL_ONE_BASED;
 #else
-    pt.indexing         = MKL_ZERO_BASED;
+    pt.indexing = MKL_ZERO_BASED;
 #endif
     pt.matrix_structure = MKL_GENERAL_STRUCTURE;
     pt.matrix_format    = MKL_CSR;

@@ -142,7 +142,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
         if(Jt.A.size() != nzmax)
             Jt.A.resize(nzmax);
-        if(Jt.ia.size() != (size_t)(size)+1)
+        if(Jt.ia.size() != (size_t)(size) + 1)
             Jt.ia.resize(size + 1);
         if(Jt.ja.size() != nzmax)
             Jt.ja.resize(nzmax);

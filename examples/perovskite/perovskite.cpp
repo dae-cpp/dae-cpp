@@ -31,6 +31,7 @@
 #include "perovskite_Mass.h"        // Mass Matrix definition
 #include "perovskite_Jacobian.h"    // Jacobian of the problem
 #include "perovskite_parameters.h"  // Parameter container of the problem
+#include "perovskite_observer.h"    // Observer (optional)
 
 namespace dae = daecpp;  // A shortcut to dae-cpp library namespace
 
@@ -110,16 +111,40 @@ int main()
                                   // of Jacobian and the matrix factorisation)
 
     // Create an instance of the solver with particular RHS, Mass matrix,
-    // Jacobian and solver options
-    dae::Solver solve(rhs, jac, mass, opt, p.t1);
+    // Jacobian and solver options.
+    dae::Solver solve(rhs, jac, mass, opt);
+
+    // In order to get access to the intermediate solution after every time
+    // step, we can override observer function in Solver class and, for example,
+    // print out some results while the solver solves the system.
+    // See perovskite_observer.h as an example.
+    // Instanse of the solver with the user-defined observer:
+    // MySolver solve_observer(rhs, jac, mass, opt);
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
 
     {
         auto tic0 = clock::now();
-        solve(x1);
+        solve(x1, p.t1);  // Solve the system without observer
+        // solve_observer(x1, p.t1);  // Use observer
         auto tic1 = clock::now();
+
+        // If we need to produce intermediate results, for example, for
+        // t = 1.0, 5.0, 10.0, we can execute the solver several times:
+        //
+        // auto tic0 = clock::now();
+        // solve(x1, 1.0);
+        // solve(x1, 5.0);
+        // solve(x1, 10.0);
+        // auto tic1 = clock::now();
+        //
+        // After each solver call the vector x1 will contain solution at
+        // the corresponding time t. Then it will be re-used as an initial
+        // condition for the next solver call, so overall performance will be
+        // almost the same as a single "solve(x1, 10.0);" call.
+        // Note that a better way to get intermediate results is to override
+        // observer function from daecpp::Solver class
 
         std::cout
             << "Solver execution time: "
@@ -131,19 +156,28 @@ int main()
     // Compare solution with an alternative solver (e.g. MATLAB)
     int check_result = solution_check(x1);
 
+    // Now we can solve the same system again but using numerical Jacobian.
     // If we don't provide analytical Jacobian we need to estimate it
     // with a given tolerance:
     dae::Jacobian jac_est(rhs, opt.atol);
 
     // Create a new instance of the solver for estimated Jacobian
-    dae::Solver solve_slow(rhs, jac_est, mass, opt, p.t1);
+    dae::Solver solve_slow(rhs, jac_est, mass, opt);
+
+    // We have re-used RHS, Mass matrix and the solver options from
+    // the previous solution.
+    // Parameters t0 (initial time) and dt_init (initial time step) were
+    // updated by the solver, so we could continue simulation but we want
+    // to start from the scratch:
+    opt.t0      = 0.0;  // Initial integration time
+    opt.dt_init = 0.1;  // Initial time step
 
     // Solve the set of DAEs again
     std::cout << "\nStarting DAE solver with estimated Jacobian...\n";
 
     {
         auto tic0 = clock::now();
-        solve_slow(x2);
+        solve_slow(x2, p.t1);
         auto tic1 = clock::now();
 
         std::cout

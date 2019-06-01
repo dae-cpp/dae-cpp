@@ -72,7 +72,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
         std::vector<std::vector<float_type>> values_local(
             size, std::vector<float_type>(0));
         std::vector<std::vector<MKL_INT>> rows_local(size,
-            std::vector<MKL_INT>(0));
+                                                     std::vector<MKL_INT>(0));
 
 #if JACOBIAN_SCHEME == 1
         m_rhs(x1, f0, t);
@@ -189,6 +189,7 @@ void Jacobian::print(const state_type &x, const double t)
     }
 
     sparse_matrix_holder J;
+
     this->operator()(J, x, t);
 
     std::cout << std::right;
@@ -206,8 +207,8 @@ void Jacobian::print(const state_type &x, const double t)
         if(i < J.ja.size())
             std::cout << std::setw(7) << J.ja[i] << " | ";
         else
-            std::cout << std::setw(7) << "???" << " | ";  // Error in Jacobian
-                                                          // matrix structure
+            std::cout << std::setw(7) << "???"
+                      << " | ";  // Error in Jacobian matrix structure
         if(i < J.ia.size())
             std::cout << std::setw(7) << J.ia[i];
         std::cout << std::endl;

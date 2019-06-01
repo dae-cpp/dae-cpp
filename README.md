@@ -4,7 +4,7 @@ A simple but powerful C++ solver for Differential Algebraic Equation (DAE) syste
 
 ## What is dae-cpp
 
-A C++ library that numerically solves a user-defined system of DAEs (an initial value problem). The system may contain both differential and algebraic equations and can be written in the following matrix-vector form:
+A cross-platform, parallel C++ library that numerically solves a user-defined system of DAEs (an initial value problem). The system may contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 <p align="center">
   <img src="https://latex.codecogs.com/gif.latex?%5Cmathbf%7BM%7D%5Cfrac%7Bd%5Cmathbf%7Bx%7D%7D%7Bdt%7D%3D%5Cmathbf%7Bf%7D%5Cleft%20%28%20%5Cmathbf%7Bx%7D%20%5Cright%20%29">
@@ -199,13 +199,27 @@ opt.atol = 1.0e-6;
 Now we are ready to create an instance of the solver with particular RHS, Mass matrix, Jacobian and the solver options, and then start the solver:
 
 ```cpp
-dae::Solver solve(rhs, jac, mass, opt, t1);
-solve(x);
+dae::Solver solve(rhs, jac, mass, opt);
+solve(x, t1);
 ```
 
-Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>).
+Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>), and **x** is the initial condition vector defined above.
 
 Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
+
+Note that in order to get intermediate solutions at times *t*<sub>a</sub>, *t*<sub>b</sub>, *t*<sub>c</sub>, etc. (0 < *t*<sub>a</sub> < *t*<sub>b</sub> < *t*<sub>c</sub> < ... < *t*<sub>1</sub>), for example, for plotting, one can call the solver at the given times:
+
+```cpp
+solve(x, t_a);  // solves the system in the interval [0; t_a] and stores the solution in x
+solve(x, t_b);  // continues solving in the interval [t_a; t_b], replaces the solution in x
+solve(x, t_c);  // continues solving in the interval [t_b; t_c], replaces the solution in x
+                // ...
+solve(x, t1);   // continues solving in the interval [t_c; t1], stores the final solution at time t1 in x
+```
+
+Every call the solver will take the previous solution **x** (if available from the previous call) and overwrite it with a new one at the given time.
+
+But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(daecpp::state_type &x, const double t)` function from `daecpp::Solver` class. This observer function receives solution vector **x** and the current time *t* every time step and allows a user to get access to the solution during the solving process at each time layer.
 
 ### Step 7 (optional). Plot results
 

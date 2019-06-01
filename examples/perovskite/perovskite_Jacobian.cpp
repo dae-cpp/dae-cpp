@@ -16,7 +16,7 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
 
     MKL_INT c = 0;
 
-// clang-format off
+    // clang-format off
     for(MKL_INT i = 0; i < size; i++)
     {
         J.ia.push_back(c);
@@ -106,7 +106,7 @@ void MyJacobian::operator()(daecpp::sparse_matrix_holder &J,
             c += 1;
         }
     }
-// clang-format on
+    // clang-format on
 
     J.ia.push_back(c);
 }
