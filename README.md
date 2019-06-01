@@ -4,7 +4,7 @@ A simple but powerful C++ solver for Differential Algebraic Equation (DAE) syste
 
 ## What is dae-cpp
 
-A cross-platform, parallel C++ library that numerically solves a user-defined system of DAEs (an initial value problem). The system may contain both differential and algebraic equations and can be written in the following matrix-vector form:
+A cross-platform, parallel C++ library for solving a user-defined system of DAEs (an initial value problem). The system may contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 <p align="center">
   <img src="https://latex.codecogs.com/gif.latex?%5Cmathbf%7BM%7D%5Cfrac%7Bd%5Cmathbf%7Bx%7D%7D%7Bdt%7D%3D%5Cmathbf%7Bf%7D%5Cleft%20%28%20%5Cmathbf%7Bx%7D%20%5Cright%20%29">
@@ -20,10 +20,11 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 
 ### The main features of the solver
 
-- May resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the machine's RAM).
-- A user may provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
-- Utilises all the available cores on the machine for better performance (this can be overridden by a user).
+- Can resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the machine's RAM).
+- A user can provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
+- Utilises all available cores on the machine for better performance (this can be overridden by a user).
 - Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
+- A user can get access to the solution at each time step by overriding Observer function (this is optional).
 - The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
 - Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp)) to kick-start the user's project.
 
@@ -207,19 +208,22 @@ Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>), and **
 
 Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
 
-Note that in order to get intermediate solutions at times *t*<sub>a</sub>, *t*<sub>b</sub>, *t*<sub>c</sub>, etc. (0 < *t*<sub>a</sub> < *t*<sub>b</sub> < *t*<sub>c</sub> < ... < *t*<sub>1</sub>), for example, for plotting, one can call the solver at the given times:
+#### Optional: Set up Observer
+
+In order to get intermediate solutions at times *t*<sub>a</sub>, *t*<sub>b</sub>, *t*<sub>c</sub>, etc. (0 < *t*<sub>a</sub> < *t*<sub>b</sub> < *t*<sub>c</sub> < ... < *t*<sub>1</sub>), for example, for plotting, one can call the solver at the given times:
 
 ```cpp
 solve(x, t_a);  // solves the system in the interval [0; t_a] and stores the solution in x
 solve(x, t_b);  // continues solving in the interval [t_a; t_b], replaces the solution in x
 solve(x, t_c);  // continues solving in the interval [t_b; t_c], replaces the solution in x
                 // ...
-solve(x, t1);   // continues solving in the interval [t_c; t1], stores the final solution at time t1 in x
+solve(x, t1);   // continues solving in the interval [t_c; t1] and
+                // stores the final solution at time t1 in x
 ```
 
 Every call the solver will take the previous solution **x** (if available from the previous call) and overwrite it with a new one at the given time.
 
-But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(daecpp::state_type &x, const double t)` function from `daecpp::Solver` class. This observer function receives solution vector **x** and the current time *t* every time step and allows a user to get access to the solution during the solving process at each time layer.
+But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(...)` function from `daecpp::Solver` class. This observer function receives the current solution vector **x** and the current time *t* every time step and allows a user to get access to the solution at each time layer. An example of a simple observer is given in the file [perovskite_observer.h](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_observer.h).
 
 ### Step 7 (optional). Plot results
 
