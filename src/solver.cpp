@@ -81,8 +81,6 @@ void Solver::operator()(state_type &x, const double t1)
     // Copy current state vector into the history vector
     x_prev[0] = x;
 
-    int calls = 0;  // Counts linear algebra solver calls
-
     // PARDISO control parameters
     MKL_INT phase;        // Current phase of the solver
     MKL_INT maxfct = 1;   // Maximum number of numerical factorizations
@@ -133,8 +131,9 @@ void Solver::operator()(state_type &x, const double t1)
 
     t += dt[0];
 
-    bool final_time_step = false;
-    int  step_counter    = 0;
+    bool final_time_step = false;  // Do final time step
+    int  step_counter    = 0;      // Counts time steps
+    int  calls           = 0;      // Counts linear algebra solver calls
 
     while(t < (t1 + dt[0] * 0.5))
     {
