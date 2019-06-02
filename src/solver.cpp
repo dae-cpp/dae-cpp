@@ -15,6 +15,10 @@
 namespace daecpp_namespace_name
 {
 
+/*
+ * The main solver
+ * =============================================================================
+ */
 void Solver::operator()(state_type &x, const double t1)
 {
     // Matrix size
@@ -67,14 +71,6 @@ void Solver::operator()(state_type &x, const double t1)
 
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
-
-    // Temporary Jacobian matrix holder
-    sparse_matrix_holder J_tmp;
-
-    // Reserve memory for at least 3-diagonal temporary Jacobian
-    J_tmp.A.reserve(3 * size);
-    J_tmp.ia.reserve(size + 1);
-    J_tmp.ja.reserve(3 * size);
 
     // Full RHS vector
     state_type b(size);
@@ -173,7 +169,7 @@ void Solver::operator()(state_type &x, const double t1)
             if(m_opt.fact_every_iter || iter == 0)
             {
                 // Time Integrator with updated Jacobian
-                ti(J, b, J_tmp, x, x_prev, t, dt, true);
+                ti(J, b, x, x_prev, t, dt, true);
 
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
@@ -240,7 +236,7 @@ void Solver::operator()(state_type &x, const double t1)
             else
             {
                 // Time Integrator with the previous Jacobian
-                ti(J, b, J_tmp, x, x_prev, t, dt, false);
+                ti(J, b, x, x_prev, t, dt, false);
             }
 
             // PHASE 3.
@@ -344,8 +340,7 @@ void Solver::operator()(state_type &x, const double t1)
             if(iter < m_opt.dt_increase_threshold)
             {
                 dt[0] *= m_opt.dt_increase_factor;
-                if(m_opt.dt_increase_factor != 1.0)
-                    current_scheme = 2;
+                current_scheme = reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] > m_opt.dt_max)
                     dt[0] = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -354,8 +349,7 @@ void Solver::operator()(state_type &x, const double t1)
             else if(iter >= m_opt.dt_decrease_threshold - 1)
             {
                 dt[0] /= m_opt.dt_decrease_factor;
-                if(m_opt.dt_decrease_factor != 1.0)
-                    current_scheme = 2;
+                current_scheme = reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] < m_opt.dt_min)
                 {
                     std::cout << "\nERROR: The time step was reduced to "
@@ -401,10 +395,7 @@ void Solver::operator()(state_type &x, const double t1)
                 m_steps--;
                 final_time_step = false;
                 dt[0] /= m_opt.dt_decrease_factor;
-                if(step_counter && m_opt.bdf_order == 2)
-                    current_scheme = 2;
-                else
-                    current_scheme = 1;
+                current_scheme = reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] < m_opt.dt_min)
                 {
                     std::cout << "\nERROR: The time step was reduced to "
@@ -428,8 +419,7 @@ void Solver::operator()(state_type &x, const double t1)
             if(eta < m_opt.dt_eta_min)
             {
                 dt[0] *= m_opt.dt_increase_factor;
-                if(m_opt.dt_increase_factor != 1.0)
-                    current_scheme = 2;
+                current_scheme = reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] > m_opt.dt_max)
                     dt[0] = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -473,6 +463,20 @@ void Solver::operator()(state_type &x, const double t1)
             &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
 }
 
+/*
+ * Updates time integrator scheme when the time step changes
+ */
+int Solver::reset_ti_scheme(SolverOptions &m_opt, const int step_counter)
+{
+    if(step_counter && m_opt.bdf_order == 2)
+        return 2;  // BDF-2
+    else
+        return 1;  // BDF-1
+}
+
+/*
+ * Checks PARDISO solver error messages
+ */
 void Solver::check_pardiso_error(MKL_INT err)
 {
     if(!err)

@@ -68,20 +68,20 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     }
 }
 
-void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
-                                sparse_matrix_holder &J, state_type &x,
-                                const state_type_matrix &x_prev, const double t,
-                                const double dt[], const bool do_jac)
+void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
+                                state_type &x, const state_type_matrix &x_prev,
+                                const double t, const double dt[],
+                                const bool do_jac)
 {
     const MKL_INT size = (MKL_INT)(x.size());
 
-    double alpha  = 0;
+    double alpha  = 0.0;
     int    scheme = m_scheme - 1;
 
     state_type dxdt(size);
 
     // Variable time stepper for BDF-2
-    if(m_scheme == 2)
+    if(m_scheme == 2 && m_opt.bdf_order == 2)
     {
         for(MKL_INT i = 0; i < size; i++)
         {
@@ -124,32 +124,37 @@ void TimeIntegrator::operator()(sparse_matrix_holder &Jt, state_type &b,
 
     if(do_jac)
     {
-        J.A.clear();
-        J.ia.clear();
-        J.ja.clear();
+        m_J.A.clear();
+        m_J.ia.clear();
+        m_J.ja.clear();
+
+        // Reserve memory for at least 3-diagonal Jacobian
+        m_J.A.reserve(3 * size);
+        m_J.ia.reserve(size + 1);
+        m_J.ja.reserve(3 * size);
 
         // Calculate Jacobian
-        m_jac(J, x, t);
+        m_jac(m_J, x, t);
 
         // Sparse matrix check
-        if(matrix_checker(J, size))
+        if(matrix_checker(m_J, size))
         {
             std::cout << "Error in Jacobian matrix.\n";
             exit(12);
         }
 
-        size_t nzmax = m_M.A.size() + J.A.size();
+        size_t nzmax = m_M.A.size() + m_J.A.size();
 
-        if(Jt.A.size() != nzmax)
-            Jt.A.resize(nzmax);
-        if(Jt.ia.size() != (size_t)(size) + 1)
-            Jt.ia.resize(size + 1);
-        if(Jt.ja.size() != nzmax)
-            Jt.ja.resize(nzmax);
+        if(J.A.size() != nzmax)
+            J.A.resize(nzmax);
+        if(J.ia.size() != (size_t)(size) + 1)
+            J.ia.resize(size + 1);
+        if(J.ja.size() != nzmax)
+            J.ja.resize(nzmax);
 
         // Replaces deprecated mkl_dcsradd()
-        // Jt: = J - M*alpha
-        matrix_add(-alpha, m_M, J, Jt);
+        // J: = m_J - M*alpha
+        matrix_add(-alpha, m_M, m_J, J);
     }
 }
 

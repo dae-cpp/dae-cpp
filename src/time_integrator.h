@@ -41,6 +41,9 @@ class TimeIntegrator
     // The first time step will be performed using BDF-1
     int m_scheme = 1;
 
+    // Temporary Jacobian matrix holder
+    sparse_matrix_holder m_J;
+
     // Mass matrix container
     sparse_matrix_holder m_M;
 
@@ -70,8 +73,7 @@ public:
 
     void set_scheme(int scheme) { m_scheme = scheme; }
 
-    void operator()(sparse_matrix_holder &Jt, state_type &b,
-                    sparse_matrix_holder &J, state_type &x,
+    void operator()(sparse_matrix_holder &J, state_type &b, state_type &x,
                     const state_type_matrix &x_prev, const double t,
                     const double dt[], const bool do_jac);
 };

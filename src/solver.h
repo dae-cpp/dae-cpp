@@ -27,6 +27,10 @@ class Solver
     size_t m_steps = 0;  // Internal time iteration counter
     size_t m_calls = 0;  // Internal solver calls counter
 
+    // Updates time integrator scheme when the time step changes
+    int reset_ti_scheme(SolverOptions &m_opt, const int step_counter);
+
+    // Checks PARDISO solver error messages
     void check_pardiso_error(MKL_INT err);
 
 public:

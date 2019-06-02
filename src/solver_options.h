@@ -70,9 +70,9 @@ public:
     int verbosity = 1;
 
     // Simple Adaptive Time Stepping options
-    int dt_increase_threshold = 3;    // Time step amplification threshold
+    int dt_increase_threshold = 4;    // Time step amplification threshold
                                       // (S-SATS only)
-    int dt_decrease_threshold = 7;    // Time step reduction threshold
+    int dt_decrease_threshold = 8;    // Time step reduction threshold
                                       // (S-SATS only)
     double dt_increase_factor = 2.0;  // Time step amplification factor
     double dt_decrease_factor = 2.0;  // Time step reduction factor
