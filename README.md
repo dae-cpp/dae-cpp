@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
 [![BCH compliance](https://bettercodehub.com/edge/badge/ikorotkin/dae-cpp?branch=master)](https://bettercodehub.com/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241871.svg)](https://doi.org/10.5281/zenodo.3241871)
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
