@@ -18,5 +18,4 @@ script:
   - mkdir build && pushd build && cmake -DDAE_SINGLE=$DAE_SINGLE -DDAE_LONG_INT=$DAE_LONG_INT .. && make -j4 && ctest -V
 
 compiler:
-  - clang
   - gcc
