@@ -1,5 +1,8 @@
 # dae-cpp
 
+[![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
+[![BCH compliance](https://bettercodehub.com/edge/badge/ikorotkin/dae-cpp?branch=master)](https://bettercodehub.com/)
+
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
 ## What is dae-cpp
@@ -112,7 +115,7 @@ Setting up the solver in Microsoft Visual Studio 2017. This has been tested but 
 
 ## How to use
 
-Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
+Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
