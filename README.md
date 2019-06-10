@@ -1,7 +1,6 @@
 # dae-cpp
 
 [![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
-[![BCH compliance](https://bettercodehub.com/edge/badge/ikorotkin/dae-cpp?branch=master)](https://bettercodehub.com/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241871.svg)](https://doi.org/10.5281/zenodo.3241871)
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
@@ -239,11 +238,17 @@ Solution can be visualised using a simple [C++ interface](https://github.com/lav
 
 Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
 
-The second example, [diffusion_2d](https://github.com/ikorotkin/dae-cpp/tree/master/examples/diffusion_2d) will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
+The second example, [diffusion_2d](https://github.com/ikorotkin/dae-cpp/tree/master/examples/diffusion_2d), will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
 
 <p align="center">
   <img src="http://korotkin.ru/public/diffusion_2d.png">
 </p>
+
+## Contribution and feedback
+
+Please feel free to contribute into the project!
+
+If you have any questions, suggestion, or a feedback, please, submit an [issue](https://github.com/ikorotkin/dae-cpp/issues).
 
 ## Licensing
 
