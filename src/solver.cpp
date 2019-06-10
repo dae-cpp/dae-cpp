@@ -163,9 +163,11 @@ int Solver::operator()(state_type &x, const double t1)
                         peak_mem3 = m_iparm[16];
 
                         std::cout << "\nPeak memory on symbolic factorization: "
+                                  << "              "
                                   << (double)peak_mem1 / 1024.0 << " Mb";
                         std::cout
                             << "\nPermanent memory on symbolic factorization: "
+                            << "         "
                             << (double)peak_mem2 / 1024.0 << " Mb";
                         std::cout << "\nPeak memory on numerical factorization "
                                      "and solution: "
@@ -336,6 +338,9 @@ int Solver::operator()(state_type &x, const double t1)
 
             // Monitor function
             double eta = norm1 / (norm2 + m_opt.dt_eps_m);
+
+            if(m_opt.verbosity > 1)
+                std::cout << "(eta = " << eta << ")";
 
             // The time step should be reduced, scrape the current time
             // iteration
