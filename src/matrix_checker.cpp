@@ -14,7 +14,7 @@
 namespace daecpp_namespace_name
 {
 
-int TimeIntegrator::matrix_checker(sparse_matrix_holder &A, MKL_INT size)
+int TimeIntegrator::m_matrix_checker(sparse_matrix_holder &A, MKL_INT size)
 {
     sparse_checker_error_values check_err_val;
     sparse_struct               pt;

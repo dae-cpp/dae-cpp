@@ -54,33 +54,31 @@ int solution_check(dae::state_type &x);
  */
 int main()
 {
-    // These parameters can be obtained from a parameter file or as command line
-    // options. Here for simplicity we define them as constants.
-    const MKL_INT N      = 4000;  // Number of points
-    const double  L      = 1.0;   // Space interval length
-    const double  lambda = 1.0;   // Lambda parameter
-    const double  t1     = 10.0;  // Integration time (0 < t < t1)
+    // Parameters of the problem (i.e. number of the cells, etc.) can be
+    // obtained from a parameter file or as command line options. Here for
+    // simplicity we define them in the user-defined structure MyParams as
+    // constants.
+    MyParams p;
 
-    // Pass the parameters to the user-defined container
-    MyParams p(N, L, lambda, t1);
-
+    // Print all
     std::cout << "N = " << p.N << "; lambda = " << p.lambda << "; t = " << p.t1
               << '\n';
 
+    // Integration time control
     using clock     = std::chrono::high_resolution_clock;
     using time_unit = std::chrono::milliseconds;
 
     // Define state vectors. Here 2*N is the total number of the equations.
     // We are going to carry out two independent simulations: with analytical
     // Jacobian and with numerically estimated one, hence two vectors.
-    dae::state_type x1(2 * N);
-    dae::state_type x2(2 * N);
+    dae::state_type x1(2 * p.N);
+    dae::state_type x2(2 * p.N);
 
     // Initial conditions
-    for(MKL_INT i = 0; i < N; i++)
+    for(MKL_INT i = 0; i < p.N; i++)
     {
-        x1[i]     = 1.0;  // for P - ion concentration
-        x1[i + N] = 0.0;  // for Phi - potential
+        x1[i]       = 1.0;  // for P - ion concentration
+        x1[i + p.N] = 0.0;  // for Phi - potential
     }
     x2 = x1;  // x1 and x2 will be overwritten by the solver
 
@@ -100,7 +98,7 @@ int main()
 
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
-    MyMassMatrix mass(N);
+    MyMassMatrix mass(p.N);
 
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
@@ -121,13 +119,16 @@ int main()
     // Instanse of the solver with the user-defined observer:
     // MySolver solve_observer(rhs, jac, mass, opt);
 
+    // Solver status
+    int status = 0;
+
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
 
     {
         auto tic0 = clock::now();
-        solve(x1, p.t1);  // Solve the system without observer
-        // solve_observer(x1, p.t1);  // Use observer
+        status    = solve(x1, p.t1);  // Solve the system without observer
+        // status = solve_observer(x1, p.t1);  // Use observer
         auto tic1 = clock::now();
 
         // If we need to produce intermediate results, for example, for
@@ -172,13 +173,16 @@ int main()
     opt.t0      = 0.0;  // Initial integration time
     opt.dt_init = 0.1;  // Initial time step
 
+    // Solver status
+    int status_slow;
+
     // Solve the set of DAEs again
     std::cout << "\nStarting DAE solver with estimated Jacobian...\n";
 
     {
-        auto tic0 = clock::now();
-        solve_slow(x2, p.t1);
-        auto tic1 = clock::now();
+        auto tic0   = clock::now();
+        status_slow = solve_slow(x2, p.t1);
+        auto tic1   = clock::now();
 
         std::cout
             << "Solver execution time: "
@@ -217,7 +221,7 @@ int main()
     plt::save(filename);
 #endif
 
-    if(check_result)
+    if(check_result || status || status_slow)
         std::cout << "...Test FAILED\n\n";
     else
         std::cout << "...done\n\n";

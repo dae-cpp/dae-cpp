@@ -205,12 +205,12 @@ Now we are ready to create an instance of the solver with particular RHS, Mass m
 
 ```cpp
 dae::Solver solve(rhs, jac, mass, opt);
-solve(x, t1);
+int status = solve(x, t1);
 ```
 
 Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>), and **x** is the initial condition vector defined above.
 
-Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
+The solver returns 0 if integration is successful or error code otherwise. Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
 
 #### Optional: Set up Observer
 

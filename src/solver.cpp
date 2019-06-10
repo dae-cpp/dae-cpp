@@ -7,10 +7,10 @@
 #include <cmath>
 
 #include <mkl_types.h>
-#include <mkl_spblas.h>
 #include <mkl_pardiso.h>
 
 #include "solver.h"
+#include "time_integrator.h"
 
 namespace daecpp_namespace_name
 {
@@ -19,10 +19,10 @@ namespace daecpp_namespace_name
  * The main solver
  * =============================================================================
  */
-void Solver::operator()(state_type &x, const double t1)
+int Solver::operator()(state_type &x, const double t1)
 {
-    // Matrix size
-    MKL_INT size = (MKL_INT)(x.size());
+    // Set system size
+    m_size = (MKL_INT)(x.size());
 
     // Check user-defined solver options
     m_opt.check_options();
@@ -33,7 +33,7 @@ void Solver::operator()(state_type &x, const double t1)
         std::cout << "ERROR: Integration time t1 = " << t1
                   << " cannot be less than the initial time t0 = " << m_opt.t0
                   << std::endl;
-        exit(7);
+        return 1;
     }
 
     // Check the initial time step
@@ -49,12 +49,12 @@ void Solver::operator()(state_type &x, const double t1)
     dt[1] = dt[0];
 
     // Initialise time integrator
-    TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, size);
+    TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, m_size);
 
     // Initial output
     if(m_opt.verbosity > 1)
     {
-        std::cout << "Number of equations: " << size << std::endl;
+        std::cout << "Number of equations: " << m_size << std::endl;
         std::cout << "Float precision:     " << 8 * sizeof(float_type)
                   << " bit\n";
         std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
@@ -67,60 +67,29 @@ void Solver::operator()(state_type &x, const double t1)
     int current_scheme = 1;
 
     // Contains a few latest successful time steps for Time Integrator
-    state_type_matrix x_prev(m_opt.bdf_order, state_type(size));
+    state_type_matrix x_prev(m_opt.bdf_order, state_type(m_size));
 
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
 
     // Full RHS vector
-    state_type b(size);
+    state_type b(m_size);
 
     // Solution vector used for Newton iterations
-    state_type xk(size);
+    state_type xk(m_size);
 
     // Copy current state vector into the history vector
     x_prev[0] = x;
 
-    // PARDISO control parameters
-    MKL_INT phase;        // Current phase of the solver
-    MKL_INT maxfct = 1;   // Maximum number of numerical factorizations
-    MKL_INT mnum   = 1;   // Which factorization to use
-    MKL_INT mtype  = 11;  // Real unsymmetric matrix
-    MKL_INT nrhs   = 1;   // Number of right hand sides
-    MKL_INT msglvl = 0;   // Print statistical information
-    MKL_INT error  = 0;   // Initialize error flag
+    // Reset PARDISO pointers
+    m_mkl_b = b.data();
+    m_mkl_x = xk.data();
 
-    MKL_INT *ia = nullptr;
-    MKL_INT *ja = nullptr;
-
-    float_type *mkl_a = nullptr;
-    float_type *mkl_b = b.data();
-    float_type *mkl_x = xk.data();
-
-    // Internal solver memory pointer pt,
-    // 32-bit: int pt[64]; 64-bit: long int pt[64]
-    // or void *pt[64] should be OK on both architectures
-    void *pt[64];
-
-    // Initialise the internal solver memory pointer. This is only
-    // necessary for the FIRST call of the PARDISO solver.
-    for(MKL_INT i = 0; i < 64; i++)
-    {
-        pt[i] = 0;
-    }
-
-    // Auxiliary variables
-    double  ddum;  // Double dummy
-    MKL_INT idum;  // Integer dummy
+    // Load Intel MKL PARDISO iparm parameter from solver_options class
+    m_opt.set_iparm_for_pardiso(m_iparm);
 
     // Memory control variables
     int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
-
-    // Intel MKL PARDISO iparm parameter
-    MKL_INT iparm[64];
-
-    // Load iparm from solver_options class
-    m_opt.set_iparm_for_pardiso(iparm);
 
     /*
      * Start the solver
@@ -172,30 +141,33 @@ void Solver::operator()(state_type &x, const double t1)
 
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
-                mkl_a = J.A.data();
-                ia    = J.ia.data();
-                ja    = J.ja.data();
+                m_mkl_a = J.A.data();
+                m_ia    = J.ia.data();
+                m_ja    = J.ja.data();
 
                 // PHASE 1.
                 // Reordering and Symbolic Factorization. This step also
                 // allocates all memory that is necessary for the factorization
-                phase = 11;
-                PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
-                        ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
+                m_phase = 11;
+                PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size,
+                        m_mkl_a, m_ia, m_ja, &m_idum, &m_nrhs, m_iparm,
+                        &m_msglvl, &m_ddum, &m_ddum, &m_error);
 
                 if(m_opt.verbosity > 1)
                 {
-                    if(iparm[14] > peak_mem1 || iparm[15] > peak_mem2 ||
-                       iparm[16] > peak_mem3)
+                    if(m_iparm[14] > peak_mem1 || m_iparm[15] > peak_mem2 ||
+                       m_iparm[16] > peak_mem3)
                     {
-                        peak_mem1 = iparm[14];
-                        peak_mem2 = iparm[15];
-                        peak_mem3 = iparm[16];
+                        peak_mem1 = m_iparm[14];
+                        peak_mem2 = m_iparm[15];
+                        peak_mem3 = m_iparm[16];
 
                         std::cout << "\nPeak memory on symbolic factorization: "
+                                  << "              "
                                   << (double)peak_mem1 / 1024.0 << " Mb";
                         std::cout
                             << "\nPermanent memory on symbolic factorization: "
+                            << "         "
                             << (double)peak_mem2 / 1024.0 << " Mb";
                         std::cout << "\nPeak memory on numerical factorization "
                                      "and solution: "
@@ -204,32 +176,25 @@ void Solver::operator()(state_type &x, const double t1)
                     }
                 }
 
-                if(error != 0)
+                if(m_error != 0)
                 {
                     std::cout << "\nERROR during symbolic factorization...\n";
-                    check_pardiso_error(error);
-                    phase = -1;  // Release memory
-                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
-                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
-                            &error);
-                    exit(1);
+                    m_check_pardiso_error(m_error);
+                    return 11;
                 }
 
                 // PHASE 2.
                 // Numerical factorization
-                phase = 22;
-                PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia,
-                        ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
+                m_phase = 22;
+                PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size,
+                        m_mkl_a, m_ia, m_ja, &m_idum, &m_nrhs, m_iparm,
+                        &m_msglvl, &m_ddum, &m_ddum, &m_error);
 
-                if(error != 0)
+                if(m_error != 0)
                 {
                     std::cout << "\nERROR during numerical factorization...\n";
-                    check_pardiso_error(error);
-                    phase = -1;  // Release memory
-                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
-                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
-                            &error);
-                    exit(2);
+                    m_check_pardiso_error(m_error);
+                    return 22;
                 }
             }
             else
@@ -240,18 +205,16 @@ void Solver::operator()(state_type &x, const double t1)
 
             // PHASE 3.
             // Back substitution and iterative refinement
-            phase = 33;
-            PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, mkl_a, ia, ja,
-                    &idum, &nrhs, iparm, &msglvl, mkl_b, mkl_x, &error);
+            m_phase = 33;
+            PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size,
+                    m_mkl_a, m_ia, m_ja, &m_idum, &m_nrhs, m_iparm, &m_msglvl,
+                    m_mkl_b, m_mkl_x, &m_error);
 
-            if(error != 0)
+            if(m_error != 0)
             {
                 std::cout << "\nERROR during solution...\n";
-                check_pardiso_error(error);
-                phase = -1;  // Release memory
-                PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum, ia,
-                        ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-                exit(3);
+                m_check_pardiso_error(m_error);
+                return 33;
             }
 
             calls++;
@@ -259,23 +222,24 @@ void Solver::operator()(state_type &x, const double t1)
 
             double tol = 0.0;
 
-            for(MKL_INT i = 0; i < size; i++)
+            for(MKL_INT i = 0; i < m_size; i++)
             {
-                double adiff = std::abs(mkl_x[i]);
-                if(adiff > m_opt.value_max || std::isnan(mkl_x[i]))
+                double adiff = std::abs(m_mkl_x[i]);
+
+                if(adiff > m_opt.value_max || std::isnan(m_mkl_x[i]))
                 {
                     std::cout << "\nERROR: Newton iterations diverged. "
                               << "Review the tolerances and/or adaptive time "
                                  "stepping.\n";
-                    phase = -1;  // Release memory
-                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
-                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
-                            &error);
-                    exit(6);
+                    return 2;
                 }
+
                 if(adiff > tol)
+                {
                     tol = adiff;
-                x[i] -= mkl_x[i];
+                }
+
+                x[i] -= m_mkl_x[i];
             }
 
             if(m_opt.verbosity > 0)
@@ -309,10 +273,7 @@ void Solver::operator()(state_type &x, const double t1)
             {
                 std::cout << "\nERROR: The time step was reduced to " << dt[0]
                           << " but the Newton method failed to converge\n";
-                phase = -1;  // Release memory
-                PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum, ia,
-                        ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
-                exit(4);
+                return 3;
             }
             x = x_prev[0];
             t += dt[0];
@@ -339,7 +300,7 @@ void Solver::operator()(state_type &x, const double t1)
             if(iter < m_opt.dt_increase_threshold)
             {
                 dt[0] *= m_opt.dt_increase_factor;
-                current_scheme = reset_ti_scheme(m_opt, step_counter);
+                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] > m_opt.dt_max)
                     dt[0] = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -348,18 +309,14 @@ void Solver::operator()(state_type &x, const double t1)
             else if(iter >= m_opt.dt_decrease_threshold - 1)
             {
                 dt[0] /= m_opt.dt_decrease_factor;
-                current_scheme = reset_ti_scheme(m_opt, step_counter);
+                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] < m_opt.dt_min)
                 {
                     std::cout << "\nERROR: The time step was reduced to "
                               << dt[0]
                               << " but the error is still above the "
                                  "threshold\n";
-                    phase = -1;  // Release memory
-                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
-                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
-                            &error);
-                    exit(5);
+                    return 4;
                 }
                 if(m_opt.verbosity > 0)
                     std::cout << '<';
@@ -371,7 +328,7 @@ void Solver::operator()(state_type &x, const double t1)
             double norm2 = 0.0;
 
             // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
-            for(MKL_INT i = 0; i < size; i++)
+            for(MKL_INT i = 0; i < m_size; i++)
             {
                 norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
                 norm2 += x_prev[0][i] * x_prev[0][i];
@@ -381,6 +338,9 @@ void Solver::operator()(state_type &x, const double t1)
 
             // Monitor function
             double eta = norm1 / (norm2 + m_opt.dt_eps_m);
+
+            if(m_opt.verbosity > 1)
+                std::cout << "(eta = " << eta << ")";
 
             // The time step should be reduced, scrape the current time
             // iteration
@@ -394,18 +354,14 @@ void Solver::operator()(state_type &x, const double t1)
                 m_steps--;
                 final_time_step = false;
                 dt[0] /= m_opt.dt_decrease_factor;
-                current_scheme = reset_ti_scheme(m_opt, step_counter);
+                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] < m_opt.dt_min)
                 {
                     std::cout << "\nERROR: The time step was reduced to "
                               << dt[0]
                               << " but the relative error is still above the "
                                  "threshold\n";
-                    phase = -1;  // Release memory
-                    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum,
-                            ia, ja, &idum, &nrhs, iparm, &msglvl, &ddum, &ddum,
-                            &error);
-                    exit(5);
+                    return 5;
                 }
                 x = x_prev[0];
                 t += dt[0];
@@ -418,7 +374,7 @@ void Solver::operator()(state_type &x, const double t1)
             if(eta < m_opt.dt_eta_min)
             {
                 dt[0] *= m_opt.dt_increase_factor;
-                current_scheme = reset_ti_scheme(m_opt, step_counter);
+                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
                 if(dt[0] > m_opt.dt_max)
                     dt[0] = m_opt.dt_max;
                 if(m_opt.verbosity > 0)
@@ -456,16 +412,22 @@ void Solver::operator()(state_type &x, const double t1)
         std::cout << "\nLinear algebra solver calls: " << calls
                   << " (total: " << m_calls << ")\n";
 
-    // Termination and release of memory
-    phase = -1;
-    PARDISO(pt, &maxfct, &mnum, &mtype, &phase, &size, &ddum, ia, ja, &idum,
-            &nrhs, iparm, &msglvl, &ddum, &ddum, &error);
+    // Success
+    return 0;
+}
+
+Solver::~Solver()
+{
+    m_phase = -1;  // Termination and release of memory
+    PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size, &m_ddum,
+            m_ia, m_ja, &m_idum, &m_nrhs, m_iparm, &m_msglvl, &m_ddum, &m_ddum,
+            &m_error);
 }
 
 /*
  * Updates time integrator scheme when the time step changes
  */
-int Solver::reset_ti_scheme(SolverOptions &m_opt, const int step_counter)
+int Solver::m_reset_ti_scheme(SolverOptions &m_opt, const int step_counter)
 {
     if(step_counter && m_opt.bdf_order == 2)
         return 2;  // BDF-2
@@ -476,7 +438,7 @@ int Solver::reset_ti_scheme(SolverOptions &m_opt, const int step_counter)
 /*
  * Checks PARDISO solver error messages
  */
-void Solver::check_pardiso_error(MKL_INT err)
+void Solver::m_check_pardiso_error(MKL_INT err)
 {
     if(!err)
     {

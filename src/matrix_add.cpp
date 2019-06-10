@@ -8,10 +8,10 @@
 namespace daecpp_namespace_name
 {
 
-void TimeIntegrator::matrix_add(const float_type alpha,
-                                const sparse_matrix_holder &A,
-                                const sparse_matrix_holder &B,
-                                sparse_matrix_holder &C)
+void TimeIntegrator::m_matrix_add(const float_type alpha,
+                                  const sparse_matrix_holder &A,
+                                  const sparse_matrix_holder &B,
+                                  sparse_matrix_holder &C)
 {
 // For compatibility with mkl_dcsradd()
 #ifdef DAE_FORTRAN_STYLE

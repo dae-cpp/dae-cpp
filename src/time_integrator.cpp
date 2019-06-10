@@ -22,9 +22,9 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     m_mass(m_M);
 
     // User defined sparse matrix check
-    if(matrix_checker(m_M, size))
+    if(m_matrix_checker(m_M, size))
     {
-        std::cout << "Error in Mass matrix.\n";
+        std::cout << "Error in Mass matrix. This error is fatal.\n";
         exit(11);
     }
 
@@ -53,8 +53,8 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     if(sp_status != SPARSE_STATUS_SUCCESS)
     {
         std::cout << "ERROR: Could not create sparse matrix descriptor for "
-                     "Mass matrix.\n";
-        exit(11);
+                     "Mass matrix. This error is fatal.\n";
+        exit(12);
     }
 
     // Analyze sparse matrix, choose proper kernels and workload
@@ -137,10 +137,10 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
         m_jac(m_J, x, t);
 
         // Sparse matrix check
-        if(matrix_checker(m_J, size))
+        if(m_matrix_checker(m_J, size))
         {
-            std::cout << "Error in Jacobian matrix.\n";
-            exit(12);
+            std::cout << "Error in Jacobian matrix. This error is fatal.\n";
+            exit(13);
         }
 
         size_t nzmax = m_M.A.size() + m_J.A.size();
@@ -154,7 +154,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
 
         // Replaces deprecated mkl_dcsradd()
         // J: = m_J - M*alpha
-        matrix_add(-alpha, m_M, m_J, J);
+        m_matrix_add(-alpha, m_M, m_J, J);
     }
 }
 
