@@ -14,10 +14,6 @@ namespace daecpp_namespace_name
 class SolverOptions
 {
 public:
-    /*
-     * List of public solver options
-     */
-
     // You can control the parallel execution of the solver by explicitly
     // setting the MKL_NUM_THREADS environment variable. If fewer OpenMP threads
     // are available than specified, the execution may slow down instead of

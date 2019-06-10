@@ -1,5 +1,5 @@
 /*
- * Numerical time integrator class
+ * Numerical time integrator class definition
  */
 
 #pragma once
@@ -56,14 +56,14 @@ class TimeIntegrator
     /*
      * Sparse matrix checker
      */
-    int matrix_checker(sparse_matrix_holder &A, MKL_INT size);
+    int m_matrix_checker(sparse_matrix_holder &A, MKL_INT size);
 
     /*
      * Performs matrix-matrix addition: C = alpha*A + B.
      * Replaces deprecated Intel MKL mkl_dcsradd() function.
      */
-    void matrix_add(const float_type alpha, const sparse_matrix_holder &A,
-                    const sparse_matrix_holder &B, sparse_matrix_holder &C);
+    void m_matrix_add(const float_type alpha, const sparse_matrix_holder &A,
+                      const sparse_matrix_holder &B, sparse_matrix_holder &C);
 
 public:
     TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
