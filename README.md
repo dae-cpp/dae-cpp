@@ -1,6 +1,7 @@
 # dae-cpp
 
 [![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4aa33eb3a2834808a6cd1b81e0d8cc23)](https://www.codacy.com/app/ikorotkin/dae-cpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikorotkin/dae-cpp&amp;utm_campaign=Badge_Grade)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241871.svg)](https://doi.org/10.5281/zenodo.3241871)
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
@@ -23,13 +24,13 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 
 ### The main features of the solver
 
-- Can resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the machine's RAM).
-- A user can provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
-- Utilises all available cores on the machine for better performance (this can be overridden by a user).
-- Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
-- A user can get access to the solution at each time step by overriding Observer function (this is optional).
-- The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
-- Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp)) to kick-start the user's project.
+  - Can resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the machine's RAM).
+  - A user can provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
+  - Utilises all available cores on the machine for better performance (this can be overridden by a user).
+  - Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
+  - A user can get access to the solution at each time step by overriding Observer function (this is optional).
+  - The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
+  - Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp)) to kick-start the user's project.
 
 ## Installation
 
@@ -102,16 +103,15 @@ During this test the solver will solve DAE systems from [examples](https://githu
 
 #### More building options
 
-- `DAE_LONG_INT` - Use long integer representation for huge systems (more than ~10<sup>7</sup> equations). This option is OFF by default. For relatively small systems it is recommended to leave it OFF.
-- `DAE_FORTRAN_STYLE` - If ON, the matrices will be defined using FORTRAN style (one-based indexing of columns and rows). By default it is OFF (zero-based indexing).
-- `DAE_SINGLE` - If ON, the single precision will be used in the solver instead of double. Single precision may ruin the accuracy. It is highly recommended to leave this option OFF. This option exists for the future compatibility with CUDA implementations of the solver.
-- `DAE_BUILD_EXAMPLES` - Build all the examples, ON by default.
-- `DAE_TEST` - Build automatic solver test, ON by default. The test can be executed by the command `ctest` from the building directory.
+  - `DAE_LONG_INT` - Use long integer representation for huge systems (more than ~10<sup>7</sup> equations). This option is OFF by default. For relatively small systems it is recommended to leave it OFF.
+  - `DAE_FORTRAN_STYLE` - If ON, the matrices will be defined using FORTRAN style (one-based indexing of columns and rows). By default it is OFF (zero-based indexing).
+  - `DAE_SINGLE` - If ON, the single precision will be used in the solver instead of double. Single precision may ruin the accuracy. It is highly recommended to leave this option OFF. This option exists for the future compatibility with CUDA implementations of the solver.
+  - `DAE_BUILD_EXAMPLES` - Build all the examples, ON by default.
+  - `DAE_TEST` - Build automatic solver test, ON by default. The test can be executed by the command `ctest` from the building directory.
 
 ### Windows
 
 Setting up the solver in Microsoft Visual Studio 2017. This has been tested but needs to be described...
-
 
 ## How to use
 
@@ -252,5 +252,5 @@ If you have any questions, suggestion, or a feedback, please, submit an [issue](
 
 ## Licensing
 
-- dae-cpp is fully open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
-- Intel MKL is free for use and redistribution under [Intel Simplified Software License](https://software.intel.com/en-us/license/intel-simplified-software-license).
+  - dae-cpp is fully open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
+  - Intel MKL is free for use and redistribution under [Intel Simplified Software License](https://software.intel.com/en-us/license/intel-simplified-software-license).
