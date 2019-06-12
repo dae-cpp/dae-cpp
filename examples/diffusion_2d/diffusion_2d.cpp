@@ -49,8 +49,10 @@ int main()
 {
     // These parameters can be obtained from a parameter file or as command line
     // options. Here for simplicity we define them as constants.
-    const MKL_INT N  = 51;    // Number of cells along one axis
-    const double  D  = 1.0;   // Diffusion coefficient
+    const MKL_INT N  = 51;    // Number of cells along one axis. Should be odd
+                              // in order to place an instantaneous point source
+                              // exactly in the middle of the plane
+    const double  D  = 1.0;   // Diffusion coefficient (dimensionless)
     const double  t1 = 0.01;  // Integration time (0 < t < t1)
 
     std::cout << "N = " << N << "; D = " << D << "; t = " << t1 << '\n';
@@ -66,7 +68,7 @@ int main()
     {
         x[i] = 0.0;
     }
-    x[N * N / 2] = N * N;  // 1/(h*h) -- numerical delta-function
+    x[N * N / 2] = N * N;  // = 1/(h*h) -- numerical delta-function
 
     // Set up the RHS of the problem.
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -192,27 +194,21 @@ int solution_check(dae::state_type &x, MKL_INT N, double t, double D)
             double yi = (double)i * h + h * 0.5;
             double an = analyt(xi, yi, t, D);
 
-            double error;
-
             if(an > 1.0)
             {
-                error = (x[ind] - an) / an * 100.0;  // relative error
+                double error = (x[ind] - an) / an * 100.0;  // relative error
 
-                if(fabs(error) > err_max)
+                if(std::abs(error) > err_max)
                 {
-                    err_max = fabs(error);
+                    err_max = std::abs(error);
                 }
-            }
-            else
-            {
-                // error = (x[ind] - an);  // absolute error
             }
         }
     }
 
     total_C *= h * h;
 
-    double err_conc = fabs(total_C - 1.0) * 100;
+    double err_conc = std::abs(total_C - 1.0) * 100;
 
     std::cout << "Total concentration:    " << total_C << " (" << err_conc
               << "% deviation from the analytical value)\n";
