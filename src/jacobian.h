@@ -14,13 +14,14 @@ namespace daecpp_namespace_name
 
 class Jacobian
 {
-
     RHS &m_rhs;
 
 #ifdef DAE_SINGLE
-    double m_tol = 5.0e-3;
+    const double m_tol = 1.0e-3;  // Default tolerance
+    const double m_eps = 1.0e-6;  // The order of the rounding unit
 #else
-    double m_tol = 1.0e-5;
+    const double m_tol = 1.0e-6;   // Default tolerance
+    const double m_eps = 1.0e-13;  // The order of the rounding unit
 #endif
 
 public:
