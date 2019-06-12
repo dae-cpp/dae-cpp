@@ -2,13 +2,14 @@
  * Performs numerical differentiation of the RHS with the given tolerance to
  * estimate numerical Jacobian matrix
  */
+
 #include <iostream>   // std::cout
 #include <iomanip>    // std::setw etc.
 #include <cmath>      // std::abs
 #include <algorithm>  // std::copy
 
 #if defined(_OPENMP)
-#include <omp.h>  // to catch omp_get_max_threads()
+#include <omp.h>  // to catch omp_get_max_threads(), omp_get_thread_num()
 #endif
 
 #include "jacobian.h"
@@ -29,9 +30,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
     const MKL_INT size   = (MKL_INT)(x.size());
-    const double  tol    = m_tol;
-    const double  tol2   = tol * tol;
-    const double  invtol = 1.0 / tol;
+    const double  invtol = 1.0 / m_tol;
 
     // Get max number of threads.
     // This can be defined using "export OMP_NUM_THREADS=N",
@@ -83,11 +82,11 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             float_type x1_backup = x1[j];
 
 #if JACOBIAN_SCHEME == 0
-            x1[j] -= tol;
+            x1[j] -= m_tol;
             m_rhs(x1, f0, t);
-            x1[j] = x1_backup + tol;
+            x1[j] = x1_backup + m_tol;
 #else
-            x1[j] += tol;
+            x1[j] += m_tol;
 #endif
 
             m_rhs(x1, f1, t);
@@ -96,7 +95,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             {
                 double diff = f1[i] - f0[i];
 
-                if(std::abs(diff) < tol2)
+                if(std::abs(diff) < m_eps)
                     continue;
 
 #if JACOBIAN_SCHEME == 0
