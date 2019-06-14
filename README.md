@@ -111,7 +111,7 @@ During this test the solver will solve DAE systems from [examples](https://githu
 
 ### Windows
 
-Setting up the solver in Microsoft Visual Studio 2017. This has been tested but needs to be described...
+An example of default solution file for Microsoft Visual Studio 15 (2017) is given in [msvc](https://github.com/ikorotkin/dae-cpp/tree/master/msvc) folder. Unpack the zip-archive into the current directory and open dae-cpp.sln. Note that you may need to retarget solution and change the paths to Intel MKL library.
 
 ## How to use
 
