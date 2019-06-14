@@ -258,10 +258,8 @@ int Solver::operator()(state_type &x, const double t1)
         {
             if(m_opt.verbosity > 0)
                 std::cout << " <- redo";
-
             if(m_reset_ti_state(x, x_prev))
                 return 3;  // Newton method failed to converge
-
             continue;
         }
 
@@ -277,7 +275,7 @@ int Solver::operator()(state_type &x, const double t1)
             break;
         }
 
-        // Simple yet efficient adaptive time stepping
+        // Adaptive time stepping algorithm
         int status = adaptive_time_stepping(x, x_prev, iter);
         if(status < 0)
             return 4;  // The algorithm failed to converge
@@ -317,6 +315,9 @@ int Solver::operator()(state_type &x, const double t1)
     return 0;
 }
 
+/*
+ * Releases memory
+ */
 Solver::~Solver()
 {
     m_phase = -1;  // Termination and release of memory

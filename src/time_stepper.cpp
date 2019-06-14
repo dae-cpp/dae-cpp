@@ -3,13 +3,18 @@
 */
 
 #include <iostream>
+#include <cmath>
+
 #include "solver.h"
 
 namespace daecpp_namespace_name
 {
 
 /*
- * Simple yet efficient Adaptive Time Stepping
+ * Simple yet efficient Adaptive Time Stepping.
+ * Returns negative status if the time stepping method failed to converge,
+ * positive status if the time step should be restarted from the scratch,
+ * or 0 in case of success.
  */
 int Solver::adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev, int iter)
 {
@@ -39,8 +44,8 @@ int Solver::adaptive_time_stepping(state_type &x, const state_type_matrix &x_pre
             norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
             norm2 += x_prev[0][i] * x_prev[0][i];
         }
-        norm1 = sqrt(norm1);
-        norm2 = sqrt(norm2);
+        norm1 = std::sqrt(norm1);
+        norm2 = std::sqrt(norm2);
 
         // Monitor function
         double eta = norm1 / (norm2 + m_opt.dt_eps_m);
@@ -66,9 +71,8 @@ int Solver::adaptive_time_stepping(state_type &x, const state_type_matrix &x_pre
             m_increase_dt();
         }
     }
-    else
+    else  // Internal error
     {
-        // Internal error
         return -10;
     }
 
@@ -141,7 +145,7 @@ int Solver::m_check_dt()
     else if(m_iterator_state.dt[0] > m_opt.dt_max)
     {
         m_iterator_state.dt[0] = m_opt.dt_max;
-        return -2;
+        return 1;
     }
     else
     {
