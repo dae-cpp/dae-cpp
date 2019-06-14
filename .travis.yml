@@ -12,7 +12,6 @@ env:
     - DAE_SINGLE=OFF DAE_LONG_INT=OFF
     - DAE_SINGLE=OFF DAE_LONG_INT=ON
     - DAE_SINGLE=ON  DAE_LONG_INT=OFF
-    - DAE_SINGLE=ON  DAE_LONG_INT=ON
 
 script: 
   - mkdir build && pushd build && cmake -DDAE_SINGLE=$DAE_SINGLE -DDAE_LONG_INT=$DAE_LONG_INT .. && make -j4 && ctest -V
