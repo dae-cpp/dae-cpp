@@ -73,7 +73,7 @@ public:
 
     void set_scheme(int scheme) { m_scheme = scheme; }
 
-    void operator()(sparse_matrix_holder &J, state_type &b, state_type &x,
+    void operator()(sparse_matrix_holder &J, state_type &b, const state_type &x,
                     const state_type_matrix &x_prev, const double t,
                     const double dt[], const bool do_jac);
 };

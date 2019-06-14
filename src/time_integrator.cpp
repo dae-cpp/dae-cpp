@@ -69,7 +69,7 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
 }
 
 void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
-                                state_type &x, const state_type_matrix &x_prev,
+                                const state_type &x, const state_type_matrix &x_prev,
                                 const double t, const double dt[],
                                 const bool do_jac)
 {

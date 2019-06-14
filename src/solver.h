@@ -23,10 +23,19 @@ class Solver
 
     SolverOptions &m_opt;  // Solver options
 
+    struct iterator_state_struct  // Keeps the current time layer state
+    {
+        double t;                   // current time
+        double dt[2];               // current and previous time steps
+        int    current_scheme;      // current BDF order
+        int    step_counter_local;  // local time step counter
+        bool   final_time_step;     // do final time step
+    } m_iterator_state;
+
     MKL_INT m_size;  // System size
 
-    size_t m_steps = 0;  // Internal time iteration counter
-    size_t m_calls = 0;  // Internal solver calls counter
+    size_t m_steps = 0;  // Total time iteration counter
+    size_t m_calls = 0;  // Total linear algebra solver calls counter
 
     // Intel MKL PARDISO control parameters
     MKL_INT m_phase;        // Current phase of the solver
@@ -58,8 +67,24 @@ class Solver
     // Intel MKL PARDISO iparm parameter
     MKL_INT m_iparm[64];
 
+    // Simple yet efficient Adaptive Time Stepping
+    int adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev, int iter);
+
+    // Scrapes the current time iteration and decreases the time step
+    // Return -1 in case the time step is below dt_min
+    int m_reset_ti_state(state_type &x, const state_type_matrix &x_prev);
+
     // Updates time integrator scheme when the time step changes
-    int m_reset_ti_scheme(SolverOptions &m_opt, const int step_counter);
+    int m_reset_ti_scheme();
+
+    // Increases the time step
+    void m_increase_dt();
+
+    // Decreases the time step
+    void m_decrease_dt();
+
+    // Checks if dt is within the interval defined in solver_options.h
+    int m_check_dt();
 
     // Checks PARDISO solver error messages
     void m_check_pardiso_error(MKL_INT err);
