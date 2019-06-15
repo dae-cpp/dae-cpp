@@ -112,6 +112,7 @@ public:
     void set_iparm_for_pardiso(MKL_INT *iparm);
 
     // Checks correctness of the solver parameters
+    // TODO: should return error code
     void check_options();
 };
 

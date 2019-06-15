@@ -41,12 +41,18 @@ int Solver::operator()(state_type &x, const double t1)
         (m_opt.dt_init > (t1 - m_opt.t0)) ? (t1 - m_opt.t0) : m_opt.dt_init;
 
     // Initial time
-    double t = m_opt.t0;
+    m_iterator_state.t = m_opt.t0;
 
     // Initial time step
-    double dt[2];
-    dt[0] = m_opt.dt_init;
-    dt[1] = dt[0];
+    m_iterator_state.dt[0] = m_opt.dt_init;
+    m_iterator_state.dt[1] = m_iterator_state.dt[0];
+
+    // Initialise the time integrator state structure.
+    // Solver starts the first time step using BDF-1 method
+    // (since it doesn't have enough history yet)
+    m_iterator_state.current_scheme     = 1;
+    m_iterator_state.step_counter_local = 0;
+    m_iterator_state.final_time_step    = false;
 
     // Initialise time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, m_size);
@@ -61,10 +67,6 @@ int Solver::operator()(state_type &x, const double t1)
         std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order
                   << std::endl;
     }
-
-    // Solver starts the first time step using BDF-1 method
-    // (since it doesn't have enough history yet)
-    int current_scheme = 1;
 
     // Contains a few latest successful time steps for Time Integrator
     state_type_matrix x_prev(m_opt.bdf_order, state_type(m_size));
@@ -98,35 +100,32 @@ int Solver::operator()(state_type &x, const double t1)
 
     // TODO: Start timer here
 
-    t += dt[0];
+    m_iterator_state.t += m_iterator_state.dt[0];
 
-    bool final_time_step = false;  // Do final time step
-    int  step_counter    = 0;      // Counts time steps
-    int  calls           = 0;      // Counts linear algebra solver calls
-
-    while(t < (t1 + dt[0] * 0.5))
+    while(m_iterator_state.t < (t1 + m_iterator_state.dt[0] * 0.5))
     {
-        step_counter++;
+        m_iterator_state.step_counter_local++;
         m_steps++;
 
         if(m_opt.verbosity > 0)
         {
             std::cout << std::left;
             std::cout << "\nStep " << std::setw(7) << m_steps
-                      << " :: t = " << std::setw(12) << t << " :: ";
+                      << " :: t = " << std::setw(12) << m_iterator_state.t
+                      << " :: ";
             std::cout.flush();
         }
 
         if(m_opt.verbosity > 1)
         {
-            std::cout << "BDF-" << current_scheme << ": ";
+            std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
         }
 
-        ti.set_scheme(current_scheme);
+        ti.set_scheme(m_iterator_state.current_scheme);
 
-        if(current_scheme < m_opt.bdf_order)
+        if(m_iterator_state.current_scheme < m_opt.bdf_order)
         {
-            current_scheme++;
+            m_iterator_state.current_scheme++;
         }
 
         int iter;  // We need this value later
@@ -137,7 +136,7 @@ int Solver::operator()(state_type &x, const double t1)
             if(m_opt.fact_every_iter || iter == 0)
             {
                 // Time Integrator with updated Jacobian
-                ti(J, b, x, x_prev, t, dt, true);
+                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt, true);
 
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
@@ -200,7 +199,7 @@ int Solver::operator()(state_type &x, const double t1)
             else
             {
                 // Time Integrator with the previous Jacobian
-                ti(J, b, x, x_prev, t, dt, false);
+                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt, false);
             }
 
             // PHASE 3.
@@ -217,7 +216,6 @@ int Solver::operator()(state_type &x, const double t1)
                 return 33;
             }
 
-            calls++;
             m_calls++;
 
             double tol = 0.0;
@@ -260,135 +258,37 @@ int Solver::operator()(state_type &x, const double t1)
         {
             if(m_opt.verbosity > 0)
                 std::cout << " <- redo";
-
-            // Decrease the time step, scrape the current time iteration and
-            // carry out it again.
-            t -= dt[0];
-            step_counter--;
-            m_steps--;
-            final_time_step = false;
-            dt[0] /= m_opt.dt_decrease_factor;
-            current_scheme = 1;  // Fall back to BDF-1 for better stability
-            if(dt[0] < m_opt.dt_min)
-            {
-                std::cout << "\nERROR: The time step was reduced to " << dt[0]
-                          << " but the Newton method failed to converge\n";
-                return 3;
-            }
-            x = x_prev[0];
-            t += dt[0];
+            if(m_reset_ti_state(x, x_prev))
+                return 3;  // Newton method failed to converge
             continue;
         }
 
         // The solver has reached the target time t1 or the stop condition
         // triggered.
-        if(final_time_step)
+        if(m_iterator_state.final_time_step)
         {
             break;
         }
-        else if(m_rhs.stop_condition(x, t))
+        else if(m_rhs.stop_condition(x, m_iterator_state.t))
         {
-            dt[1] = dt[0];
+            m_iterator_state.dt[1] = m_iterator_state.dt[0];
             break;
         }
 
-        // Simple yet efficient adaptive time stepping
-        if(m_opt.time_stepping == 1)  // S-SATS
-        {
-            dt[1] = dt[0];
-
-            if(iter < m_opt.dt_increase_threshold)
-            {
-                dt[0] *= m_opt.dt_increase_factor;
-                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
-                if(dt[0] > m_opt.dt_max)
-                    dt[0] = m_opt.dt_max;
-                if(m_opt.verbosity > 0)
-                    std::cout << '>';
-            }
-            else if(iter >= m_opt.dt_decrease_threshold - 1)
-            {
-                dt[0] /= m_opt.dt_decrease_factor;
-                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
-                if(dt[0] < m_opt.dt_min)
-                {
-                    std::cout << "\nERROR: The time step was reduced to "
-                              << dt[0]
-                              << " but the error is still above the "
-                                 "threshold\n";
-                    return 4;
-                }
-                if(m_opt.verbosity > 0)
-                    std::cout << '<';
-            }
-        }
-        else if(m_opt.time_stepping == 2)  // A-SATS
-        {
-            double norm1 = 0.0;
-            double norm2 = 0.0;
-
-            // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
-            for(MKL_INT i = 0; i < m_size; i++)
-            {
-                norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
-                norm2 += x_prev[0][i] * x_prev[0][i];
-            }
-            norm1 = sqrt(norm1);
-            norm2 = sqrt(norm2);
-
-            // Monitor function
-            double eta = norm1 / (norm2 + m_opt.dt_eps_m);
-
-            if(m_opt.verbosity > 1)
-                std::cout << "(eta = " << eta << ")";
-
-            // The time step should be reduced, scrape the current time
-            // iteration
-            if(eta > m_opt.dt_eta_max)
-            {
-                if(m_opt.verbosity > 0)
-                    std::cout << " <- redo: dt_eta = " << eta;
-
-                t -= dt[0];
-                step_counter--;
-                m_steps--;
-                final_time_step = false;
-                dt[0] /= m_opt.dt_decrease_factor;
-                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
-                if(dt[0] < m_opt.dt_min)
-                {
-                    std::cout << "\nERROR: The time step was reduced to "
-                              << dt[0]
-                              << " but the relative error is still above the "
-                                 "threshold\n";
-                    return 5;
-                }
-                x = x_prev[0];
-                t += dt[0];
-                continue;
-            }
-
-            dt[1] = dt[0];
-
-            // The time step can be increased
-            if(eta < m_opt.dt_eta_min)
-            {
-                dt[0] *= m_opt.dt_increase_factor;
-                current_scheme = m_reset_ti_scheme(m_opt, step_counter);
-                if(dt[0] > m_opt.dt_max)
-                    dt[0] = m_opt.dt_max;
-                if(m_opt.verbosity > 0)
-                    std::cout << '>';
-            }
-        }  // SATS
+        // Adaptive time stepping algorithm
+        int status = adaptive_time_stepping(x, x_prev, iter);
+        if(status < 0)
+            return 4;  // The algorithm failed to converge
+        else if(status > 0)
+            continue;  // Re-run the current time step
 
         // Looks like the solver has reached the target time t1
-        if(t + dt[0] >= t1)
+        if(m_iterator_state.t + m_iterator_state.dt[0] >= t1)
         {
-            final_time_step = true;
+            m_iterator_state.final_time_step = true;
             // Adjust the last time step size
-            dt[1] = dt[0];
-            dt[0] = t1 - t;
+            m_iterator_state.dt[1] = m_iterator_state.dt[0];
+            m_iterator_state.dt[0] = t1 - m_iterator_state.t;
         }
 
         // Rewrite solution history
@@ -399,40 +299,31 @@ int Solver::operator()(state_type &x, const double t1)
         x_prev[0] = x;
 
         // Call Observer to provide a user with intermediate results
-        observer(x, t);
+        observer(x, m_iterator_state.t);
 
-        t += dt[0];  // Time step lapse
+        m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
 
     }  // while t
 
-    m_opt.t0      = t;
-    m_opt.dt_init = dt[1];
+    m_opt.t0      = m_iterator_state.t;
+    m_opt.dt_init = m_iterator_state.dt[1];
 
     if(m_opt.verbosity > 0)
-        std::cout << "\nLinear algebra solver calls: " << calls
-                  << " (total: " << m_calls << ")\n";
+        std::cout << "\nLinear algebra solver calls: " << m_calls << '\n';
 
     // Success
     return 0;
 }
 
+/*
+ * Releases memory
+ */
 Solver::~Solver()
 {
     m_phase = -1;  // Termination and release of memory
     PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size, &m_ddum,
             m_ia, m_ja, &m_idum, &m_nrhs, m_iparm, &m_msglvl, &m_ddum, &m_ddum,
             &m_error);
-}
-
-/*
- * Updates time integrator scheme when the time step changes
- */
-int Solver::m_reset_ti_scheme(SolverOptions &m_opt, const int step_counter)
-{
-    if(step_counter && m_opt.bdf_order == 2)
-        return 2;  // BDF-2
-    else
-        return 1;  // BDF-1
 }
 
 /*

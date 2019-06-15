@@ -25,7 +25,7 @@ typedef std::vector<MKL_INT>    vector_type_int;
 
 typedef std::vector<std::vector<float_type>> state_type_matrix;
 
-struct sparse_matrix_holder
+struct sparse_matrix_holder  // Matrix structure in 3-array CSR format
 {
     state_type      A;   // Non-zero elements of the sparse matrix A
     vector_type_int ia;  // Points to the first column index of the given row
