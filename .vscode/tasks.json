@@ -70,6 +70,39 @@
             ]
         },
         {
+            "label": "build-robertson",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-O3",
+                "-Wall",
+                "-std=c++11",
+                "-m64",
+                "-fopenmp",
+                "./examples/robertson/*.cpp",
+                "./src/*.cpp",
+                "-o",
+                "robertson.exe",
+                "-I/opt/intel/mkl/include",
+                "-I./src/external",
+                //"-I/usr/include/python3.6m",
+                //"-I/usr/local/lib/python3.6/dist-packages/numpy/core/include",
+                //"-lpython3.6m",
+                "-L/opt/intel/mkl/lib/intel64",
+                "-Wl,--no-as-needed",
+                "-lmkl_intel_lp64",
+                "-lmkl_gnu_thread",
+                "-lmkl_core",
+                "-lgomp",
+                "-lpthread",
+                "-lm",
+                "-ldl"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
             "label": "build-intel-omp",
             "type": "shell",
             "command": "g++",
