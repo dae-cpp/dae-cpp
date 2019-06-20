@@ -1,7 +1,28 @@
 /*
- * TODO: Description
+ * Solves Robertson Problem as Semi-Explicit Differential Algebraic Equations
+ * (see https://www.mathworks.com/help/matlab/ref/ode15s.html):
  *
- * Keywords: Robertson problem, stiff DAE.
+ * x1' = -0.04*x1 + 1e4*x2*x3
+ * x2' =  0.04*x1 - 1e4*x2*x3 - 3e7*x2^2
+ *  0  =  x1 + x2 + x3 - 1
+ *
+ * Initial conditions are: x1 = 1, x2 = 0, x3 = 0.
+ *
+ * The 3rd equation in the system is basically a conservation law. It will be
+ * tested that x1 + x2 + x3 = 1 exactly every time step.
+ *
+ * From MATLAB ode15s description:
+ *
+ *   This problem is used as an example in the prolog to LSODI [1]. Though
+ *   consistent initial conditions are obvious, the guess x3 = 1e-3 is used
+ *   to test initialization. A logarithmic scale is appropriate for plotting
+ *   the solution on the long time interval. x2 is small and its major change
+ *   takes place in a relatively short time.
+ *
+ *   [1] A.C. Hindmarsh, LSODE and LSODI, two new initial value ordinary
+ *       differential equation solvers, SIGNUM Newsletter, 15 (1980), pp. 10-11.
+ *
+ * Keywords: Robertson problem, stiff DAE system, comparison with MATLAB ode15s.
  */
 
 #include <iostream>
@@ -19,26 +40,37 @@ using namespace daecpp;
 namespace plt = matplotlibcpp;
 #endif
 
-// To compare dae-cpp solution with the analytical solution
-// int solution_check(state_type &x, MKL_INT N, double t, double D);
-
+/*
+ * Singular mass matrix in 3-array sparse format
+ * =============================================================================
+ * The matrix has the following form:
+ *     |1 0 0|
+ * M = |0 1 0|
+ *     |0 0 0|
+ *
+ * For more information about the sparse format see
+ * https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format
+ */
 class MyMassMatrix : public MassMatrix
 {
 public:
     void operator()(daecpp::sparse_matrix_holder &M)
     {
-        M.A.resize(3);
-        M.ja.resize(3);
-        M.ia.resize(4);
+        M.A.resize(3);   // Matrix size
+        M.ja.resize(3);  // Matrix size
+        M.ia.resize(4);  // Matrix size + 1
 
+        // Non-zero and/or diagonal elements
         M.A[0] = 1;
         M.A[1] = 1;
         M.A[2] = 0;
 
+        // Column index of each element given above
         M.ja[0] = 0;
         M.ja[1] = 1;
         M.ja[2] = 2;
 
+        // Index of the first element for each row
         M.ia[0] = 0;
         M.ia[1] = 1;
         M.ia[2] = 2;
@@ -53,6 +85,10 @@ public:
 class MyRHS : public RHS
 {
 public:
+    /*
+     * Receives current solution vector x and the current time t. Defines the
+     * RHS f for each element in x.
+     */
     void operator()(const daecpp::state_type &x, daecpp::state_type &f,
                     const double t)
     {
@@ -62,6 +98,12 @@ public:
     }
 };
 
+/*
+ * (Optional) Observer
+ * =============================================================================
+ * Checks conservation law x1 + x2 + x3 = 1 every time step and prints solution
+ * to console.
+ */
 class MySolver : public Solver
 {
 public:
@@ -74,7 +116,6 @@ public:
     /*
      * Overloaded observer.
      * Receives current solution vector and the current time every time step.
-     * Prints current time t and potential phi on the right boundary.
      */
     void observer(daecpp::state_type &x, const double t)
     {
@@ -83,18 +124,31 @@ public:
     }
 };
 
+/*
+ * (Optional) Analytical Jacobian in 3-array sparse format
+ * =============================================================================
+ *
+ * For more information about the sparse format see
+ * https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format
+ */
 class MyJacobian : public Jacobian
 {
 public:
     MyJacobian(daecpp::RHS &rhs) : daecpp::Jacobian(rhs) {}
 
+    /*
+     * Receives current solution vector x and the current time t. Defines the
+     * analytical Jacobian matrix J.
+     */
     void operator()(daecpp::sparse_matrix_holder &J,
                     const daecpp::state_type &x, const double t)
     {
+        // Initialize Jacobian in sparse format
         J.A.resize(9);
         J.ja.resize(9);
         J.ia.resize(4);
 
+        // Non-zero elements
         J.A[0] = -0.04;
         J.A[1] = 1.0e4 * x[2];
         J.A[2] = 1.0e4 * x[1];
@@ -105,6 +159,7 @@ public:
         J.A[7] = 1.0;
         J.A[8] = 1.0;
 
+        // Column index of each element given above
         J.ja[0] = 0;
         J.ja[1] = 1;
         J.ja[2] = 2;
@@ -115,6 +170,7 @@ public:
         J.ja[7] = 1;
         J.ja[8] = 2;
 
+        // Index of the first element for each row
         J.ia[0] = 0;
         J.ia[1] = 3;
         J.ia[2] = 6;
@@ -130,49 +186,48 @@ public:
  */
 int main()
 {
+    // Solution time 0 <= t <= t1
     const double t1 = 4.0e6;
 
-    // Define state vector
+    // Define the state vector
     state_type x(3);
 
-    // Initial conditions
-    // Use inconsistent initial condition to test initialization
+    // Initial conditions.
+    // We will use slightly inconsistent initial condition to test initialization.
     x[0] = 1;
     x[1] = 0;
-    x[2] = 1e-3;  // Should be 0
+    x[2] = 1e-3;  // Should be 0 theoretically
 
     // Set up the RHS of the problem.
-
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
     MyRHS rhs;
 
-    // Set up the Mass Matrix of the problem. In this case this matrix is
-    // identity, so we can use a helper class provided by dae-cpp library.
+    // Set up the Mass Matrix of the problem.
+    // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass;
 
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
     SolverOptions opt;
 
+    //////////////////////////////////// Adjust this
     opt.dt_init = 1.0e-6;  // Change initial time step
-    // opt.fact_every_iter = false;   // Gain some speed (delay the update
-    // of Jacobian and the matrix factorisation)
-
     opt.verbosity             = 2;
     opt.dt_max                = t1 / 100;
     opt.time_stepping         = 1;
     opt.dt_increase_threshold = 2;
-    // opt.dt_decrease_threshold = 6;
-    // opt.atol = 1e-7;
     // opt.bdf_order = 6;
 
     // We can override Jacobian class from dae-cpp library and provide
-    // analytical Jacobian. But we will use numerically estimated one.
-    Jacobian jac_est(rhs, 1e-10);
-    jac_est.print(x, 0);
-
+    // analytical Jacobian
     MyJacobian jac(rhs);
-    jac.print(x, 0);
+    // jac.print(x, 0);  // print it out for t = 0
+
+    // Or use numerically estimated one with a given tolerance
+    // (commented out since we have analytical Jacobian above).
+    // Jacobian jac_est(rhs, 1e-10);  // Obviously this tolerance is
+                                      // inacceptable in single precision
+    // jac_est.print(x, 0);           // print Jacobian out for t = 0
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
@@ -180,23 +235,22 @@ int main()
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
-
     solve(x, t1);
 
-    std::cout << " | " << x[0] << ' ' << 1e4 * x[1] << ' ' << x[2]
-              << " == " << x[0] + x[1] + x[2] << '\n';
-
-    // Compare result with the analytical solution
+    // Compare results with MATLAB ode15s solution
     const double x_ref[3]     = {0.00051675, 2.068e-9, 0.99948324};
     const double conservation = std::abs(x[0] + x[1] + x[2] - 1);
-    double       result       = 0.0;
+
+    // Find total relative deviation from the reference solution
+    double result = 0.0;
     for(int i = 0; i < 3; i++)
         result += std::abs(x[i] - x_ref[i]) / x_ref[i] * 100;
 
-    std::cout << result << "% " << conservation << '\n';
-    //    int check_result = solution_check(x, N, t1, D);
+    std::cout << "Total relative error: " << result << "%\n";
+    std::cout << "Conservation law absolute deviation: " << conservation
+              << '\n';
 
-    // Plot the solution
+    // Plot the solution -- TODO: Update this!
 #ifdef PLOTTING
     const double h = 1.0 / (double)N;
 
@@ -228,7 +282,11 @@ int main()
     plt::save(filename);
 #endif
 
+#ifdef DAE_SINGLE
+    const bool check_result = (result > 1.0 || conservation > 1e-6);
+#else
     const bool check_result = (result > 1.0 || conservation > 1e-14);
+#endif
 
     if(check_result)
         std::cout << "...Test FAILED\n\n";
@@ -237,60 +295,3 @@ int main()
 
     return check_result;
 }
-
-/*
- * Returns '0' if solution comparison is OK or '1' if the error is above
- * acceptable tolerance
- */
-/*
-int solution_check(state_type &x, MKL_INT N, double t, double D)
-{
-    std::cout << "Solution check:\n";
-
-    const double h = 1.0 / (double)N;
-
-    double total_C = 0;
-    double err_max = 0;
-
-    for(MKL_INT i = 0; i < N; i++)
-    {
-        for(MKL_INT j = 0; j < N; j++)
-        {
-            MKL_INT ind = j + i * N;
-
-            total_C += x[ind];
-
-            double xi = (double)j * h + h * 0.5;
-            double yi = (double)i * h + h * 0.5;
-            double an = analyt(xi, yi, t, D);
-
-            if(an > 1.0)
-            {
-                double error = (x[ind] - an) / an * 100.0;  // relative error
-
-                if(std::abs(error) > err_max)
-                {
-                    err_max = std::abs(error);
-                }
-            }
-        }
-    }
-
-    total_C *= h * h;
-
-    double err_conc = std::abs(total_C - 1.0) * 100;
-
-    std::cout << "Total concentration:    " << total_C << " (" << err_conc
-              << "% deviation from the analytical value)\n";
-    std::cout << "Maximum relative error: " << err_max << "%\n";
-
-#ifdef DAE_SINGLE
-    if(err_max < 1.0 && err_conc < 2.0e-5)
-#else
-    if(err_max < 1.0 && err_conc < 1.0e-10)
-#endif
-        return 0;
-    else
-        return 1;
-}
-*/
