@@ -30,7 +30,7 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 -   Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
 -   A user can get access to the solution at each time step by overriding Observer function (this is optional).
 -   The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
--   Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp)) to kick-start the user's project.
+-   Easy-to-follow examples (see, for example, [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp)) to kick-start the user's project.
 
 ## Installation
 
@@ -66,6 +66,12 @@ On Linux make sure you have `git`, `cmake` and `g++` installed:
 
 ```bash
 sudo apt-get install g++ cmake cmake-curses-gui git
+```
+
+In order to enable plotting (optional), `python3`, `matplotlib` and `numpy` should be installed:
+
+```bash
+sudo apt-get install python3 python3-numpy python3-matplotlib
 ```
 
 Then download dae-cpp library:
@@ -115,7 +121,7 @@ An example of default solution file for Microsoft Visual Studio 15 (2017) is giv
 
 ## How to use
 
-Please refer to [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
+Please refer to [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
@@ -147,7 +153,7 @@ We can get access to each element of the state vector **x** as to `std::vector` 
 
 ### Step 2. Set up the RHS
 
-Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp) or [diffusion_2d_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d_RHS.cpp).
+Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp) or [diffusion_2d_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d_RHS.cpp).
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
@@ -159,7 +165,7 @@ In the child MyRHS class the user can also override `stop_condition` virtual fun
 
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
+Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -175,7 +181,7 @@ dae::MassMatrixIdentity mass(N);
 
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library ([example](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
+We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
@@ -226,7 +232,7 @@ solve(x, t1);   // continues solving in the interval [t_c; t1] and
 
 Every call the solver will take the previous solution **x** (if available from the previous call) and overwrite it with a new one at the given time.
 
-But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(...)` function from `daecpp::Solver` class. This observer function receives the current solution vector **x** and the current time *t* every time step and allows a user to get access to the solution at each time layer. An example of a simple observer is given in the file [perovskite_observer.h](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_observer.h).
+But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(...)` function from `daecpp::Solver` class. This observer function receives the current solution vector **x** and the current time *t* every time step and allows a user to get access to the solution at each time layer. An example of a simple observer is given in the file [perovskite_observer.h](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_observer.h), also in [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp).
 
 ### Step 7 (optional). Plot results
 
@@ -236,13 +242,19 @@ Solution can be visualised using a simple [C++ interface](https://github.com/lav
   <img src="http://korotkin.ru/public/perovskite.png">
 </p>
 
-Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
-
 The second example, [diffusion_2d](https://github.com/ikorotkin/dae-cpp/tree/master/examples/diffusion_2d), will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
 
 <p align="center">
   <img src="http://korotkin.ru/public/diffusion_2d.png">
 </p>
+
+The third example, [robertson](https://github.com/ikorotkin/dae-cpp/tree/master/examples/robertson), solves Robertson stiff DAE problem with a conservation law. It produces the following figure:
+
+<p align="center">
+  <img src="http://korotkin.ru/public/robertson.png">
+</p>
+
+Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
 
 ## Contribution and feedback
 
