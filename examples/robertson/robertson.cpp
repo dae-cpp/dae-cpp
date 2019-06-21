@@ -54,7 +54,7 @@ namespace plt = matplotlibcpp;
 class MyMassMatrix : public MassMatrix
 {
 public:
-    void operator()(daecpp::sparse_matrix_holder &M)
+    void operator()(sparse_matrix_holder &M)
     {
         M.A.resize(3);   // Matrix size
         M.ja.resize(3);  // Matrix size
@@ -89,8 +89,7 @@ public:
      * Receives current solution vector x and the current time t. Defines the
      * RHS f for each element in x.
      */
-    void operator()(const daecpp::state_type &x, daecpp::state_type &f,
-                    const double t)
+    void operator()(const state_type &x, state_type &f, const double t)
     {
         f[0] = -0.04 * x[0] + 1.0e4 * x[1] * x[2];
         f[1] = 0.04 * x[0] - 1.0e4 * x[1] * x[2] - 3.0e7 * x[1] * x[1];
@@ -107,20 +106,31 @@ public:
 class MySolver : public Solver
 {
 public:
-    MySolver(daecpp::RHS &rhs, daecpp::Jacobian &jac, daecpp::MassMatrix &mass,
-             daecpp::SolverOptions &opt)
-        : daecpp::Solver(rhs, jac, mass, opt)
+    MySolver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
+        : Solver(rhs, jac, mass, opt)
     {
     }
+
+#ifdef PLOTTING
+    state_type x_axis, x0, x1, x2;  // For plotting
+#endif
 
     /*
      * Overloaded observer.
      * Receives current solution vector and the current time every time step.
      */
-    void observer(daecpp::state_type &x, const double t)
+    void observer(state_type &x, const double t)
     {
         std::cout << " | " << x[0] << ' ' << 1e4 * x[1] << ' ' << x[2]
                   << " == " << x[0] + x[1] + x[2] - 1.0;
+
+#ifdef PLOTTING
+        // Save data for plotting
+        x_axis.push_back(t);
+        x0.push_back(x[0]);
+        x1.push_back(1.0e4 * x[1]);
+        x2.push_back(x[2]);
+#endif
     }
 };
 
@@ -134,14 +144,14 @@ public:
 class MyJacobian : public Jacobian
 {
 public:
-    MyJacobian(daecpp::RHS &rhs) : daecpp::Jacobian(rhs) {}
+    explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
 
     /*
      * Receives current solution vector x and the current time t. Defines the
      * analytical Jacobian matrix J.
      */
-    void operator()(daecpp::sparse_matrix_holder &J,
-                    const daecpp::state_type &x, const double t)
+    void operator()(sparse_matrix_holder &J, const state_type &x,
+                    const double t)
     {
         // Initialize Jacobian in sparse format
         J.A.resize(9);
@@ -262,34 +272,20 @@ int main()
     std::cout << "Conservation law absolute deviation: " << conservation
               << '\n';
 
-    // Plot the solution -- TODO: Update this!
+    // Plot the solution
 #ifdef PLOTTING
-    const double h = 1.0 / (double)N;
-
-    dae::state_type_matrix x_axis, y_axis, z_axis;
-
-    for(MKL_INT i = 0; i < N; i++)
-    {
-        dae::state_type x_row, y_row, z_row;
-
-        for(MKL_INT j = 0; j < N; j++)
-        {
-            x_row.push_back((double)j * h + h * 0.5);
-            y_row.push_back((double)i * h + h * 0.5);
-            z_row.push_back(x[j + i * N]);
-        }
-
-        x_axis.push_back(x_row);
-        y_axis.push_back(y_row);
-        z_axis.push_back(z_row);
-    }
-
     plt::figure();
-    plt::figure_size(800, 600);
-    plt::plot_surface(x_axis, y_axis, z_axis);
+    plt::figure_size(640, 480);
+    plt::named_semilogx("x0", solve.x_axis, solve.x0);
+    plt::named_semilogx("x1", solve.x_axis, solve.x1);
+    plt::named_semilogx("x2", solve.x_axis, solve.x2);
+    plt::xlabel("time");
+    plt::title("Robertson DAE problem with a Conservation Law");
+    plt::grid(true);
+    plt::legend();
 
     // Save figure
-    const char *filename = "diffusion_2d.png";
+    const char *filename = "robertson.png";
     std::cout << "Saving result to " << filename << "...\n";
     plt::save(filename);
 #endif
