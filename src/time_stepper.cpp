@@ -1,6 +1,6 @@
 /*
-* Simple yet efficient Adaptive Time Stepping
-*/
+ * Simple yet efficient Adaptive Time Stepping algorithm
+ */
 
 #include <iostream>
 #include <cmath>
@@ -16,9 +16,10 @@ namespace daecpp_namespace_name
  * positive status if the time step should be restarted from the scratch,
  * or 0 in case of success.
  */
-int Solver::adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev, int iter)
+int Solver::m_adaptive_time_stepping(state_type &x,
+                                     const state_type_matrix &x_prev, int iter)
 {
-    if(m_opt.time_stepping == 1)  // S-SATS
+    if(m_opt.time_stepping == 1)  // S-SATS (Stability-based time stepping)
     {
         m_iterator_state.dt[1] = m_iterator_state.dt[0];
 
@@ -33,19 +34,41 @@ int Solver::adaptive_time_stepping(state_type &x, const state_type_matrix &x_pre
                 return -1;  // Method failed to converge
         }
     }
-    else if(m_opt.time_stepping == 2)  // A-SATS
+    else if(m_opt.time_stepping == 2)  // V-SATS (Variability-based)
     {
         double norm1 = 0.0;
         double norm2 = 0.0;
 
         // Estimate NORM(C(n+1) - C(n)) and NORM(C(n))
-        for(MKL_INT i = 0; i < m_size; i++)
+        if(m_opt.vsats_norm == 2)  // NORM_2
         {
-            norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
-            norm2 += x_prev[0][i] * x_prev[0][i];
+            for(MKL_INT i = 0; i < m_size; i++)
+            {
+                norm1 += (x[i] - x_prev[0][i]) * (x[i] - x_prev[0][i]);
+                norm2 += x_prev[0][i] * x_prev[0][i];
+            }
+
+            norm1 = std::sqrt(norm1);
+            norm2 = std::sqrt(norm2);
         }
-        norm1 = std::sqrt(norm1);
-        norm2 = std::sqrt(norm2);
+        else  // NORM_inf (experimental)
+        {
+            for(MKL_INT i = 0; i < m_size; i++)
+            {
+                double adiff1 = std::abs(x[i] - x_prev[0][i]);
+                double adiff2 = std::abs(x_prev[0][i]);
+
+                if(adiff1 > norm1)
+                {
+                    norm1 = adiff1;
+
+                    if(adiff2 < m_opt.dt_eps_m)
+                        norm2 = 1;
+                    else
+                        norm2 = adiff2;
+                }
+            }
+        }
 
         // Monitor function
         double eta = norm1 / (norm2 + m_opt.dt_eps_m);
@@ -114,9 +137,12 @@ int Solver::m_reset_ti_scheme()
 void Solver::m_increase_dt()
 {
     m_iterator_state.dt[0] *= m_opt.dt_increase_factor;
-    m_iterator_state.current_scheme = m_reset_ti_scheme();
-    if(!m_check_dt() && m_opt.verbosity > 0)
-        std::cout << '>';
+    if(!m_check_dt())
+    {
+        m_iterator_state.current_scheme = m_reset_ti_scheme();
+        if(m_opt.verbosity > 0)
+            std::cout << '>';
+    }
 }
 
 /*

@@ -23,7 +23,7 @@ class Solver
 
     SolverOptions &m_opt;  // Solver options
 
-    struct iterator_state_struct  // Keeps the current time layer state
+    struct m_iterator_state_struct  // Keeps the current time layer state
     {
         double t;                   // current time
         double dt[2];               // current and previous time steps
@@ -68,7 +68,8 @@ class Solver
     MKL_INT m_iparm[64];
 
     // Simple yet efficient Adaptive Time Stepping
-    int adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev, int iter);
+    int m_adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev,
+                                 int iter);
 
     // Scrapes the current time iteration and decreases the time step
     // Return -1 in case the time step is below dt_min
@@ -96,7 +97,7 @@ public:
     Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
         : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
     {
-        // Initialise the internal solver memory pointer. This is only
+        // Initialize the internal solver memory pointer. This is only
         // necessary for the FIRST call of the PARDISO solver.
         for(MKL_INT i = 0; i < 64; i++)
         {
@@ -114,7 +115,7 @@ public:
      * result in the array x. Parameter t0 can be overriden in the solver
      * options (t0 = 0 by default).
      * The data stored in x (initial conditions) will be overwritten.
-     * Returns 0 in case of success or error code if integration failed.
+     * Returns 0 in case of success or error code if integration is failed.
      */
     int operator()(state_type &x, const double t1);
 
