@@ -25,11 +25,14 @@ class Jacobian
 #endif
 
 public:
-    Jacobian(RHS &rhs) : m_rhs(rhs) {}
-    Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol) {}
+    explicit Jacobian(RHS &rhs) : m_rhs(rhs) {}
+    Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol)
+    {
+        // TODO: Check user's tol parameter. Too small tol may lead to crash.
+    }
 
     /*
-     * Can be overriden to provide analytical Jacobian.
+     * Can be overriden to provide analytical Jacobian
      */
     virtual void operator()(sparse_matrix_holder &J, const state_type &x,
                             const double t);

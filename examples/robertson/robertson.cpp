@@ -193,7 +193,8 @@ int main()
     state_type x(3);
 
     // Initial conditions.
-    // We will use slightly inconsistent initial condition to test initialization.
+    // We will use slightly inconsistent initial condition to test
+    // initialization.
     x[0] = 1;
     x[1] = 0;
     x[2] = 1e-3;  // Should be 0 theoretically
@@ -210,32 +211,43 @@ int main()
     // parameters defined in solver_options.h
     SolverOptions opt;
 
-    //////////////////////////////////// Adjust this
-    opt.dt_init = 1.0e-6;  // Change initial time step
-    opt.verbosity             = 2;
-    opt.dt_max                = t1 / 100;
-    opt.time_stepping         = 1;
-    opt.dt_increase_threshold = 2;
-    // opt.bdf_order = 6;
+    opt.dt_init               = 1.0e-6;    // Change initial time step
+    opt.dt_max                = t1 / 100;  // Set maximum time step
+    opt.time_stepping         = 1;         // S-SATS works better here
+    opt.dt_increase_threshold = 2;         // Time step amplification threshold
+    opt.atol                  = 1e-6;      // Absolute tolerance
+    opt.bdf_order             = 6;         // Set BDF-6
 
     // We can override Jacobian class from dae-cpp library and provide
-    // analytical Jacobian
+    // analytical Jacobian. We shall do this for single precision:
+#ifdef DAE_SINGLE
     MyJacobian jac(rhs);
-    // jac.print(x, 0);  // print it out for t = 0
 
-    // Or use numerically estimated one with a given tolerance
-    // (commented out since we have analytical Jacobian above).
-    // Jacobian jac_est(rhs, 1e-10);  // Obviously this tolerance is
-                                      // inacceptable in single precision
-    // jac_est.print(x, 0);           // print Jacobian out for t = 0
+    // Print it out for t = 0:
+    // jac.print(x, 0);
+#endif
+
+    // Or we can use numerically estimated Jacobian with the given tolerance.
+    // Let's use it as a test for double precision:
+#ifndef DAE_SINGLE
+    Jacobian jac_est(rhs, 1e-10);  // Obviously this tolerance is
+                                   // inacceptable for single precision
+
+    // Print Jacobian out for t = 0:
+    // jac_est.print(x, 0);
+#endif
 
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
+#ifdef DAE_SINGLE
     MySolver solve(rhs, jac, mass, opt);
+#else
+    MySolver solve(rhs, jac_est, mass, opt);
+#endif
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
-    solve(x, t1);
+    int status = solve(x, t1);
 
     // Compare results with MATLAB ode15s solution
     const double x_ref[3]     = {0.00051675, 2.068e-9, 0.99948324};
@@ -283,9 +295,9 @@ int main()
 #endif
 
 #ifdef DAE_SINGLE
-    const bool check_result = (result > 1.0 || conservation > 1e-6);
+    const bool check_result = (result > 1.0 || conservation > 1e-6 || status);
 #else
-    const bool check_result = (result > 1.0 || conservation > 1e-14);
+    const bool check_result = (result > 1.0 || conservation > 1e-14 || status);
 #endif
 
     if(check_result)

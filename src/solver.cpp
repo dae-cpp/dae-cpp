@@ -47,14 +47,14 @@ int Solver::operator()(state_type &x, const double t1)
     m_iterator_state.dt[0] = m_opt.dt_init;
     m_iterator_state.dt[1] = m_iterator_state.dt[0];
 
-    // Initialise the time integrator state structure.
+    // Initialize the time integrator state structure.
     // Solver starts the first time step using BDF-1 method
     // (since it doesn't have enough history yet)
     m_iterator_state.current_scheme     = 1;
     m_iterator_state.step_counter_local = 0;
     m_iterator_state.final_time_step    = false;
 
-    // Initialise time integrator
+    // Initialize time integrator
     TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, m_size);
 
     // Initial output
@@ -136,7 +136,8 @@ int Solver::operator()(state_type &x, const double t1)
             if(m_opt.fact_every_iter || iter == 0)
             {
                 // Time Integrator with updated Jacobian
-                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt, true);
+                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt,
+                   true);
 
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
@@ -166,8 +167,8 @@ int Solver::operator()(state_type &x, const double t1)
                                   << (double)peak_mem1 / 1024.0 << " Mb";
                         std::cout
                             << "\nPermanent memory on symbolic factorization: "
-                            << "         "
-                            << (double)peak_mem2 / 1024.0 << " Mb";
+                            << "         " << (double)peak_mem2 / 1024.0
+                            << " Mb";
                         std::cout << "\nPeak memory on numerical factorization "
                                      "and solution: "
                                   << (double)peak_mem3 / 1024.0 << " Mb"
@@ -199,7 +200,8 @@ int Solver::operator()(state_type &x, const double t1)
             else
             {
                 // Time Integrator with the previous Jacobian
-                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt, false);
+                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt,
+                   false);
             }
 
             // PHASE 3.
@@ -253,7 +255,8 @@ int Solver::operator()(state_type &x, const double t1)
 
         }  // for iter
 
-        // Newton iterator failed to converge within max_Newton_iter iterations
+        // Newton iterator failed to converge within max_Newton_iter iterations.
+        // Trying to reduce the time step.
         if(iter == m_opt.max_Newton_iter)
         {
             if(m_opt.verbosity > 0)
@@ -276,7 +279,7 @@ int Solver::operator()(state_type &x, const double t1)
         }
 
         // Adaptive time stepping algorithm
-        int status = adaptive_time_stepping(x, x_prev, iter);
+        int status = m_adaptive_time_stepping(x, x_prev, iter);
         if(status < 0)
             return 4;  // The algorithm failed to converge
         else if(status > 0)
@@ -304,6 +307,9 @@ int Solver::operator()(state_type &x, const double t1)
         m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
 
     }  // while t
+
+    // Catch up the last time step
+    observer(x, m_iterator_state.t);
 
     m_opt.t0      = m_iterator_state.t;
     m_opt.dt_init = m_iterator_state.dt[1];

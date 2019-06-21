@@ -32,7 +32,7 @@ public:
 
     // Time stepping algorithm:
     // 1 - Stability-based Simple Adaptive Time Stepping (S-SATS),
-    // 2 - Accuracy-based Simple Adaptive Time Stepping (A-SATS) from
+    // 2 - Variability-based Simple Adaptive Time Stepping (V-SATS) from
     // https://www.sciencedirect.com/science/article/pii/S0377042705005534
     int time_stepping = 2;
 
@@ -43,11 +43,11 @@ public:
 
 #ifdef DAE_SINGLE
     double atol      = 1.0e-3;  // Absolute tolerance for the Newton algorithm
-    double dt_eps_m  = 1.0e-5;  // The order of the rounding unit (A-SATS only)
+    double dt_eps_m  = 1.0e-6;  // The order of the rounding unit
     double value_max = 1.0e20;  // Solution shouldn't be higher than this
 #else
     double atol      = 1.0e-6;   // Absolute tolerance for the Newton algorithm
-    double dt_eps_m  = 1.0e-10;  // The order of the rounding unit (A-SATS only)
+    double dt_eps_m  = 1.0e-12;  // The order of the rounding unit
     double value_max = 1.0e100;  // Solution shouldn't be higher than this
 #endif
 
@@ -57,23 +57,29 @@ public:
     // Initial integration time t0 -- will be equal to t1 after integration
     double t0 = 0.0;
 
-    // Minimum and maximum time steps
+    // Minimum time step
     double dt_min = dt_eps_m;
-    double dt_max = 100.0;
+
+    // Maximum time step
+    double dt_max = 1.0 / dt_eps_m;
 
     // Verbosity level of the solver:
     // 0 - be silent, 1 - prints some basic information, 2 - chatterbox
     int verbosity = 1;
 
     // Simple Adaptive Time Stepping options
-    int dt_increase_threshold = 4;    // Time step amplification threshold
+    int dt_increase_threshold = 3;    // Time step amplification threshold
                                       // (S-SATS only)
-    int dt_decrease_threshold = 8;    // Time step reduction threshold
+    int dt_decrease_threshold = 7;    // Time step reduction threshold
                                       // (S-SATS only)
     double dt_increase_factor = 2.0;  // Time step amplification factor
     double dt_decrease_factor = 2.0;  // Time step reduction factor
-    double dt_eta_min = 0.05;  // Monitor function lower threshold (A-SATS only)
-    double dt_eta_max = 0.5;  // Monitor function higher threshold (A-SATS only)
+    double dt_eta_min = 0.05;  // Monitor function lower threshold (V-SATS only)
+    double dt_eta_max = 0.5;  // Monitor function higher threshold (V-SATS only)
+
+    // 1 - V-SATS will use NORM_infinity to estimate solution variability,
+    // 2 - V-SATS will use NORM_2 (default)
+    int vsats_norm = 2;
 
     // Intel MKL PARDISO parameters (iparam). More about iparam:
     // https://software.intel.com/en-us/mkl-developer-reference-c-pardiso-iparm-parameter
