@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/4aa33eb3a2834808a6cd1b81e0d8cc23)](https://www.codacy.com/app/ikorotkin/dae-cpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikorotkin/dae-cpp&amp;utm_campaign=Badge_Grade)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241871.svg)](https://doi.org/10.5281/zenodo.3241871)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241870.svg)](https://doi.org/10.5281/zenodo.3241870)
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
