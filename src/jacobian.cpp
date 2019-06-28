@@ -95,7 +95,7 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
             {
                 double diff = f1[i] - f0[i];
 
-                if(std::abs(diff) < m_eps)
+                if((std::abs(diff) < m_eps) && (i != j))
                     continue;
 
 #if JACOBIAN_SCHEME == 0
