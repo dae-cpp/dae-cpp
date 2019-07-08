@@ -74,7 +74,7 @@ int Solver::m_adaptive_time_stepping(state_type &x,
         double eta = norm1 / (norm2 + m_opt.dt_eps_m);
 
         if(m_opt.verbosity > 1)
-            std::cout << "(eta = " << eta << ")";
+            std::cout << " (eta = " << eta << ")";
 
         // The time step should be reduced, scrape the current time iteration
         if(eta > m_opt.dt_eta_max)

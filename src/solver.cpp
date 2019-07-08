@@ -146,6 +146,8 @@ int Solver::operator()(state_type &x, const double t1)
         if(m_opt.verbosity > 1)
         {
             std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
+            std::cout << "dt=" << m_iterator_state.dt[0]
+                      << ", dt_prev=" << m_iterator_state.dt[1] << ": ";
         }
 
         m_ti->set_scheme(m_iterator_state.current_scheme);
@@ -315,6 +317,8 @@ int Solver::operator()(state_type &x, const double t1)
 
             if(dt_eval == 0.0)
             {
+                // dt[0] could be changed, restore
+                m_iterator_state.dt[0] = m_iterator_state.dt[1];
                 break;  // The solver has reached t1
             }
             else
