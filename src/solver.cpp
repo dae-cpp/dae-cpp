@@ -27,8 +27,12 @@ int Solver::operator()(state_type &x, const double t1)
     // Check user-defined solver options
     m_opt.check_options();
 
+    // We don't need to do anything if t1 == t0. Return initial conditions.
+    if(t1 == m_opt.t0)
+        return 0;
+
     // Assert t1 > t0
-    if(t1 <= m_opt.t0)
+    if(t1 < m_opt.t0)
     {
         std::cout << "ERROR: Integration time t1 = " << t1
                   << " cannot be less than the initial time t0 = " << m_opt.t0

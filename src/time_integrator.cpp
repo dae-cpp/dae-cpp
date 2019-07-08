@@ -124,6 +124,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
 
     if(do_jac)
     {
+        // Clear temporary Jacobian
         m_J.A.clear();
         m_J.ia.clear();
         m_J.ja.clear();
@@ -143,14 +144,18 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
             exit(13);
         }
 
+        // Clear previous Jacobian matrix
+        J.A.clear();
+        J.ia.clear();
+        J.ja.clear();
+
         size_t nzmax = m_M.A.size() + m_J.A.size();
 
-        if(J.A.size() != nzmax)
-            J.A.resize(nzmax);
-        if(J.ia.size() != (size_t)(size) + 1)
-            J.ia.resize(size + 1);
-        if(J.ja.size() != nzmax)
-            J.ja.resize(nzmax);
+        // If new size is greater than the current capacity,
+        // a reallocation happens
+        J.A.reserve(nzmax);
+        J.ia.reserve(size + 1);
+        J.ja.reserve(nzmax);
 
         // Replaces deprecated mkl_dcsradd()
         // J: = m_J - M*alpha

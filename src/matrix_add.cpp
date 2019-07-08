@@ -26,7 +26,6 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
     MKL_INT jb    = 0;
     MKL_INT a_row = 0;
     MKL_INT b_row = 0;
-    MKL_INT ic    = 0;
     MKL_INT jc    = 0;
     MKL_INT c_row = -1;
 
@@ -38,12 +37,12 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
         // ib and jb point to the element before
         if(b_row < a_row || (b_row == a_row && B.ja[jb] < A.ja[ja]))
         {
-            C.A[jc]  = B.A[jb];
-            C.ja[jc] = B.ja[jb];
+            C.A.push_back(B.A[jb]);
+            C.ja.push_back(B.ja[jb]);
 
             if(c_row < b_row)
             {
-                C.ia[ic++] = jc + FORTRAN_STYLE;
+                C.ia.push_back(jc + FORTRAN_STYLE);
                 c_row++;
             }
 
@@ -62,12 +61,12 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
         // ib and jb point to the same position as ia and ja
         if(b_row == a_row && B.ja[jb] == A.ja[ja])
         {
-            C.A[jc]  = alpha * A.A[ja] + B.A[jb];
-            C.ja[jc] = A.ja[ja];
+            C.A.push_back(alpha * A.A[ja] + B.A[jb]);
+            C.ja.push_back(A.ja[ja]);
 
             if(c_row < a_row)
             {
-                C.ia[ic++] = jc + FORTRAN_STYLE;
+                C.ia.push_back(jc + FORTRAN_STYLE);
                 c_row++;
             }
 
@@ -93,12 +92,12 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
         // ib and jb point to the element after
         if(b_row > a_row || (b_row == a_row && B.ja[jb] > A.ja[ja]))
         {
-            C.A[jc]  = alpha * A.A[ja];
-            C.ja[jc] = A.ja[ja];
+            C.A.push_back(alpha * A.A[ja]);
+            C.ja.push_back(A.ja[ja]);
 
             if(c_row < a_row)
             {
-                C.ia[ic++] = jc + FORTRAN_STYLE;
+                C.ia.push_back(jc + FORTRAN_STYLE);
                 c_row++;
             }
 
@@ -117,12 +116,12 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
 
     while(ja < sizeA)
     {
-        C.A[jc]  = alpha * A.A[ja];
-        C.ja[jc] = A.ja[ja];
+        C.A.push_back(alpha * A.A[ja]);
+        C.ja.push_back(A.ja[ja]);
 
         if(c_row < a_row)
         {
-            C.ia[ic++] = jc + FORTRAN_STYLE;
+            C.ia.push_back(jc + FORTRAN_STYLE);
             c_row++;
         }
 
@@ -132,12 +131,12 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
 
     while(jb < sizeB)
     {
-        C.A[jc]  = B.A[jb];
-        C.ja[jc] = B.ja[jb];
+        C.A.push_back(B.A[jb]);
+        C.ja.push_back(B.ja[jb]);
 
         if(c_row < b_row)
         {
-            C.ia[ic++] = jc + FORTRAN_STYLE;
+            C.ia.push_back(jc + FORTRAN_STYLE);
             c_row++;
         }
 
@@ -145,7 +144,7 @@ void TimeIntegrator::m_matrix_add(const float_type alpha,
         jc++;
     }
 
-    C.ia[ic] = jc + FORTRAN_STYLE;
+    C.ia.push_back(jc + FORTRAN_STYLE);
 }
 
 }  // namespace daecpp_namespace_name
