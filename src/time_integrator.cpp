@@ -10,16 +10,14 @@ namespace daecpp_namespace_name
 {
 
 TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
-                               SolverOptions &opt, const MKL_INT size)
+                               SolverOptions &opt)
     : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
 {
-    // Reserve memory for at least 1-diagonal mass matrix
-    m_M.A.reserve(size);
-    m_M.ja.reserve(size);
-    m_M.ia.reserve(size + 1);
-
     // Get static mass matrix
     m_mass(m_M);
+
+    // Extract the mass matrix size
+    const MKL_INT size = m_M.ia.size() - 1;
 
     // User defined sparse matrix check
     if(m_matrix_checker(m_M, size))
@@ -68,10 +66,10 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     }
 }
 
-void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
-                                const state_type &x, const state_type_matrix &x_prev,
-                                const double t, const double dt[],
-                                const bool do_jac)
+void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
+                               const state_type &x,
+                               const state_type_matrix &x_prev, const double t,
+                               const double dt[], const bool do_jac)
 {
     const MKL_INT size = (MKL_INT)(x.size());
 
