@@ -75,10 +75,11 @@ int Solver::operator()(state_type &x, const double t1)
     }
 
     // Check initial time steps
-    m_iterator_state.dt[0] =
+    m_iterator_state.dt_eval =
         (m_iterator_state.dt[0] > (t1 - m_iterator_state.t))
             ? (t1 - m_iterator_state.t)
             : m_iterator_state.dt[0];
+    m_iterator_state.dt[0] = m_iterator_state.dt_eval;
 
     // Initialize the time integrator state structure.
     m_iterator_state.step_counter_local = 0;
@@ -133,10 +134,10 @@ int Solver::operator()(state_type &x, const double t1)
     // Timer starts here
     auto tic0 = clock::now();
 
-    m_iterator_state.t += m_iterator_state.dt[0];
-
     while(m_iterator_state.t < (t1 + m_iterator_state.dt[0] * 0.5))
     {
+        m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
+
         m_iterator_state.step_counter_local++;
         m_steps++;
 
@@ -316,23 +317,19 @@ int Solver::operator()(state_type &x, const double t1)
             continue;  // Re-run the current time step
 
         // Looks like the solver has reached the target time t1
-        if(m_iterator_state.t + m_iterator_state.dt[0] >= t1)
+        if(m_iterator_state.t + m_iterator_state.dt_eval >= t1)
         {
             // Adjust the last time step size
-            double dt_eval = t1 - m_iterator_state.t;
+            double dt_max = t1 - m_iterator_state.t;
 
-            if(std::abs(dt_eval) < m_opt.dt_eps_m)
+            if(std::abs(dt_max) < m_opt.dt_eps_m)
             {
-                // dt[0] could be changed, restore
-                m_iterator_state.dt[0] = m_iterator_state.dt[1];
                 break;  // The solver has reached t1
             }
             else
             {
                 m_iterator_state.final_time_step = true;
-
-                m_iterator_state.dt[1] = m_iterator_state.dt[0];
-                m_iterator_state.dt[0] = dt_eval;
+                m_iterator_state.dt_eval         = dt_max;
             }
         }
 
@@ -343,17 +340,19 @@ int Solver::operator()(state_type &x, const double t1)
         }
         m_x_prev[0] = x;
 
+        // Update time step history
+        m_iterator_state.dt[1] = m_iterator_state.dt[0];
+        m_iterator_state.dt[0] = m_iterator_state.dt_eval;
+
         // Call Observer to provide a user with intermediate results
         observer(x, m_iterator_state.t);
-
-        m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
 
     }  // while t
 
     // Stop timer
     auto tic1 = clock::now();
 
-    // Rewrite solution history
+    // Update solution history
     for(int d = m_opt.bdf_order - 1; d > 0; d--)
     {
         m_x_prev[d] = m_x_prev[d - 1];

@@ -21,8 +21,6 @@ int Solver::m_adaptive_time_stepping(state_type &x,
 {
     if(m_opt.time_stepping == 1)  // S-SATS (Stability-based time stepping)
     {
-        m_iterator_state.dt[1] = m_iterator_state.dt[0];
-
         if(iter < m_opt.dt_increase_threshold)
         {
             m_increase_dt();
@@ -86,8 +84,6 @@ int Solver::m_adaptive_time_stepping(state_type &x,
             return 2;       // Re-run the current iteration
         }
 
-        m_iterator_state.dt[1] = m_iterator_state.dt[0];
-
         // The time step can be increased
         if(eta < m_opt.dt_eta_min)
         {
@@ -113,7 +109,6 @@ int Solver::m_reset_ti_state(state_type &x, const state_type_matrix &x_prev)
     m_iterator_state.final_time_step = false;
     m_iterator_state.dt[0] /= m_opt.dt_decrease_factor;
     m_iterator_state.current_scheme = m_reset_ti_scheme();
-    m_iterator_state.t += m_iterator_state.dt[0];
 
     x = x_prev[0];
 
@@ -136,10 +131,13 @@ int Solver::m_reset_ti_scheme()
  */
 void Solver::m_increase_dt()
 {
-    m_iterator_state.dt[0] *= m_opt.dt_increase_factor;
+    m_iterator_state.dt_eval =
+        m_iterator_state.dt[0] * m_opt.dt_increase_factor;
+
     if(!m_check_dt())
     {
         m_iterator_state.current_scheme = m_reset_ti_scheme();
+
         if(m_opt.verbosity > 0)
             std::cout << '>';
     }
@@ -150,8 +148,11 @@ void Solver::m_increase_dt()
  */
 void Solver::m_decrease_dt()
 {
-    m_iterator_state.dt[0] /= m_opt.dt_decrease_factor;
+    m_iterator_state.dt_eval =
+        m_iterator_state.dt[0] / m_opt.dt_decrease_factor;
+
     m_iterator_state.current_scheme = m_reset_ti_scheme();
+
     if(!m_check_dt() && m_opt.verbosity > 0)
         std::cout << '<';
 }
@@ -161,16 +162,16 @@ void Solver::m_decrease_dt()
  */
 int Solver::m_check_dt()
 {
-    if(m_iterator_state.dt[0] < m_opt.dt_min)
+    if(m_iterator_state.dt_eval < m_opt.dt_min)
     {
         std::cout << "\nERROR: The time step was reduced to "
-                  << m_iterator_state.dt[0]
+                  << m_iterator_state.dt_eval
                   << " but the scheme failed to converge\n";
         return -1;
     }
-    else if(m_iterator_state.dt[0] > m_opt.dt_max)
+    else if(m_iterator_state.dt_eval > m_opt.dt_max)
     {
-        m_iterator_state.dt[0] = m_opt.dt_max;
+        m_iterator_state.dt_eval = m_opt.dt_max;
         return 1;
     }
     else

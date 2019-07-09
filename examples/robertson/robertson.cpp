@@ -224,7 +224,6 @@ int main()
     opt.dt_init               = 1.0e-6;    // Change initial time step
     opt.dt_max                = t1 / 100;  // Set maximum time step
     opt.time_stepping         = 1;         // S-SATS works better here
-    opt.dt_increase_threshold = 2;         // Time step amplification threshold
     opt.atol                  = 1e-6;      // Absolute tolerance
     opt.bdf_order             = 6;         // Set BDF-6
 
