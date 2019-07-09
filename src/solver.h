@@ -30,6 +30,7 @@ class Solver
     {
         double t;                   // current time
         double dt[2];               // current and previous time steps
+        double dt_eval;             // new time step
         int    current_scheme;      // current BDF order
         int    step_counter_local;  // local time step counter
         bool   final_time_step;     // do final time step
@@ -106,7 +107,7 @@ public:
     /*
      * Releases memory. Defined in solver.cpp.
      */
-    ~Solver();
+    virtual ~Solver();
 
     /*
      * Integrates the system of DAEs on the interval t = [t0; t1] and returns

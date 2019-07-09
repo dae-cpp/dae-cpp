@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
 
 #include <mkl_types.h>
 #include <mkl_pardiso.h>
@@ -120,12 +121,17 @@ int Solver::operator()(state_type &x, const double t1)
     // Memory control variables
     int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
 
+    // Initialise clock
+    using clock     = std::chrono::high_resolution_clock;
+    using time_unit = std::chrono::milliseconds;
+
     /*
      * Start the solver
      * =========================================================================
      */
 
-    // TODO: Start timer here
+    // Timer starts here
+    auto tic0 = clock::now();
 
     m_iterator_state.t += m_iterator_state.dt[0];
 
@@ -315,7 +321,7 @@ int Solver::operator()(state_type &x, const double t1)
             // Adjust the last time step size
             double dt_eval = t1 - m_iterator_state.t;
 
-            if(dt_eval == 0.0)
+            if(std::abs(dt_eval) < m_opt.dt_eps_m)
             {
                 // dt[0] could be changed, restore
                 m_iterator_state.dt[0] = m_iterator_state.dt[1];
@@ -344,6 +350,9 @@ int Solver::operator()(state_type &x, const double t1)
 
     }  // while t
 
+    // Stop timer
+    auto tic1 = clock::now();
+
     // Rewrite solution history
     for(int d = m_opt.bdf_order - 1; d > 0; d--)
     {
@@ -358,7 +367,14 @@ int Solver::operator()(state_type &x, const double t1)
     m_iterator_state.dt[1] = m_iterator_state.dt[0];
 
     if(m_opt.verbosity > 0)
+    {
         std::cout << "\nLinear algebra solver calls: " << m_calls << '\n';
+        std::cout
+            << "Time spent by the solver: "
+            << std::chrono::duration_cast<time_unit>(tic1 - tic0).count() /
+                   1000.0
+            << " sec." << '\n';
+    }
 
     // Success
     return 0;
@@ -373,6 +389,8 @@ Solver::~Solver()
     PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size, &m_ddum,
             m_ia, m_ja, &m_idum, &m_nrhs, m_iparm, &m_msglvl, &m_ddum, &m_ddum,
             &m_error);
+
+    delete m_ti;
 }
 
 /*
