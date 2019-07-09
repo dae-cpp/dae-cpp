@@ -120,7 +120,7 @@ int main()
     // MySolver solve_observer(rhs, jac, mass, opt);
 
     // Solver status
-    int status = 0;
+    int status = -1;
 
     // Now we are ready to solve the set of DAEs
     std::cout << "\nStarting DAE solver...\n";
@@ -162,19 +162,13 @@ int main()
     // with a given tolerance:
     dae::Jacobian jac_est(rhs, opt.atol);
 
-    // Create a new instance of the solver for estimated Jacobian
-    dae::Solver solve_slow(rhs, jac_est, mass, opt);
-
+    // Create a new instance of the solver for estimated Jacobian.
     // We have re-used RHS, Mass matrix and the solver options from
     // the previous solution.
-    // Parameters t0 (initial time) and dt_init (initial time step) were
-    // updated by the solver, so we could continue simulation but we want
-    // to start from the scratch:
-    opt.t0      = 0.0;  // Initial integration time
-    opt.dt_init = 0.1;  // Initial time step
+    dae::Solver solve_slow(rhs, jac_est, mass, opt);
 
     // Solver status
-    int status_slow;
+    int status_slow = -1;
 
     // Solve the set of DAEs again
     std::cout << "\nStarting DAE solver with estimated Jacobian...\n";

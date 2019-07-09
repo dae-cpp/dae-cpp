@@ -5,15 +5,49 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
 
 #include <mkl_types.h>
 #include <mkl_pardiso.h>
 
 #include "solver.h"
-#include "time_integrator.h"
 
 namespace daecpp_namespace_name
 {
+
+/*
+ * The solver constructor
+ */
+Solver::Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
+    : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
+{
+    // Initialises the internal solver memory pointer. This is only
+    // necessary for the FIRST call of the PARDISO solver.
+    for(MKL_INT i = 0; i < 64; i++)
+    {
+        m_pt[i] = 0;
+    }
+
+    // Initialises current integration time
+    m_iterator_state.t = opt.t0;
+
+    // Sets initial time steps
+    m_iterator_state.dt[0] = opt.dt_init;
+    m_iterator_state.dt[1] = 0.0;
+
+    // Solver starts the first time step using BDF-1 method
+    // (since it doesn't have enough history yet)
+    m_iterator_state.current_scheme = 1;
+
+    // Initialises the time integrator
+    m_ti = new TimeIntegrator(rhs, jac, mass, opt);
+
+    // Initialises solution history for the time integrator
+    m_x_prev.resize(opt.bdf_order);
+
+    // Loads Intel MKL PARDISO iparm parameter from solver_options class
+    opt.set_iparm_for_pardiso(m_iparm);
+}
 
 /*
  * The main solver
@@ -27,35 +61,29 @@ int Solver::operator()(state_type &x, const double t1)
     // Check user-defined solver options
     m_opt.check_options();
 
+    // We don't need to do anything if t1 == t0. Return initial conditions.
+    if(t1 == m_iterator_state.t)
+        return 0;
+
     // Assert t1 > t0
-    if(t1 <= m_opt.t0)
+    if(t1 < m_iterator_state.t)
     {
         std::cout << "ERROR: Integration time t1 = " << t1
-                  << " cannot be less than the initial time t0 = " << m_opt.t0
-                  << std::endl;
+                  << " cannot be less than the initial time t0 = "
+                  << m_iterator_state.t << std::endl;
         return 1;
     }
 
-    // Check the initial time step
-    m_opt.dt_init =
-        (m_opt.dt_init > (t1 - m_opt.t0)) ? (t1 - m_opt.t0) : m_opt.dt_init;
-
-    // Initial time
-    m_iterator_state.t = m_opt.t0;
-
-    // Initial time step
-    m_iterator_state.dt[0] = m_opt.dt_init;
-    m_iterator_state.dt[1] = m_iterator_state.dt[0];
+    // Check initial time steps
+    m_iterator_state.dt_eval =
+        (m_iterator_state.dt[0] > (t1 - m_iterator_state.t))
+            ? (t1 - m_iterator_state.t)
+            : m_iterator_state.dt[0];
+    m_iterator_state.dt[0] = m_iterator_state.dt_eval;
 
     // Initialize the time integrator state structure.
-    // Solver starts the first time step using BDF-1 method
-    // (since it doesn't have enough history yet)
-    m_iterator_state.current_scheme     = 1;
     m_iterator_state.step_counter_local = 0;
     m_iterator_state.final_time_step    = false;
-
-    // Initialize time integrator
-    TimeIntegrator ti(m_rhs, m_jac, m_mass, m_opt, m_size);
 
     // Initial output
     if(m_opt.verbosity > 1)
@@ -68,8 +96,15 @@ int Solver::operator()(state_type &x, const double t1)
                   << std::endl;
     }
 
-    // Contains a few latest successful time steps for Time Integrator
-    state_type_matrix x_prev(m_opt.bdf_order, state_type(m_size));
+    // Reserve memory for the solution history. This will be done only once
+    if(m_x_prev[0].size() == 0)
+    {
+        for(int i = 0; i < m_opt.bdf_order; i++)
+            m_x_prev[i].resize(m_size);
+    }
+
+    // Copy current state vector into the history vector
+    m_x_prev[0] = x;
 
     // Full Jacobian matrix holder
     sparse_matrix_holder J;
@@ -80,30 +115,29 @@ int Solver::operator()(state_type &x, const double t1)
     // Solution vector used for Newton iterations
     state_type xk(m_size);
 
-    // Copy current state vector into the history vector
-    x_prev[0] = x;
-
     // Reset PARDISO pointers
     m_mkl_b = b.data();
     m_mkl_x = xk.data();
 
-    // Load Intel MKL PARDISO iparm parameter from solver_options class
-    m_opt.set_iparm_for_pardiso(m_iparm);
-
     // Memory control variables
     int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+
+    // Initialise clock
+    using clock     = std::chrono::high_resolution_clock;
+    using time_unit = std::chrono::milliseconds;
 
     /*
      * Start the solver
      * =========================================================================
      */
 
-    // TODO: Start timer here
-
-    m_iterator_state.t += m_iterator_state.dt[0];
+    // Timer starts here
+    auto tic0 = clock::now();
 
     while(m_iterator_state.t < (t1 + m_iterator_state.dt[0] * 0.5))
     {
+        m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
+
         m_iterator_state.step_counter_local++;
         m_steps++;
 
@@ -119,9 +153,11 @@ int Solver::operator()(state_type &x, const double t1)
         if(m_opt.verbosity > 1)
         {
             std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
+            std::cout << "dt=" << m_iterator_state.dt[0]
+                      << ", dt_prev=" << m_iterator_state.dt[1] << ": ";
         }
 
-        ti.set_scheme(m_iterator_state.current_scheme);
+        m_ti->set_scheme(m_iterator_state.current_scheme);
 
         if(m_iterator_state.current_scheme < m_opt.bdf_order)
         {
@@ -136,8 +172,8 @@ int Solver::operator()(state_type &x, const double t1)
             if(m_opt.fact_every_iter || iter == 0)
             {
                 // Time Integrator with updated Jacobian
-                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt,
-                   true);
+                m_ti->integrate(J, b, x, m_x_prev, m_iterator_state.t,
+                                m_iterator_state.dt, true);
 
                 // Jacobian can change its size and can be re-allocated.
                 // Catch up new array addresses.
@@ -200,8 +236,8 @@ int Solver::operator()(state_type &x, const double t1)
             else
             {
                 // Time Integrator with the previous Jacobian
-                ti(J, b, x, x_prev, m_iterator_state.t, m_iterator_state.dt,
-                   false);
+                m_ti->integrate(J, b, x, m_x_prev, m_iterator_state.t,
+                                m_iterator_state.dt, false);
             }
 
             // PHASE 3.
@@ -229,8 +265,7 @@ int Solver::operator()(state_type &x, const double t1)
                 if(adiff > m_opt.value_max || std::isnan(m_mkl_x[i]))
                 {
                     std::cout << "\nERROR: Newton iterations diverged. "
-                              << "Review the tolerances and/or adaptive time "
-                                 "stepping.\n";
+                              << "Review the solver options.\n";
                     return 2;
                 }
 
@@ -261,61 +296,84 @@ int Solver::operator()(state_type &x, const double t1)
         {
             if(m_opt.verbosity > 0)
                 std::cout << " <- redo";
-            if(m_reset_ti_state(x, x_prev))
+            if(m_reset_ti_state(x, m_x_prev))
                 return 3;  // Newton method failed to converge
             continue;
         }
 
         // The solver has reached the target time t1 or the stop condition
         // triggered.
-        if(m_iterator_state.final_time_step)
+        if(m_iterator_state.final_time_step ||
+           m_rhs.stop_condition(x, m_iterator_state.t))
         {
-            break;
-        }
-        else if(m_rhs.stop_condition(x, m_iterator_state.t))
-        {
-            m_iterator_state.dt[1] = m_iterator_state.dt[0];
             break;
         }
 
         // Adaptive time stepping algorithm
-        int status = m_adaptive_time_stepping(x, x_prev, iter);
+        int status = m_adaptive_time_stepping(x, m_x_prev, iter);
         if(status < 0)
             return 4;  // The algorithm failed to converge
         else if(status > 0)
             continue;  // Re-run the current time step
 
         // Looks like the solver has reached the target time t1
-        if(m_iterator_state.t + m_iterator_state.dt[0] >= t1)
+        if(m_iterator_state.t + m_iterator_state.dt_eval >= t1)
         {
-            m_iterator_state.final_time_step = true;
             // Adjust the last time step size
-            m_iterator_state.dt[1] = m_iterator_state.dt[0];
-            m_iterator_state.dt[0] = t1 - m_iterator_state.t;
+            double dt_max = t1 - m_iterator_state.t;
+
+            if(std::abs(dt_max) < m_opt.dt_eps_m)
+            {
+                break;  // The solver has reached t1
+            }
+            else
+            {
+                m_iterator_state.final_time_step = true;
+                m_iterator_state.dt_eval         = dt_max;
+            }
         }
 
         // Rewrite solution history
         for(int d = m_opt.bdf_order - 1; d > 0; d--)
         {
-            x_prev[d] = x_prev[d - 1];
+            m_x_prev[d] = m_x_prev[d - 1];
         }
-        x_prev[0] = x;
+        m_x_prev[0] = x;
+
+        // Update time step history
+        m_iterator_state.dt[1] = m_iterator_state.dt[0];
+        m_iterator_state.dt[0] = m_iterator_state.dt_eval;
 
         // Call Observer to provide a user with intermediate results
         observer(x, m_iterator_state.t);
 
-        m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
-
     }  // while t
+
+    // Stop timer
+    auto tic1 = clock::now();
+
+    // Update solution history
+    for(int d = m_opt.bdf_order - 1; d > 0; d--)
+    {
+        m_x_prev[d] = m_x_prev[d - 1];
+    }
+    m_x_prev[0] = x;
 
     // Catch up the last time step
     observer(x, m_iterator_state.t);
 
-    m_opt.t0      = m_iterator_state.t;
-    m_opt.dt_init = m_iterator_state.dt[1];
+    // Copy the previous time step size
+    m_iterator_state.dt[1] = m_iterator_state.dt[0];
 
     if(m_opt.verbosity > 0)
+    {
         std::cout << "\nLinear algebra solver calls: " << m_calls << '\n';
+        std::cout
+            << "Time spent by the solver: "
+            << std::chrono::duration_cast<time_unit>(tic1 - tic0).count() /
+                   1000.0
+            << " sec." << '\n';
+    }
 
     // Success
     return 0;
@@ -330,6 +388,8 @@ Solver::~Solver()
     PARDISO(m_pt, &m_maxfct, &m_mnum, &m_mtype, &m_phase, &m_size, &m_ddum,
             m_ia, m_ja, &m_idum, &m_nrhs, m_iparm, &m_msglvl, &m_ddum, &m_ddum,
             &m_error);
+
+    delete m_ti;
 }
 
 /*

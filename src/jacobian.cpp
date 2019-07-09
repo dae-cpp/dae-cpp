@@ -198,18 +198,30 @@ void Jacobian::print(const state_type &x, const double t)
               << std::setw(10) << "J.ja |" << std::setw(8) << "J.ia";
     std::cout << "\n-----------------------------------------\n";
 
-    for(std::size_t i = 0; i < J.A.size(); i++)
+    size_t size = (J.A.size() > J.ia.size()) ? J.A.size() : J.ia.size();
+
+    for(std::size_t i = 0; i < size; i++)
     {
-        std::cout << std::setw(7) << i << ": " << std::setw(12) << J.A[i]
-                  << " | ";
+        std::cout << std::setw(7) << i << ": ";
+        std::cout << std::setw(12);
+
+        if(i < J.A.size())
+            std::cout << J.A[i] ;
+        else
+            std::cout << ' ';
+
+        std::cout << " | " << std::setw(7);
 
         if(i < J.ja.size())
-            std::cout << std::setw(7) << J.ja[i] << " | ";
+            std::cout << J.ja[i];
         else
-            std::cout << std::setw(7) << "???"
-                      << " | ";  // Error in Jacobian matrix structure
+            std::cout << ' ';
+
+        std::cout << " | ";
+
         if(i < J.ia.size())
             std::cout << std::setw(7) << J.ia[i];
+
         std::cout << std::endl;
     }
 }

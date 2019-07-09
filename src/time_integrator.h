@@ -67,15 +67,15 @@ class TimeIntegrator
 
 public:
     TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
-                   SolverOptions &opt, const MKL_INT size);
+                   SolverOptions &opt);
 
     ~TimeIntegrator() { mkl_sparse_destroy(m_csrA); }
 
     void set_scheme(int scheme) { m_scheme = scheme; }
 
-    void operator()(sparse_matrix_holder &J, state_type &b, const state_type &x,
-                    const state_type_matrix &x_prev, const double t,
-                    const double dt[], const bool do_jac);
+    void integrate(sparse_matrix_holder &J, state_type &b, const state_type &x,
+                   const state_type_matrix &x_prev, const double t,
+                   const double dt[], const bool do_jac);
 };
 
 }  // namespace daecpp_namespace_name

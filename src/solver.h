@@ -9,6 +9,7 @@
 #include "jacobian.h"
 #include "mass_matrix.h"
 #include "solver_options.h"
+#include "time_integrator.h"
 
 namespace daecpp_namespace_name
 {
@@ -23,10 +24,13 @@ class Solver
 
     SolverOptions &m_opt;  // Solver options
 
+    TimeIntegrator *m_ti;  // Pointer to the time integrator
+
     struct m_iterator_state_struct  // Keeps the current time layer state
     {
         double t;                   // current time
         double dt[2];               // current and previous time steps
+        double dt_eval;             // new time step
         int    current_scheme;      // current BDF order
         int    step_counter_local;  // local time step counter
         bool   final_time_step;     // do final time step
@@ -36,6 +40,9 @@ class Solver
 
     size_t m_steps = 0;  // Total time iteration counter
     size_t m_calls = 0;  // Total linear algebra solver calls counter
+
+    // Contains a few latest successful time steps for the time integrator
+    state_type_matrix m_x_prev;
 
     // Intel MKL PARDISO control parameters
     MKL_INT m_phase;        // Current phase of the solver
@@ -92,23 +99,15 @@ class Solver
 
 public:
     /*
-     * Receives user-defined RHS, Jacobian, Mass matrix and solver options
+     * Receives user-defined RHS, Jacobian, Mass matrix and solver options.
+     * Defined in solver.cpp
      */
-    Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
-        : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
-    {
-        // Initialize the internal solver memory pointer. This is only
-        // necessary for the FIRST call of the PARDISO solver.
-        for(MKL_INT i = 0; i < 64; i++)
-        {
-            m_pt[i] = 0;
-        }
-    }
+    Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt);
 
     /*
      * Releases memory. Defined in solver.cpp.
      */
-    ~Solver();
+    virtual ~Solver();
 
     /*
      * Integrates the system of DAEs on the interval t = [t0; t1] and returns
@@ -127,7 +126,7 @@ public:
      */
     virtual void observer(state_type &x, const double t)
     {
-        return;  // It does nothing by deafult
+        return;  // It does nothing by default
     }
 };
 

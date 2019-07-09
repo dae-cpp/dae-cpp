@@ -10,16 +10,14 @@ namespace daecpp_namespace_name
 {
 
 TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
-                               SolverOptions &opt, const MKL_INT size)
+                               SolverOptions &opt)
     : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
 {
-    // Reserve memory for at least 1-diagonal mass matrix
-    m_M.A.reserve(size);
-    m_M.ja.reserve(size);
-    m_M.ia.reserve(size + 1);
-
     // Get static mass matrix
     m_mass(m_M);
+
+    // Extract the mass matrix size
+    const MKL_INT size = m_M.ia.size() - 1;
 
     // User defined sparse matrix check
     if(m_matrix_checker(m_M, size))
@@ -68,10 +66,10 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     }
 }
 
-void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
-                                const state_type &x, const state_type_matrix &x_prev,
-                                const double t, const double dt[],
-                                const bool do_jac)
+void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
+                               const state_type &x,
+                               const state_type_matrix &x_prev, const double t,
+                               const double dt[], const bool do_jac)
 {
     const MKL_INT size = (MKL_INT)(x.size());
 
@@ -124,6 +122,7 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
 
     if(do_jac)
     {
+        // Clear temporary Jacobian
         m_J.A.clear();
         m_J.ia.clear();
         m_J.ja.clear();
@@ -143,14 +142,18 @@ void TimeIntegrator::operator()(sparse_matrix_holder &J, state_type &b,
             exit(13);
         }
 
+        // Clear previous Jacobian matrix
+        J.A.clear();
+        J.ia.clear();
+        J.ja.clear();
+
         size_t nzmax = m_M.A.size() + m_J.A.size();
 
-        if(J.A.size() != nzmax)
-            J.A.resize(nzmax);
-        if(J.ia.size() != (size_t)(size) + 1)
-            J.ia.resize(size + 1);
-        if(J.ja.size() != nzmax)
-            J.ja.resize(nzmax);
+        // If new size is greater than the current capacity,
+        // a reallocation happens
+        J.A.reserve(nzmax);
+        J.ia.reserve(size + 1);
+        J.ja.reserve(nzmax);
 
         // Replaces deprecated mkl_dcsradd()
         // J: = m_J - M*alpha

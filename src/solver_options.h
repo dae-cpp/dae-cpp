@@ -47,14 +47,14 @@ public:
     double value_max = 1.0e20;  // Solution shouldn't be higher than this
 #else
     double atol      = 1.0e-6;   // Absolute tolerance for the Newton algorithm
-    double dt_eps_m  = 1.0e-12;  // The order of the rounding unit
+    double dt_eps_m  = 1.0e-14;  // The order of the rounding unit
     double value_max = 1.0e100;  // Solution shouldn't be higher than this
 #endif
 
-    // Initial time step -- will store actual last time step after integration
+    // Initial time step
     double dt_init = 0.1;
 
-    // Initial integration time t0 -- will be equal to t1 after integration
+    // Initial integration time t0
     double t0 = 0.0;
 
     // Minimum time step
@@ -68,7 +68,7 @@ public:
     int verbosity = 1;
 
     // Simple Adaptive Time Stepping options
-    int dt_increase_threshold = 3;    // Time step amplification threshold
+    int dt_increase_threshold = 2;    // Time step amplification threshold
                                       // (S-SATS only)
     int dt_decrease_threshold = 7;    // Time step reduction threshold
                                       // (S-SATS only)
