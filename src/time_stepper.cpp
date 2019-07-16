@@ -19,6 +19,8 @@ namespace daecpp_namespace_name
 int Solver::m_adaptive_time_stepping(state_type &x,
                                      const state_type_matrix &x_prev, int iter)
 {
+    m_iterator_state.dt_eval = m_iterator_state.dt[0];
+
     if(m_opt.time_stepping == 1)  // S-SATS (Stability-based time stepping)
     {
         if(iter < m_opt.dt_increase_threshold)
@@ -108,6 +110,7 @@ int Solver::m_reset_ti_state(state_type &x, const state_type_matrix &x_prev)
     m_steps--;
     m_iterator_state.final_time_step = false;
     m_iterator_state.dt[0] /= m_opt.dt_decrease_factor;
+    m_iterator_state.dt_eval = m_iterator_state.dt[0];
     m_iterator_state.current_scheme = m_reset_ti_scheme();
 
     x = x_prev[0];
