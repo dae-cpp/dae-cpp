@@ -3,6 +3,7 @@
  */
 
 #include <iostream>
+#include <chrono>
 
 #include "time_integrator.h"
 
@@ -122,6 +123,10 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
 
     if(do_jac)
     {
+        // Initialise clock
+        using clock     = std::chrono::high_resolution_clock;
+        using time_unit = std::chrono::milliseconds;
+
         // Clear temporary Jacobian
         m_J.A.clear();
         m_J.ia.clear();
@@ -133,7 +138,13 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
         m_J.ja.reserve(3 * size);
 
         // Calculate Jacobian
+        auto tic0 = clock::now();
         m_jac(m_J, x, t);
+        auto tic1 = clock::now();
+
+        // Update Jacobian timer
+        m_jac_time +=
+            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() / 1000.0;
 
         // Sparse matrix check
         if(m_matrix_checker(m_J, size))

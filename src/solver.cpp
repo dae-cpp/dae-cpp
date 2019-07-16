@@ -122,6 +122,12 @@ int Solver::operator()(state_type &x, const double t1)
     // Memory control variables
     int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
 
+    // Reset Jacobian timer
+    m_ti->reset_jac_time();
+
+    // Reset linear algebra solver timer
+    double lin_alg_time = 0.0;
+
     // Initialise clock
     using clock     = std::chrono::high_resolution_clock;
     using time_unit = std::chrono::milliseconds;
@@ -181,6 +187,8 @@ int Solver::operator()(state_type &x, const double t1)
                 m_ia    = J.ia.data();
                 m_ja    = J.ja.data();
 
+                auto tic_phase1 = clock::now();
+
                 // PHASE 1.
                 // Reordering and Symbolic Factorization. This step also
                 // allocates all memory that is necessary for the factorization
@@ -232,6 +240,11 @@ int Solver::operator()(state_type &x, const double t1)
                     m_check_pardiso_error(m_error);
                     return 22;
                 }
+
+                lin_alg_time += std::chrono::duration_cast<time_unit>(
+                                    clock::now() - tic_phase1)
+                                    .count() /
+                                1000.0;
             }
             else
             {
@@ -239,6 +252,8 @@ int Solver::operator()(state_type &x, const double t1)
                 m_ti->integrate(J, b, x, m_x_prev, m_iterator_state.t,
                                 m_iterator_state.dt, false);
             }
+
+            auto tic_phase3 = clock::now();
 
             // PHASE 3.
             // Back substitution and iterative refinement
@@ -253,6 +268,11 @@ int Solver::operator()(state_type &x, const double t1)
                 m_check_pardiso_error(m_error);
                 return 33;
             }
+
+            lin_alg_time +=
+                std::chrono::duration_cast<time_unit>(clock::now() - tic_phase3)
+                    .count() /
+                1000.0;
 
             m_calls++;
 
@@ -367,12 +387,18 @@ int Solver::operator()(state_type &x, const double t1)
 
     if(m_opt.verbosity > 0)
     {
+        double solver_time =
+            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() / 1000.0;
+        double jac_time         = m_ti->get_jac_time();
+        double jac_time_rel     = jac_time / solver_time * 100.0;
+        double lin_alg_time_rel = lin_alg_time / solver_time * 100.0;
         std::cout << "\nLinear algebra solver calls: " << m_calls << '\n';
-        std::cout
-            << "Time spent by the solver: "
-            << std::chrono::duration_cast<time_unit>(tic1 - tic0).count() /
-                   1000.0
-            << " sec." << '\n';
+        std::cout << "Time spent by linear algebra solver: " << lin_alg_time
+                  << " sec. (" << lin_alg_time_rel << "%)" << '\n';
+        std::cout << "Time spent to calculate Jacobian:    " << jac_time
+                  << " sec. (" << jac_time_rel << "%)" << '\n';
+        std::cout << "Total time spent by the solver:      " << solver_time
+                  << " sec. (100.0%)" << '\n';
     }
 
     // Success

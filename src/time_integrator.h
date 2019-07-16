@@ -41,6 +41,9 @@ class TimeIntegrator
     // The first time step will be performed using BDF-1
     int m_scheme = 1;
 
+    // Total time spent to estimate Jacobian, sec.
+    double m_jac_time = 0.0;
+
     // Temporary Jacobian matrix holder
     sparse_matrix_holder m_J;
 
@@ -72,6 +75,10 @@ public:
     ~TimeIntegrator() { mkl_sparse_destroy(m_csrA); }
 
     void set_scheme(int scheme) { m_scheme = scheme; }
+
+    void reset_jac_time() { m_jac_time = 0.0; }
+
+    double get_jac_time() { return m_jac_time; }
 
     void integrate(sparse_matrix_holder &J, state_type &b, const state_type &x,
                    const state_type_matrix &x_prev, const double t,
