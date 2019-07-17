@@ -15,6 +15,10 @@
 #ifndef WITHOUT_NUMPY
 #  define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #  include <numpy/arrayobject.h>
+
+#  ifdef WITH_OPENCV
+#  include <opencv2/opencv.hpp>
+#  endif // WITH_OPENCV
 #endif // WITHOUT_NUMPY
 
 #if PY_MAJOR_VERSION >= 3
@@ -45,6 +49,7 @@ struct _interpreter {
     PyObject *s_python_function_fill;
     PyObject *s_python_function_fill_between;
     PyObject *s_python_function_hist;
+    PyObject *s_python_function_imshow;
     PyObject *s_python_function_scatter;
     PyObject *s_python_function_subplot;
     PyObject *s_python_function_legend;
@@ -82,6 +87,18 @@ struct _interpreter {
     static _interpreter& get() {
         static _interpreter ctx;
         return ctx;
+    }
+
+    PyObject* safe_import(PyObject* module, std::string fname) {
+        PyObject* fn = PyObject_GetAttrString(module, fname.c_str());
+
+        if (!fn)
+            throw std::runtime_error(std::string("Couldn't find required function: ") + fname);
+
+        if (!PyFunction_Check(fn))
+            throw std::runtime_error(fname + std::string(" is unexpectedly not a PyFunction."));
+
+        return fn;
     }
 
 private:
@@ -151,120 +168,48 @@ private:
         Py_DECREF(pylabname);
         if (!pylabmod) { throw std::runtime_error("Error loading module pylab!"); }
 
-        s_python_function_show = PyObject_GetAttrString(pymod, "show");
-        s_python_function_close = PyObject_GetAttrString(pymod, "close");
-        s_python_function_draw = PyObject_GetAttrString(pymod, "draw");
-        s_python_function_pause = PyObject_GetAttrString(pymod, "pause");
-        s_python_function_figure = PyObject_GetAttrString(pymod, "figure");
-        s_python_function_fignum_exists = PyObject_GetAttrString(pymod, "fignum_exists");
-        s_python_function_plot = PyObject_GetAttrString(pymod, "plot");
-        s_python_function_quiver = PyObject_GetAttrString(pymod, "quiver");
-        s_python_function_semilogx = PyObject_GetAttrString(pymod, "semilogx");
-        s_python_function_semilogy = PyObject_GetAttrString(pymod, "semilogy");
-        s_python_function_loglog = PyObject_GetAttrString(pymod, "loglog");
-        s_python_function_fill = PyObject_GetAttrString(pymod, "fill");
-        s_python_function_fill_between = PyObject_GetAttrString(pymod, "fill_between");
-        s_python_function_hist = PyObject_GetAttrString(pymod,"hist");
-        s_python_function_scatter = PyObject_GetAttrString(pymod,"scatter");
-        s_python_function_subplot = PyObject_GetAttrString(pymod, "subplot");
-        s_python_function_legend = PyObject_GetAttrString(pymod, "legend");
-        s_python_function_ylim = PyObject_GetAttrString(pymod, "ylim");
-        s_python_function_title = PyObject_GetAttrString(pymod, "title");
-        s_python_function_axis = PyObject_GetAttrString(pymod, "axis");
-        s_python_function_xlabel = PyObject_GetAttrString(pymod, "xlabel");
-        s_python_function_ylabel = PyObject_GetAttrString(pymod, "ylabel");
-        s_python_function_xticks = PyObject_GetAttrString(pymod, "xticks");
-        s_python_function_yticks = PyObject_GetAttrString(pymod, "yticks");
-        s_python_function_grid = PyObject_GetAttrString(pymod, "grid");
-        s_python_function_xlim = PyObject_GetAttrString(pymod, "xlim");
-        s_python_function_ion = PyObject_GetAttrString(pymod, "ion");
-        s_python_function_ginput = PyObject_GetAttrString(pymod, "ginput");
-        s_python_function_save = PyObject_GetAttrString(pylabmod, "savefig");
-        s_python_function_annotate = PyObject_GetAttrString(pymod,"annotate");
-        s_python_function_clf = PyObject_GetAttrString(pymod, "clf");
-        s_python_function_errorbar = PyObject_GetAttrString(pymod, "errorbar");
-        s_python_function_tight_layout = PyObject_GetAttrString(pymod, "tight_layout");
-        s_python_function_stem = PyObject_GetAttrString(pymod, "stem");
-        s_python_function_xkcd = PyObject_GetAttrString(pymod, "xkcd");
-        s_python_function_text = PyObject_GetAttrString(pymod, "text");
-        s_python_function_suptitle = PyObject_GetAttrString(pymod, "suptitle");
-        s_python_function_bar = PyObject_GetAttrString(pymod,"bar");
-        s_python_function_subplots_adjust = PyObject_GetAttrString(pymod,"subplots_adjust");
-
-        if(    !s_python_function_show
-            || !s_python_function_close
-            || !s_python_function_draw
-            || !s_python_function_pause
-            || !s_python_function_figure
-            || !s_python_function_fignum_exists
-            || !s_python_function_plot
-            || !s_python_function_quiver
-            || !s_python_function_semilogx
-            || !s_python_function_semilogy
-            || !s_python_function_loglog
-            || !s_python_function_fill
-            || !s_python_function_fill_between
-            || !s_python_function_subplot
-            || !s_python_function_legend
-            || !s_python_function_ylim
-            || !s_python_function_title
-            || !s_python_function_axis
-            || !s_python_function_xlabel
-            || !s_python_function_ylabel
-            || !s_python_function_grid
-            || !s_python_function_xlim
-            || !s_python_function_ion
-            || !s_python_function_ginput
-            || !s_python_function_save
-            || !s_python_function_clf
-            || !s_python_function_annotate
-            || !s_python_function_errorbar
-            || !s_python_function_errorbar
-            || !s_python_function_tight_layout
-            || !s_python_function_stem
-            || !s_python_function_xkcd
-            || !s_python_function_text
-            || !s_python_function_suptitle
-            || !s_python_function_bar
-            || !s_python_function_subplots_adjust
-        ) { throw std::runtime_error("Couldn't find required function!"); }
-
-        if (   !PyFunction_Check(s_python_function_show)
-            || !PyFunction_Check(s_python_function_close)
-            || !PyFunction_Check(s_python_function_draw)
-            || !PyFunction_Check(s_python_function_pause)
-            || !PyFunction_Check(s_python_function_figure)
-            || !PyFunction_Check(s_python_function_fignum_exists)
-            || !PyFunction_Check(s_python_function_plot)
-            || !PyFunction_Check(s_python_function_quiver)
-            || !PyFunction_Check(s_python_function_semilogx)
-            || !PyFunction_Check(s_python_function_semilogy)
-            || !PyFunction_Check(s_python_function_loglog)
-            || !PyFunction_Check(s_python_function_fill)
-            || !PyFunction_Check(s_python_function_fill_between)
-            || !PyFunction_Check(s_python_function_subplot)
-            || !PyFunction_Check(s_python_function_legend)
-            || !PyFunction_Check(s_python_function_annotate)
-            || !PyFunction_Check(s_python_function_ylim)
-            || !PyFunction_Check(s_python_function_title)
-            || !PyFunction_Check(s_python_function_axis)
-            || !PyFunction_Check(s_python_function_xlabel)
-            || !PyFunction_Check(s_python_function_ylabel)
-            || !PyFunction_Check(s_python_function_grid)
-            || !PyFunction_Check(s_python_function_xlim)
-            || !PyFunction_Check(s_python_function_ion)
-            || !PyFunction_Check(s_python_function_ginput)
-            || !PyFunction_Check(s_python_function_save)
-            || !PyFunction_Check(s_python_function_clf)
-            || !PyFunction_Check(s_python_function_tight_layout)
-            || !PyFunction_Check(s_python_function_errorbar)
-            || !PyFunction_Check(s_python_function_stem)
-            || !PyFunction_Check(s_python_function_xkcd)
-            || !PyFunction_Check(s_python_function_text)
-            || !PyFunction_Check(s_python_function_suptitle)
-            || !PyFunction_Check(s_python_function_bar)
-            || !PyFunction_Check(s_python_function_subplots_adjust)
-        ) { throw std::runtime_error("Python object is unexpectedly not a PyFunction."); }
+        s_python_function_show = safe_import(pymod, "show");
+        s_python_function_close = safe_import(pymod, "close");
+        s_python_function_draw = safe_import(pymod, "draw");
+        s_python_function_pause = safe_import(pymod, "pause");
+        s_python_function_figure = safe_import(pymod, "figure");
+        s_python_function_fignum_exists = safe_import(pymod, "fignum_exists");
+        s_python_function_plot = safe_import(pymod, "plot");
+        s_python_function_quiver = safe_import(pymod, "quiver");
+        s_python_function_semilogx = safe_import(pymod, "semilogx");
+        s_python_function_semilogy = safe_import(pymod, "semilogy");
+        s_python_function_loglog = safe_import(pymod, "loglog");
+        s_python_function_fill = safe_import(pymod, "fill");
+        s_python_function_fill_between = safe_import(pymod, "fill_between");
+        s_python_function_hist = safe_import(pymod,"hist");
+        s_python_function_scatter = safe_import(pymod,"scatter");
+        s_python_function_subplot = safe_import(pymod, "subplot");
+        s_python_function_legend = safe_import(pymod, "legend");
+        s_python_function_ylim = safe_import(pymod, "ylim");
+        s_python_function_title = safe_import(pymod, "title");
+        s_python_function_axis = safe_import(pymod, "axis");
+        s_python_function_xlabel = safe_import(pymod, "xlabel");
+        s_python_function_ylabel = safe_import(pymod, "ylabel");
+        s_python_function_xticks = safe_import(pymod, "xticks");
+        s_python_function_yticks = safe_import(pymod, "yticks");
+        s_python_function_grid = safe_import(pymod, "grid");
+        s_python_function_xlim = safe_import(pymod, "xlim");
+        s_python_function_ion = safe_import(pymod, "ion");
+        s_python_function_ginput = safe_import(pymod, "ginput");
+        s_python_function_save = safe_import(pylabmod, "savefig");
+        s_python_function_annotate = safe_import(pymod,"annotate");
+        s_python_function_clf = safe_import(pymod, "clf");
+        s_python_function_errorbar = safe_import(pymod, "errorbar");
+        s_python_function_tight_layout = safe_import(pymod, "tight_layout");
+        s_python_function_stem = safe_import(pymod, "stem");
+        s_python_function_xkcd = safe_import(pymod, "xkcd");
+        s_python_function_text = safe_import(pymod, "text");
+        s_python_function_suptitle = safe_import(pymod, "suptitle");
+        s_python_function_bar = safe_import(pymod,"bar");
+        s_python_function_subplots_adjust = safe_import(pymod,"subplots_adjust");
+#ifndef WITHOUT_NUMPY
+        s_python_function_imshow = safe_import(pymod, "imshow");
+#endif
 
         s_python_empty_tuple = PyTuple_New(0);
     }
@@ -622,6 +567,78 @@ bool hist(const std::vector<Numeric>& y, long bins=10,std::string color="b",
 
     return res;
 }
+
+#ifndef WITHOUT_NUMPY
+    namespace internal {
+        void imshow(void *ptr, const NPY_TYPES type, const int rows, const int columns, const int colors, const std::map<std::string, std::string> &keywords)
+        {
+            assert(type == NPY_UINT8 || type == NPY_FLOAT);
+            assert(colors == 1 || colors == 3 || colors == 4);
+
+            detail::_interpreter::get();    //interpreter needs to be initialized for the numpy commands to work
+
+            // construct args
+            npy_intp dims[3] = { rows, columns, colors };
+            PyObject *args = PyTuple_New(1);
+            PyTuple_SetItem(args, 0, PyArray_SimpleNewFromData(colors == 1 ? 2 : 3, dims, type, ptr));
+
+            // construct keyword args
+            PyObject* kwargs = PyDict_New();
+            for(std::map<std::string, std::string>::const_iterator it = keywords.begin(); it != keywords.end(); ++it)
+            {
+                PyDict_SetItemString(kwargs, it->first.c_str(), PyUnicode_FromString(it->second.c_str()));
+            }
+
+            PyObject *res = PyObject_Call(detail::_interpreter::get().s_python_function_imshow, args, kwargs);
+            Py_DECREF(args);
+            Py_DECREF(kwargs);
+            if (!res)
+                throw std::runtime_error("Call to imshow() failed");
+            Py_DECREF(res);
+        }
+    }
+
+    void imshow(const unsigned char *ptr, const int rows, const int columns, const int colors, const std::map<std::string, std::string> &keywords = {})
+    {
+        internal::imshow((void *) ptr, NPY_UINT8, rows, columns, colors, keywords);
+    }
+
+    void imshow(const float *ptr, const int rows, const int columns, const int colors, const std::map<std::string, std::string> &keywords = {})
+    {
+        internal::imshow((void *) ptr, NPY_FLOAT, rows, columns, colors, keywords);
+    }
+
+#ifdef WITH_OPENCV
+    void imshow(const cv::Mat &image, const std::map<std::string, std::string> &keywords = {})
+    {
+        // Convert underlying type of matrix, if needed
+        cv::Mat image2;
+        NPY_TYPES npy_type = NPY_UINT8;
+        switch (image.type() & CV_MAT_DEPTH_MASK) {
+        case CV_8U:
+            image2 = image;
+            break;
+        case CV_32F:
+            image2 = image;
+            npy_type = NPY_FLOAT;
+            break;
+        default:
+            image.convertTo(image2, CV_MAKETYPE(CV_8U, image.channels()));
+        }
+
+        // If color image, convert from BGR to RGB
+        switch (image2.channels()) {
+        case 3:
+            cv::cvtColor(image2, image2, CV_BGR2RGB);
+            break;
+        case 4:
+            cv::cvtColor(image2, image2, CV_BGRA2RGBA);
+        }
+
+        internal::imshow(image2.data, npy_type, image2.rows, image2.cols, image2.channels(), keywords);
+    }
+#endif // WITH_OPENCV
+#endif // WITHOUT_NUMPY
 
 template<typename NumericX, typename NumericY>
 bool scatter(const std::vector<NumericX>& x,
@@ -1045,6 +1062,14 @@ bool plot(const std::vector<Numeric>& y, const std::string& format = "")
 }
 
 template<typename Numeric>
+bool plot(const std::vector<Numeric>& y, const std::map<std::string, std::string>& keywords)
+{
+    std::vector<Numeric> x(y.size());
+    for(size_t i=0; i<x.size(); ++i) x.at(i) = i;
+    return plot(x,y,keywords);
+}
+
+template<typename Numeric>
 bool stem(const std::vector<Numeric>& y, const std::string& format = "")
 {
     std::vector<Numeric> x(y.size());
@@ -1116,6 +1141,9 @@ inline bool fignum_exists(long number)
 
 inline void figure_size(size_t w, size_t h)
 {
+    // Make sure interpreter is initialised
+    detail::_interpreter::get();
+
     const size_t dpi = 100;
     PyObject* size = PyTuple_New(2);
     PyTuple_SetItem(size, 0, PyFloat_FromDouble((double)w / dpi));
