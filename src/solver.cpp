@@ -53,7 +53,7 @@ Solver::Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
  * The main solver
  * =============================================================================
  */
-int Solver::operator()(state_type &x, const double t1)
+int Solver::operator()(state_type &x, double &t1)
 {
     // Set system size
     m_size = (MKL_INT)(x.size());
@@ -371,6 +371,9 @@ int Solver::operator()(state_type &x, const double t1)
 
     // Stop timer
     auto tic1 = clock::now();
+
+    // Update solution time
+    t1 = m_iterator_state.t;
 
     // Update solution history
     for(int d = m_opt.bdf_order - 1; d > 0; d--)

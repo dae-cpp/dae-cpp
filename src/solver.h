@@ -116,7 +116,7 @@ public:
      * The data stored in x (initial conditions) will be overwritten.
      * Returns 0 in case of success or error code if integration is failed.
      */
-    int operator()(state_type &x, const double t1);
+    int operator()(state_type &x, double &t1);
 
     /*
      * Virtual Observer. Called by the solver every time step.

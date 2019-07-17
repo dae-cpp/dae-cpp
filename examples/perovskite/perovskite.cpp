@@ -127,23 +127,27 @@ int main()
 
     {
         auto tic0 = clock::now();
-        status    = solve(x1, p.t1);  // Solve the system without observer
-        // status = solve_observer(x1, p.t1);  // Use observer
+        double t  = p.t1;
+        status    = solve(x1, t);  // Solve the system without observer
+        // status = solve_observer(x1, t);  // Use observer
         auto tic1 = clock::now();
 
         // If we need to produce intermediate results, for example, for
         // t = 1.0, 5.0, 10.0, we can execute the solver several times:
         //
         // auto tic0 = clock::now();
-        // solve(x1, 1.0);
-        // solve(x1, 5.0);
-        // solve(x1, 10.0);
+        // t = 1.0;
+        // solve(x1, t);
+        // t = 5.0;
+        // solve(x1, t);
+        // t = 10.0;
+        // solve(x1, t);
         // auto tic1 = clock::now();
         //
         // After each solver call the vector x1 will contain solution at
         // the corresponding time t. Then it will be re-used as an initial
         // condition for the next solver call, so overall performance will be
-        // almost the same as a single "solve(x1, 10.0);" call.
+        // almost the same as a single "solve(x1, t);" call, where t = 10.
         // Note that a better way to get intermediate results is to override
         // observer function from daecpp::Solver class
 
@@ -175,7 +179,8 @@ int main()
 
     {
         auto tic0   = clock::now();
-        status_slow = solve_slow(x2, p.t1);
+        double t    = p.t1;
+        status_slow = solve_slow(x2, t);
         auto tic1   = clock::now();
 
         std::cout

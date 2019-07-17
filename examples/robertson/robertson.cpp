@@ -197,7 +197,7 @@ public:
 int main()
 {
     // Solution time 0 <= t <= t1
-    const double t1 = 4.0e6;
+    double t1 = 4.0e6;
 
     // Define the state vector
     state_type x(3);
