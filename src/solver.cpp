@@ -385,8 +385,10 @@ int Solver::operator()(state_type &x, double &t1)
     // Catch up the last time step
     observer(x, m_iterator_state.t);
 
-    // Copy the previous time step size
-    m_iterator_state.dt[1] = m_iterator_state.dt[0];
+    // Restore the previous time step size
+    m_iterator_state.dt_eval = m_iterator_state.dt[1];
+    m_iterator_state.dt[1]   = m_iterator_state.dt[0];
+    m_iterator_state.dt[0]   = m_iterator_state.dt_eval;
 
     if(m_opt.verbosity > 0)
     {
