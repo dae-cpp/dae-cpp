@@ -215,7 +215,7 @@ int status = solve(x, t1);
 
 Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>), and **x** is the initial condition vector defined above.
 
-The solver returns 0 if integration is successful or error code otherwise. Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). That's it!
+The solver returns 0 if integration is successful or error code otherwise. Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). The actual integration time *t*<sub>1</sub> will be returned (in case the solver terminates integration earlier). That's it!
 
 #### Optional: Set up Observer
 
