@@ -74,6 +74,10 @@ int Solver::operator()(state_type &x, double &t1)
         return 1;
     }
 
+    // Assert dt > dt_min
+    if(m_iterator_state.dt[0] < m_opt.dt_min)
+        m_iterator_state.dt[0] = m_opt.dt_init;
+
     // Check initial time steps
     m_iterator_state.dt_eval =
         (m_iterator_state.dt[0] > (t1 - m_iterator_state.t))
