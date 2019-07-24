@@ -73,13 +73,13 @@ int Solver::m_adaptive_time_stepping(state_type &x,
         // Monitor function
         double eta = norm1 / (norm2 + m_opt.dt_eps_m);
 
-        if(m_opt.verbosity > 1)
+        if(m_opt.verbosity > 2)
             std::cout << " (eta = " << eta << ")";
 
         // The time step should be reduced, scrape the current time iteration
         if(eta > m_opt.dt_eta_max)
         {
-            if(m_opt.verbosity > 0)
+            if(m_opt.verbosity > 1)
                 std::cout << " <- redo: dt_eta = " << eta;
             if(m_reset_ti_state(x, x_prev))
                 return -2;  // Method failed to converge
@@ -141,7 +141,7 @@ void Solver::m_increase_dt()
     {
         m_iterator_state.current_scheme = m_reset_ti_scheme();
 
-        if(m_opt.verbosity > 0)
+        if(m_opt.verbosity > 1)
             std::cout << '>';
     }
 }
@@ -156,7 +156,7 @@ void Solver::m_decrease_dt()
 
     m_iterator_state.current_scheme = m_reset_ti_scheme();
 
-    if(!m_check_dt() && m_opt.verbosity > 0)
+    if(!m_check_dt() && m_opt.verbosity > 1)
         std::cout << '<';
 }
 

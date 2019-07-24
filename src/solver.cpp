@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include <cmath>
 #include <chrono>
 
@@ -90,9 +91,12 @@ int Solver::operator()(state_type &x, double &t1)
     m_iterator_state.final_time_step    = false;
 
     // Initial output
-    if(m_opt.verbosity > 1)
+    if(m_opt.verbosity > 0)
     {
         std::cout << "Number of equations: " << m_size << std::endl;
+    }
+    if(m_opt.verbosity > 1)
+    {
         std::cout << "Float precision:     " << 8 * sizeof(float_type)
                   << " bit\n";
         std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
@@ -124,7 +128,8 @@ int Solver::operator()(state_type &x, double &t1)
     m_mkl_x = xk.data();
 
     // Memory control variables
-    int peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+    int    peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
+    double total_peak_mem = 0.0;
 
     // Reset Jacobian timer
     m_ti->reset_jac_time();
@@ -134,7 +139,13 @@ int Solver::operator()(state_type &x, double &t1)
 
     // Initialise clock
     using clock     = std::chrono::high_resolution_clock;
-    using time_unit = std::chrono::milliseconds;
+    using time_unit = std::chrono::microseconds;
+
+    if(m_opt.verbosity == 1)
+    {
+        std::cout << "Calculating...";
+        std::cout.flush();
+    }
 
     /*
      * Start the solver
@@ -151,7 +162,7 @@ int Solver::operator()(state_type &x, double &t1)
         m_iterator_state.step_counter_local++;
         m_steps++;
 
-        if(m_opt.verbosity > 0)
+        if(m_opt.verbosity > 1)
         {
             std::cout << std::left;
             std::cout << "\nStep " << std::setw(7) << m_steps
@@ -160,7 +171,7 @@ int Solver::operator()(state_type &x, double &t1)
             std::cout.flush();
         }
 
-        if(m_opt.verbosity > 1)
+        if(m_opt.verbosity > 2)
         {
             std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
             std::cout << "dt=" << m_iterator_state.dt[0]
@@ -201,7 +212,7 @@ int Solver::operator()(state_type &x, double &t1)
                         m_mkl_a, m_ia, m_ja, &m_idum, &m_nrhs, m_iparm,
                         &m_msglvl, &m_ddum, &m_ddum, &m_error);
 
-                if(m_opt.verbosity > 1)
+                if(m_opt.verbosity > 2)
                 {
                     if(m_iparm[14] > peak_mem1 || m_iparm[15] > peak_mem2 ||
                        m_iparm[16] > peak_mem3)
@@ -222,6 +233,11 @@ int Solver::operator()(state_type &x, double &t1)
                                   << (double)peak_mem3 / 1024.0 << " Mb"
                                   << std::endl;
                     }
+                }
+                if(m_opt.verbosity > 0)
+                {
+                    total_peak_mem =
+                        (double)(m_iparm[14] + m_iparm[16]) / 1024.0;
                 }
 
                 if(m_error != 0)
@@ -247,8 +263,8 @@ int Solver::operator()(state_type &x, double &t1)
 
                 lin_alg_time += std::chrono::duration_cast<time_unit>(
                                     clock::now() - tic_phase1)
-                                    .count() /
-                                1000.0;
+                                    .count() *
+                                1e-6;
             }
             else
             {
@@ -275,8 +291,8 @@ int Solver::operator()(state_type &x, double &t1)
 
             lin_alg_time +=
                 std::chrono::duration_cast<time_unit>(clock::now() - tic_phase3)
-                    .count() /
-                1000.0;
+                    .count() *
+                1e-6;
 
             m_calls++;
 
@@ -301,7 +317,7 @@ int Solver::operator()(state_type &x, double &t1)
                 x[i] -= m_mkl_x[i];
             }
 
-            if(m_opt.verbosity > 0)
+            if(m_opt.verbosity > 1)
             {
                 std::cout << "#";
                 std::cout.flush();
@@ -318,7 +334,7 @@ int Solver::operator()(state_type &x, double &t1)
         // Trying to reduce the time step.
         if(iter == m_opt.max_Newton_iter)
         {
-            if(m_opt.verbosity > 0)
+            if(m_opt.verbosity > 1)
                 std::cout << " <- redo";
             if(m_reset_ti_state(x, m_x_prev))
                 return 3;  // Newton method failed to converge
@@ -397,17 +413,35 @@ int Solver::operator()(state_type &x, double &t1)
     if(m_opt.verbosity > 0)
     {
         double solver_time =
-            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() / 1000.0;
-        double jac_time         = m_ti->get_jac_time();
+            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() * 1e-6;
+        double jac_time   = m_ti->get_jac_time();
+        double rhs_time   = m_ti->get_rhs_time();
+        double other_time = solver_time - (lin_alg_time + rhs_time + jac_time);
         double jac_time_rel     = jac_time / solver_time * 100.0;
+        double rhs_time_rel     = rhs_time / solver_time * 100.0;
         double lin_alg_time_rel = lin_alg_time / solver_time * 100.0;
-        std::cout << "\nLinear algebra solver calls: " << m_calls << '\n';
-        std::cout << "Time spent by linear algebra solver: " << lin_alg_time
-                  << " sec. (" << lin_alg_time_rel << "%)" << '\n';
-        std::cout << "Time spent to calculate Jacobian:    " << jac_time
-                  << " sec. (" << jac_time_rel << "%)" << '\n';
-        std::cout << "Total time spent by the solver:      " << solver_time
-                  << " sec. (100.0%)" << '\n';
+        double other_time_rel =
+            100.0 - (lin_alg_time_rel + rhs_time_rel + jac_time_rel);
+
+        std::stringstream ss;
+
+        ss << std::setprecision(3);
+        ss << "\nLinear algebra solver calls: " << m_calls << '\n';
+        ss << "Peak memory for the linear solver: " << total_peak_mem << " Mb"
+           << std::endl;
+        ss << "Time spent:\n  by linear algebra solver:     " << lin_alg_time
+           << " sec. (" << lin_alg_time_rel << "%)" << '\n';
+        ss << "  to calculate the RHS:         " << rhs_time << " sec. ("
+           << rhs_time_rel << "%)" << '\n';
+        ss << "  to calculate Jacobian:        " << jac_time << " sec. ("
+           << jac_time_rel << "%)" << '\n';
+        ss << "  other calculations:           " << other_time << " sec. ("
+           << other_time_rel << "%)" << '\n';
+        ss << "Total time spent by the solver: " << solver_time
+           << " sec. (100.0%)" << '\n';
+        ss << std::endl;
+
+        std::cout << ss.str();
     }
 
     // Success

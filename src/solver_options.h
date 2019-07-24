@@ -19,6 +19,8 @@ public:
     // are available than specified, the execution may slow down instead of
     // speeding up. If MKL_NUM_THREADS is not defined, then the solver uses all
     // available processors.
+    // In order to control the parallel execution of the numerical Jacobian, use
+    // OMP_NUM_THREADS environment variable (uses all cores by default).
 
     // Perform Jacobian update, Reordering, Symbolic and Numerical Factorization
     // every Newton iteration. Changing to 'false' can increase speed but also
@@ -64,8 +66,8 @@ public:
     double dt_max = 1.0 / dt_eps_m;
 
     // Verbosity level of the solver:
-    // 0 - be silent, 1 - prints some basic information, 2 - chatterbox
-    int verbosity = 1;
+    // 0 - silent, 1 - basic information, 2 - time stepping info, 3 - all info
+    int verbosity = 2;
 
     // Simple Adaptive Time Stepping options
     int dt_increase_threshold = 2;    // Time step amplification threshold

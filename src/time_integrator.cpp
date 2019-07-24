@@ -109,8 +109,20 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
         alpha = invdt * ALPHA_COEF[scheme];
     }
 
-    // Calculate RHS
-    m_rhs(x, b, t);
+    // Initialise clock
+    using clock     = std::chrono::high_resolution_clock;
+    using time_unit = std::chrono::microseconds;
+
+    // Calculate the RHS
+    {
+        auto tic0 = clock::now();
+        m_rhs(x, b, t);
+        auto tic1 = clock::now();
+
+        // Update the RHS timer
+        m_rhs_time +=
+            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() * 1e-6;
+    }
 
     // b := -M * dxdt + b
 #ifdef DAE_SINGLE
@@ -123,10 +135,6 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
 
     if(do_jac)
     {
-        // Initialise clock
-        using clock     = std::chrono::high_resolution_clock;
-        using time_unit = std::chrono::milliseconds;
-
         // Clear temporary Jacobian
         m_J.A.clear();
         m_J.ia.clear();
@@ -144,7 +152,7 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
 
         // Update Jacobian timer
         m_jac_time +=
-            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() / 1000.0;
+            std::chrono::duration_cast<time_unit>(tic1 - tic0).count() * 1e-6;
 
         // Sparse matrix check
         if(m_matrix_checker(m_J, size))

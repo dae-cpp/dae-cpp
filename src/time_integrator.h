@@ -44,6 +44,9 @@ class TimeIntegrator
     // Total time spent to estimate Jacobian, sec.
     double m_jac_time = 0.0;
 
+    // Total time spent to calculate the RHS, sec.
+    double m_rhs_time = 0.0;
+
     // Temporary Jacobian matrix holder
     sparse_matrix_holder m_J;
 
@@ -79,6 +82,8 @@ public:
     void reset_jac_time() { m_jac_time = 0.0; }
 
     double get_jac_time() { return m_jac_time; }
+
+    double get_rhs_time() { return m_rhs_time; }
 
     void integrate(sparse_matrix_holder &J, state_type &b, const state_type &x,
                    const state_type_matrix &x_prev, const double t,
