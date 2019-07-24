@@ -27,6 +27,10 @@ public:
     // can lead to instability.
     bool fact_every_iter = true;
 
+    // If fact_every_iter = false, update Jacobian every fact_iter Newton
+    // iterations
+    int fact_iter = 15;
+
     // Order of BDF implicit numerical integration method:
     // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
     // Default is BDF-2 since it fully supports variable time stepping
@@ -78,6 +82,10 @@ public:
     double dt_decrease_factor = 2.0;  // Time step reduction factor
     double dt_eta_min = 0.05;  // Monitor function lower threshold (V-SATS only)
     double dt_eta_max = 0.5;  // Monitor function higher threshold (V-SATS only)
+
+    // Try to roll back and reduce the time step if Newton iterations diverged.
+    // Otherwise stop with error message.
+    bool redo_newton = false;
 
     // 1 - V-SATS will use NORM_infinity to estimate solution variability,
     // 2 - V-SATS will use NORM_2 (default)

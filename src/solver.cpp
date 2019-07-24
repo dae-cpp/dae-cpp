@@ -190,7 +190,7 @@ int Solver::operator()(state_type &x, double &t1)
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
             // Reordering, Symbolic and Numerical Factorization
-            if(m_opt.fact_every_iter || iter == 0)
+            if(m_opt.fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
             {
                 // Time Integrator with updated Jacobian
                 m_ti->integrate(J, b, x, m_x_prev, m_iterator_state.t,
@@ -304,9 +304,23 @@ int Solver::operator()(state_type &x, double &t1)
 
                 if(adiff > m_opt.value_max || std::isnan(m_mkl_x[i]))
                 {
-                    std::cout << "\nERROR: Newton iterations diverged. "
-                              << "Review the solver options.\n";
-                    return 2;
+                    if(!m_opt.redo_newton || m_opt.verbosity > 1)
+                    {
+                        std::cout << "\nNewton iterations diverged. "
+                                  << "Review the solver options.\n";
+                    }
+
+                    if(m_opt.redo_newton)
+                    {
+                        if(m_opt.verbosity > 1)
+                            std::cout << "Trying to recover...\n";
+                        iter = m_opt.max_Newton_iter;
+                        break;
+                    }
+                    else
+                    {
+                        return 2;
+                    }
                 }
 
                 if(adiff > tol)
