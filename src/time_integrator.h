@@ -81,6 +81,8 @@ public:
 
     void reset_jac_time() { m_jac_time = 0.0; }
 
+    void reset_rhs_time() { m_rhs_time = 0.0; }
+
     double get_jac_time() { return m_jac_time; }
 
     double get_rhs_time() { return m_rhs_time; }

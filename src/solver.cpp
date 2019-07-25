@@ -131,8 +131,9 @@ int Solver::operator()(state_type &x, double &t1)
     int    peak_mem1 = 0, peak_mem2 = 0, peak_mem3 = 0;
     double total_peak_mem = 0.0;
 
-    // Reset Jacobian timer
+    // Reset time integrator timers
     m_ti->reset_jac_time();
+    m_ti->reset_rhs_time();
 
     // Reset linear algebra solver timer
     double lin_alg_time = 0.0;
