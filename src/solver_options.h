@@ -49,10 +49,12 @@ public:
 
 #ifdef DAE_SINGLE
     double atol      = 1.0e-3;  // Absolute tolerance for the Newton algorithm
+    double rtol      = 1.0e-6;  // Relative tolerance for the Newton algorithm
     double dt_eps_m  = 1.0e-6;  // The order of the rounding unit
     double value_max = 1.0e20;  // Solution shouldn't be higher than this
 #else
     double atol      = 1.0e-6;   // Absolute tolerance for the Newton algorithm
+    double rtol      = 1.0e-6;   // Relative tolerance for the Newton algorithm
     double dt_eps_m  = 1.0e-14;  // The order of the rounding unit
     double value_max = 1.0e100;  // Solution shouldn't be higher than this
 #endif

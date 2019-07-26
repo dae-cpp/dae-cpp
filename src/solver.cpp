@@ -301,7 +301,7 @@ int Solver::operator()(state_type &x, double &t1)
             calls++;
             m_calls++;
 
-            double tol = 0.0;
+            bool is_converged = true;
 
             for(MKL_INT i = 0; i < m_size; i++)
             {
@@ -328,9 +328,23 @@ int Solver::operator()(state_type &x, double &t1)
                     }
                 }
 
-                if(adiff > tol)
+                if(is_converged)
                 {
-                    tol = adiff;
+                    if(x[i] != 0.0)
+                    {
+                        double rdiff = adiff / std::abs(x[i]);
+                        if(adiff > m_opt.atol && rdiff > m_opt.rtol)
+                        {
+                            is_converged = false;
+                        }
+                    }
+                    else
+                    {
+                        if(adiff > m_opt.atol)
+                        {
+                            is_converged = false;
+                        }
+                    }
                 }
 
                 x[i] -= m_mkl_x[i];
@@ -342,7 +356,7 @@ int Solver::operator()(state_type &x, double &t1)
                 std::cout.flush();
             }
 
-            if(tol < m_opt.atol)
+            if(is_converged)
             {
                 break;
             }
