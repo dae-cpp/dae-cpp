@@ -41,6 +41,15 @@ class Solver
     size_t m_steps = 0;  // Total time iteration counter
     size_t m_calls = 0;  // Total linear algebra solver calls counter
 
+    // Count the number of the DAE solver calls (for output)
+    size_t m_dae_solver_calls = 0;
+
+    // Timers
+    double m_timer_lin = 0;
+    double m_timer_rhs = 0;
+    double m_timer_jac = 0;
+    double m_timer_tot = 0;
+
     // Contains a few latest successful time steps for the time integrator
     state_type_matrix m_x_prev;
 

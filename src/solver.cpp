@@ -142,6 +142,9 @@ int Solver::operator()(state_type &x, double &t1)
     using clock     = std::chrono::high_resolution_clock;
     using time_unit = std::chrono::microseconds;
 
+    // Counts linear solver calls
+    size_t calls = 0;
+
     if(m_opt.verbosity == 1)
     {
         std::cout << "Calculating...";
@@ -295,6 +298,7 @@ int Solver::operator()(state_type &x, double &t1)
                     .count() *
                 1e-6;
 
+            calls++;
             m_calls++;
 
             double tol = 0.0;
@@ -425,6 +429,7 @@ int Solver::operator()(state_type &x, double &t1)
     m_iterator_state.dt[1]   = m_iterator_state.dt[0];
     m_iterator_state.dt[0]   = m_iterator_state.dt_eval;
 
+    // Final output
     if(m_opt.verbosity > 0)
     {
         double solver_time =
@@ -438,28 +443,53 @@ int Solver::operator()(state_type &x, double &t1)
         double other_time_rel =
             100.0 - (lin_alg_time_rel + rhs_time_rel + jac_time_rel);
 
+        m_timer_lin += lin_alg_time;
+        m_timer_rhs += rhs_time;
+        m_timer_jac += jac_time;
+        m_timer_tot += solver_time;
+
+        double timer_other =
+            m_timer_tot - (m_timer_lin + m_timer_rhs + m_timer_jac);
+
         std::stringstream ss;
 
-        ss << std::setprecision(3);
-        ss << "\nLinear algebra solver calls: " << m_calls << '\n';
-        ss << "Peak memory for the linear solver: " << total_peak_mem << " Mb"
-           << std::endl;
+        ss << std::fixed << std::setprecision(3);
+        ss << "\nLinear algebra solver calls:       " << calls;
+        if(m_dae_solver_calls)
+            ss << " (" << m_calls << " total)";
+        ss << "\nPeak memory for the linear solver: " << total_peak_mem
+           << " Mb\n";
         ss << "Time spent:\n  by linear algebra solver:     " << lin_alg_time
-           << " sec. (" << lin_alg_time_rel << "%)" << '\n';
-        ss << "  to calculate the RHS:         " << rhs_time << " sec. ("
-           << rhs_time_rel << "%)" << '\n';
-        ss << "  to calculate Jacobian:        " << jac_time << " sec. ("
-           << jac_time_rel << "%)" << '\n';
-        ss << "  other calculations:           " << other_time << " sec. ("
-           << other_time_rel << "%)" << '\n';
-        ss << "Total time spent by the solver: " << solver_time
-           << " sec. (100.0%)" << '\n';
-        ss << std::endl;
+           << " sec. (" << lin_alg_time_rel << "%)";
+        if(m_dae_solver_calls)
+            ss << " --> " << m_timer_lin << " sec. ("
+               << m_timer_lin / m_timer_tot * 100.0 << "%)";
+        ss << "\n  to calculate the RHS:         " << rhs_time << " sec. ("
+           << rhs_time_rel << "%)";
+        if(m_dae_solver_calls)
+            ss << " --> " << m_timer_rhs << " sec. ("
+               << m_timer_rhs / m_timer_tot * 100.0 << "%)";
+        ss << "\n  to calculate Jacobian:        " << jac_time << " sec. ("
+           << jac_time_rel << "%)";
+        if(m_dae_solver_calls)
+            ss << " --> " << m_timer_jac << " sec. ("
+               << m_timer_jac / m_timer_tot * 100.0 << "%)";
+        ss << "\n  other calculations:           " << other_time << " sec. ("
+           << other_time_rel << "%)";
+        if(m_dae_solver_calls)
+            ss << " --> " << timer_other << " sec. ("
+               << timer_other / m_timer_tot * 100.0 << "%)";
+        ss << "\nTotal time spent by the solver: " << solver_time
+           << " sec. (100.0%)";
+        if(m_dae_solver_calls)
+            ss << " --> " << m_timer_tot << " sec. (100.0%)";
+        ss << "\n\n";
 
         std::cout << ss.str();
     }
 
     // Success
+    m_dae_solver_calls++;
     return 0;
 }
 
