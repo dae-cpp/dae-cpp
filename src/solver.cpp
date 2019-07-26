@@ -22,6 +22,16 @@ namespace daecpp_namespace_name
 Solver::Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
     : m_rhs(rhs), m_jac(jac), m_mass(mass), m_opt(opt)
 {
+    // Initial output
+    if(m_opt.verbosity > 1)
+    {
+        std::cout << "Float precision:     " << 8 * sizeof(float_type)
+            << " bit\n";
+        std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
+        std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order
+            << std::endl;
+    }
+
     // Initialises the internal solver memory pointer. This is only
     // necessary for the FIRST call of the PARDISO solver.
     for(MKL_INT i = 0; i < 64; i++)
@@ -94,14 +104,6 @@ int Solver::operator()(state_type &x, double &t1)
     if(m_opt.verbosity > 0)
     {
         std::cout << "Number of equations: " << m_size << std::endl;
-    }
-    if(m_opt.verbosity > 1)
-    {
-        std::cout << "Float precision:     " << 8 * sizeof(float_type)
-                  << " bit\n";
-        std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
-        std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order
-                  << std::endl;
     }
 
     // Reserve memory for the solution history. This will be done only once
