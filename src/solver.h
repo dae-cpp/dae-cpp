@@ -16,13 +16,16 @@ namespace daecpp_namespace_name
 
 class Solver
 {
+protected:
+    // Expose solver options for the observer in the children classes
+    SolverOptions &m_opt;  // Solver options
+
+private:
     RHS &m_rhs;  // RHS
 
     Jacobian &m_jac;  // Jacobian matrix
 
     MassMatrix &m_mass;  // Mass matrix
-
-    SolverOptions &m_opt;  // Solver options
 
     TimeIntegrator *m_ti;  // Pointer to the time integrator
 
