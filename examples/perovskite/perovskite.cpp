@@ -116,7 +116,7 @@ int main()
     // step, we can override observer function in Solver class and, for example,
     // print out some results while the solver solves the system.
     // See perovskite_observer.h as an example.
-    // Instanse of the solver with the user-defined observer:
+    // Instance of the solver with the user-defined observer:
     // MySolver solve_observer(rhs, jac, mass, opt);
 
     // Solver status
@@ -135,14 +135,12 @@ int main()
         // If we need to produce intermediate results, for example, for
         // t = 1.0, 5.0, 10.0, we can execute the solver several times:
         //
-        // auto tic0 = clock::now();
         // t = 1.0;
         // solve(x1, t);
         // t = 5.0;
         // solve(x1, t);
         // t = 10.0;
         // solve(x1, t);
-        // auto tic1 = clock::now();
         //
         // After each solver call the vector x1 will contain solution at
         // the corresponding time t. Then it will be re-used as an initial
@@ -220,12 +218,14 @@ int main()
     plt::save(filename);
 #endif
 
-    if(check_result || status || status_slow)
+    const bool check = (check_result || status || status_slow);
+
+    if(check)
         std::cout << "...Test FAILED\n\n";
     else
         std::cout << "...done\n\n";
 
-    return check_result;
+    return check;
 }
 
 /*
