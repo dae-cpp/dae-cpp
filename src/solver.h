@@ -16,11 +16,6 @@ namespace daecpp_namespace_name
 
 class Solver
 {
-protected:
-    // Expose solver options for the observer in the children classes
-    SolverOptions &m_opt;  // Solver options
-
-private:
     RHS &m_rhs;  // RHS
 
     Jacobian &m_jac;  // Jacobian matrix
@@ -108,6 +103,12 @@ private:
 
     // Checks PARDISO solver error messages
     void m_check_pardiso_error(MKL_INT err);
+
+protected:
+    /*
+     * Expose solver options for the observer in the children classes
+     */
+    SolverOptions &m_opt;  // Solver options
 
 public:
     /*
