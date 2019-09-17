@@ -193,13 +193,13 @@ int main()
 
     // Plot the results
 #ifdef PLOTTING
-    dae::state_type x_axis(N), P(N), Phi(N);
+    dae::state_type x_axis(p.N), P(p.N), Phi(p.N);
 
-    for(MKL_INT i = 0; i < N; i++)
+    for(MKL_INT i = 0; i < p.N; i++)
     {
-        x_axis[i] = (double)(i) / (N - 1);
+        x_axis[i] = (double)(i) / (p.N - 1);
         P[i]      = x1[i];
-        Phi[i]    = x1[i + N];
+        Phi[i]    = x1[i + p.N];
     }
 
     plt::figure();

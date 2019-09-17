@@ -122,7 +122,7 @@ During this test the solver will solve DAE systems from [examples](https://githu
 
 ### Windows
 
-Download and install compiler (e.g. [Microsoft Visual Studio](https://visualstudio.microsoft.com/downloads/)) and [Python 3](https://www.python.org/downloads) with `numpy` and `matplotlib` modules (for plotting, optional). Choose 32-bit version of Python 3 for better compatibility.
+Download and install compiler (e.g. [Microsoft Visual Studio](https://visualstudio.microsoft.com/downloads/)) and [Python 3](https://www.python.org/downloads/windows/) with `numpy` and `matplotlib` modules (for plotting, optional).
 
 Download and install [Git](https://git-scm.com/download/win) and [CMake](https://cmake.org/download/) for Windows.
 
@@ -139,7 +139,7 @@ Then from `Git Bash` command line clone dae-cpp library (you may need to create 
 git clone https://github.com/ikorotkin/dae-cpp.git
 ```
 
-Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and the target directory (it will contain Visual Studio project files). Press "Configure" button. If asked, leave default compiler for the project and default platform (Win32).
+Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and the target directory (it will contain Visual Studio project files). Press "Configure" button.
 
 If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see [More building options](https://github.com/ikorotkin/dae-cpp#more-building-options) above) and re-configure the project.
 
@@ -147,15 +147,11 @@ If configuration is successful, press "Configure" again to update the cache and 
 
 Double-click on `dae-cpp.sln` to open Visual Studio with the project. Do not forget to change Solution Configuration from `Debug` to `Release`. Compile the solution (`F7` by default). After compilation, the executable files can be found in `Release` folder.
 
-Note that in order to execute the tests (for example, `robertson.exe`) from `Release` folder you need to set up Intel MKL environment variables by executing `mklvars.bat ia32` from `cmd`. For example, by default:
+Note that in order to execute the tests (for example, `robertson.exe`) from `Release` folder, you need to set up Intel MKL environment variables by executing `mklvars.bat intel64` or `mklvars.bat ia32` (depending on the target platform) from `cmd`. By default `mklvars.bat` is located in MKL root folder in `bin` subdirectory, for example:
 
 ```bash
-cd <Path_to_Release_DIRECTORY>
-"C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" ia32
-robertson.exe
+"C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" intel64
 ```
-
-where `<Path_to_Release_DIRECTORY>` is the full path to the `Release` directory with executables.
 
 An example of default solution file for Microsoft Visual Studio 15 (2017) is given in [msvc](https://github.com/ikorotkin/dae-cpp/tree/master/msvc) folder. Unpack the zip-archive into the current directory and open dae-cpp.sln. Note that you may need to retarget solution and change the paths to Intel MKL library.
 

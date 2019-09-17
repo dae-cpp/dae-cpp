@@ -39,8 +39,15 @@ set(DAE_MKL_DIR "${MKL_ROOT_DIR}" CACHE STRING "Path to Intel MKL root directory
 find_path(DAE_MKL_INCLUDE NAMES mkl.h HINTS ${MKL_ROOT_DIR}/include)
 
 if(WIN32)
-  set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/ia32_win")
-  set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/ia32_win")
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # 64 bits
+    set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/intel64_win")
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/intel64_win")
+  elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # 32 bits
+    set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/ia32_win")
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/ia32_win")
+  endif()
 else(WIN32)
   if(EXISTS ${DAE_MKL_DIR}/lib/intel64)
     set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/intel64")
@@ -131,7 +138,13 @@ if(DAE_BUILD_EXAMPLES)
   set(EXAMPLE_LIST "perovskite" "diffusion_2d" "robertson")
 
   if(WIN32)
-    find_library(LIB_MKL_INTEL_LP64 mkl_intel_c.lib HINTS ${DAE_MKL_LIB})
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      # 64 bits
+      find_library(LIB_MKL_INTEL_LP64 mkl_intel_lp64.lib HINTS ${DAE_MKL_LIB})
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+      # 32 bits
+      find_library(LIB_MKL_INTEL_LP64 mkl_intel_c.lib HINTS ${DAE_MKL_LIB})
+    endif()
     find_library(LIB_MKL_THREAD mkl_intel_thread.lib HINTS ${DAE_MKL_LIB})
     find_library(LIB_MKL_CORE mkl_core.lib HINTS ${DAE_MKL_LIB})
     find_library(LIB_INTEL_OPENMP libiomp5md.lib HINTS ${DAE_INTEL_LIB})
@@ -165,7 +178,7 @@ if(DAE_BUILD_EXAMPLES)
     target_link_libraries(${EXAMPLE_NAME} ${LIB_MKL_INTEL_LP64} ${LIB_MKL_THREAD} ${LIB_MKL_CORE} ${LIB_INTEL_OPENMP} ${LIB_PTHREAD} ${LIB_MATH} ${LIB_DL})
 
     if(PLOTTING)
-      target_link_libraries(${PROJECT_NAME} ${PYTHON_LIB})
+      target_link_libraries(${EXAMPLE_NAME} ${PYTHON_LIB})
     endif(PLOTTING)
 
     install(TARGETS ${EXAMPLE_NAME} DESTINATION bin)
