@@ -34,7 +34,7 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 
 ## Installation
 
-This is a cross-platform software that should work on both Linux (e.g. Ubuntu) and Windows. It should work under macOS as well (but not tested yet). The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos).
+This is a cross-platform software that should work on both Linux (e.g. Ubuntu) and Windows. It should work under macOS as well (but not tested yet). The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, the latest version and Full Package.
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -80,22 +80,22 @@ Then download dae-cpp library:
 git clone https://github.com/ikorotkin/dae-cpp.git
 ```
 
-The easiest way to install the library and compile all examples is just to create a new directory and then execute `cmake` and `make`:
+The easiest way to install the library and compile all examples is just to create the build directory, then execute `cmake` (providing installation path) and `make`:
 
 ```bash
 cd dae-cpp
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=/install/path ..
+cmake -DCMAKE_INSTALL_PREFIX=/install_path ..
 make
 make install
 ```
 
-where `/install/path` is the user-defined path where the package should be installed.
+where `/install_path` is the user-defined path where the package should be installed.
 
-Note that `cmake` will try to find Intel MKL at its default location: `/opt/intel/mkl`. If the installation path is different, please provide it with the following `cmake` option: `-DDAE_MKL_DIR=/path/to/intel/mkl/root/dir`.
+Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`..
 
-Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install/path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
+Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install_path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
 
 #### Test the solver
 
@@ -114,10 +114,103 @@ During this test the solver will solve DAE systems from [examples](https://githu
 -   `DAE_SINGLE` - If ON, the single precision will be used in the solver instead of double. Single precision may ruin the accuracy. It is highly recommended to leave this option OFF. This option exists for the future compatibility with CUDA implementations of the solver.
 -   `DAE_BUILD_EXAMPLES` - Build all the examples, ON by default.
 -   `DAE_TEST` - Build automatic solver test, ON by default. The test can be executed by the command `ctest` from the building directory.
+-   `DAE_MKL_DIR` - Defines a path to Intel MKL root directory (usually `/opt/intel/mkl`).
+-   `PLOTTING` - Use [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting, `OFF` by default. If `ON`, `cmake` will try to find Python and `numpy` include directories and libraries.
+-   `PYTHON_INCLUDE` - Only if `PLOTTING=ON`, defines a path to Python include file (`Python.h`) for plotting.
+-   `PYTHON_NUMPY_INCLUDE` - Only if `PLOTTING=ON`, defines a path to Python `numpy` include file (`numpy/arrayobject.h`) for plotting.
+-   `PYTHON_LIB` - Only if `PLOTTING=ON`, defines Python library (e.g. `libpython3.6m`) for plotting.
 
 ### Windows
 
+Download and install compiler (e.g. [Microsoft Visual Studio](https://visualstudio.microsoft.com/downloads/)) and [Python 3](https://www.python.org/downloads) with `numpy` and `matplotlib` modules (for plotting, optional). Choose 32-bit version of Python 3 for better compatibility.
+
+Download and install [Git](https://git-scm.com/download/win) and [CMake](https://cmake.org/download/) for Windows.
+
+Note if you install `git` for the first time you will need to configure it. Start `Git Bash` and use the following commands (change `Your Name` and `your@email` to your full name and email):
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email your@email
+```
+
+Then from `Git Bash` command line clone dae-cpp library (you may need to create a working directory first):
+
+```bash
+git clone https://github.com/ikorotkin/dae-cpp.git
+```
+
+Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and the target directory (it will contain Visual Studio project files). Press "Configure" button. If asked, leave default compiler for the project and default platform (Win32).
+
+If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see `More building options` above) and re-configure the project.
+
+If configuration is successful, press "Configure" again to update the cache and then "Generate". In the target directory you will find Visual Studio project files.
+
+Double-click on `dae-cpp.sln` to open Visual Studio with the project. Do not forget to change Solution Configuration from `Debug` to `Release`. Compile the solution (`F7` by default). After compilation, the executable files can be found in `Release` folder.
+
+Note that in order to execute the tests (for example, `robertson.exe`) from `Release` folder you need to set up Intel MKL environment variables by executing `mklvars.bat ia32` from `cmd`. For example, by default:
+
+```bash
+cd <Path_to_Release_DIRECTORY>
+"C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" ia32
+robertson.exe
+```
+
+where `<Path_to_Release_DIRECTORY>` is the full path to the `Release` directory with executables.
+
 An example of default solution file for Microsoft Visual Studio 15 (2017) is given in [msvc](https://github.com/ikorotkin/dae-cpp/tree/master/msvc) folder. Unpack the zip-archive into the current directory and open dae-cpp.sln. Note that you may need to retarget solution and change the paths to Intel MKL library.
+
+### Mac
+
+Make sure you have installed: `git`, `cmake` and, optional, Python 3 with `numpy` and `matplotlib` modules (for plotting). If these packages are not installed yet, you may install [Homebrew](https://brew.sh/) (package manager for macOS), then install all necessary packages:
+
+```bash
+brew install cmake git python
+pip install numpy matplotlib
+```
+
+Note if you install `git` for the first time you will need to configure it (change `Your Name` and `your@email` to your full name and email):
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email your@email
+```
+
+Then from a working directory download dae-cpp library source files:
+
+```bash
+git clone https://github.com/ikorotkin/dae-cpp.git
+```
+
+The easiest way to install the library and compile all examples is just to create the build directory, then execute `cmake` (providing installation path) and `make`:
+
+```bash
+cd dae-cpp
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/install_path ..
+make
+make install
+```
+
+where `/install_path` is the user-defined path where the package should be installed.
+
+Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`..
+
+Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install_path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
+
+**_Note_** that Apple-provided default C++ compiler (`clang`) does not support OpenMP out of the box. So you may need to install either OpenMP for `clang` or an alternative C++ compiler (e.g. `gcc`):
+
+```bash
+brew install llvm libomp
+```
+
+or
+
+```bash
+brew install gcc
+```
+
+If alternative compiler is installed (for example, `gcc-7`), provide its name for `cmake` using the following options: `-DCMAKE_CXX_COMPILER=g++-7` and `-DCMAKE_CC_COMPILER=gcc-7`.
 
 ## How to use
 

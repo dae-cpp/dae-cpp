@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 project(dae-cpp)
 
@@ -19,70 +19,167 @@ endif(DAE_TEST)
 
 option(DAE_BUILD_EXAMPLES "Build all examples" ON)
 
-set(DAE_MKL_DIR "/opt/intel/mkl" CACHE STRING "Path to Intel MKL root")
 
-unset(DAE_MKL_INCLUDE CACHE)
-unset(DAE_MKL_LIB CACHE)
+#### Locate Intel MKL ####
 
-set(DAE_MKL_INCLUDE "${DAE_MKL_DIR}/include" CACHE STRING "Path to Intel MKL includes")
-set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/intel64" CACHE STRING "Path to Intel MKL libraries")
+if(DEFINED ENV{MKLROOT})
+  message(STATUS "Found MKLROOT environment variable...")
+  set(MKL_ROOT_DIR $ENV{MKLROOT})
+else(DEFINED ENV{MKLROOT})
+  message(STATUS "MKLROOT environment variable not found. Will use default MKL paths...")
+  if(WIN32)
+    set(MKL_ROOT_DIR "C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl")
+  else(WIN32)
+    set(MKL_ROOT_DIR "/opt/intel/mkl")
+  endif(WIN32)
+endif(DEFINED ENV{MKLROOT})
 
-set(EXT_INCLUDE "${PROJECT_SOURCE_DIR}/src/external")
+set(DAE_MKL_DIR "${MKL_ROOT_DIR}" CACHE STRING "Path to Intel MKL root directory")
+
+find_path(DAE_MKL_INCLUDE NAMES mkl.h HINTS ${MKL_ROOT_DIR}/include)
+
+if(WIN32)
+  set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/ia32_win")
+  set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/ia32_win")
+else(WIN32)
+  if(EXISTS ${DAE_MKL_DIR}/lib/intel64)
+    set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/intel64")
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib/intel64")
+  else(EXISTS ${DAE_MKL_DIR}/lib/intel64)
+    set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib")
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib")
+  endif(EXISTS ${DAE_MKL_DIR}/lib/intel64)
+endif(WIN32)
+
+
+#### Locate Python if needed ####
+
+option(PLOTTING "Use Python interface (matplotlib) for plotting" OFF)
+
+if(PLOTTING)
+  find_package(PythonLibs)
+  if(PYTHONLIBS_FOUND)
+    set(PYTHON_INCLUDE ${PYTHON_INCLUDE_DIRS} CACHE STRING "Path to Python include file (Python.h) for plotting")
+    set(PYTHON_LIB ${PYTHON_LIBRARIES} CACHE STRING "Python library for plotting")
+  else(PYTHONLIBS_FOUND)
+    set(PYTHON_INCLUDE "" CACHE STRING "Path to Python include file (Python.h) for plotting")
+    set(PYTHON_LIB "" CACHE STRING "Python library for plotting")
+  endif(PYTHONLIBS_FOUND)
+  find_path(PYTHON_NUMPY_INCLUDE numpy/arrayobject.h PATHS
+    /usr/local/lib/python3.5/dist-packages/numpy/core/include
+    /usr/local/lib/python3.6/dist-packages/numpy/core/include
+    /usr/local/lib/python3.7/dist-packages/numpy/core/include
+    /usr/local/lib/python3.5/site-packages/numpy/core/include
+    /usr/local/lib/python3.6/site-packages/numpy/core/include
+    /usr/local/lib/python3.7/site-packages/numpy/core/include
+    ${PYTHON_INCLUDE}/../Lib/site-packages/numpy/core/include
+    ${PYTHON_LIB}/../Lib/site-packages/numpy/core/include
+    DOC "Path to Python numpy include file (numpy/arrayobject.h) for plotting")
+  include_directories(${PYTHON_INCLUDE} ${PYTHON_NUMPY_INCLUDE})
+endif(PLOTTING)
+
+
+#### Set compiler options ####
 
 unset(CMAKE_CXX_FLAGS CACHE)
 
-if(DAE_LONG_INT)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DMKL_ILP64 -m64 -fopenmp -Wall -Wl,--no-as-needed")
-else(DAE_LONG_INT)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -fopenmp -Wall -Wl,--no-as-needed")
-endif(DAE_LONG_INT)
+if(UNIX AND NOT APPLE)
+  message(STATUS "Unix (not Apple) OS detected...")
+  if(DAE_LONG_INT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DMKL_ILP64 -m64 -fopenmp -Wall -Wl,--no-as-needed")
+  else(DAE_LONG_INT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -fopenmp -Wall -Wl,--no-as-needed")
+  endif(DAE_LONG_INT)
+
+elseif(APPLE)
+  message(STATUS "Apple OS detected...")
+  if(DAE_LONG_INT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DMKL_ILP64 -m64 -fopenmp -Wall -Wl,-rpath,${DAE_MKL_LIB}")
+  else(DAE_LONG_INT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -fopenmp -Wall -Wl,-rpath,${DAE_MKL_LIB}")
+  endif(DAE_LONG_INT)
+
+elseif(WIN32)
+  message(STATUS "Windows OS detected...")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /EHsc")
+
+else(UNIX AND NOT APPLE)
+  message(STATUS "Unknown OS detected... Cannot set up compiler options.")
+
+endif(UNIX AND NOT APPLE)
+
+
+#### Add include and library paths ####
+
+configure_file(${PROJECT_SOURCE_DIR}/src/cmake_config.h.in ${PROJECT_SOURCE_DIR}/src/cmake_config.h)
+
+set(EXT_INCLUDE "${PROJECT_SOURCE_DIR}/src/external")
 
 include_directories(${DAE_MKL_INCLUDE} ${EXT_INCLUDE})
-link_directories(${DAE_MKL_LIB})
-
 include_directories("${PROJECT_SOURCE_DIR}/src")
-configure_file(${PROJECT_SOURCE_DIR}/src/cmake_config.h.in ${PROJECT_SOURCE_DIR}/src/cmake_config.h)
+
+link_directories(${DAE_MKL_LIB})
+link_directories(${DAE_INTEL_LIB})
+
 add_subdirectory(src)
+
+
+#### Build examples if needed ####
 
 if(DAE_BUILD_EXAMPLES)
 
   set(EXAMPLE_LIST "perovskite" "diffusion_2d" "robertson")
-  
-  unset(LIB_MKL_INTEL_LP64 CACHE)
 
-  if(DAE_LONG_INT)
-    find_library(LIB_MKL_INTEL_LP64 mkl_intel_ilp64 HINTS ${DAE_MKL_LIB})
-  else(DAE_LONG_INT)
-    find_library(LIB_MKL_INTEL_LP64 mkl_intel_lp64 HINTS ${DAE_MKL_LIB})
-  endif(DAE_LONG_INT)
-  
-  find_library(LIB_MKL_GNU_THREAD mkl_gnu_thread HINTS ${DAE_MKL_LIB})
-  find_library(LIB_MKL_CORE mkl_core HINTS ${DAE_MKL_LIB})
-  find_library(LIB_PTHREAD pthread)
-  find_library(LIB_MATH m)
-  find_library(LIB_DL dl)
-  
+  if(WIN32)
+    find_library(LIB_MKL_INTEL_LP64 mkl_intel_c.lib HINTS ${DAE_MKL_LIB})
+    find_library(LIB_MKL_THREAD mkl_intel_thread.lib HINTS ${DAE_MKL_LIB})
+    find_library(LIB_MKL_CORE mkl_core.lib HINTS ${DAE_MKL_LIB})
+    find_library(LIB_INTEL_OPENMP libiomp5md.lib HINTS ${DAE_INTEL_LIB})
+    set(LIB_PTHREAD "")
+    set(LIB_MATH "")
+    set(LIB_DL "")
+
+  else(WIN32)
+    if(DAE_LONG_INT)
+      unset(LIB_MKL_INTEL_LP64 CACHE)
+      find_library(LIB_MKL_INTEL_LP64 mkl_intel_ilp64 HINTS ${DAE_MKL_LIB})
+    else(DAE_LONG_INT)
+      find_library(LIB_MKL_INTEL_LP64 mkl_intel_lp64 HINTS ${DAE_MKL_LIB})
+    endif(DAE_LONG_INT)
+    find_library(LIB_MKL_THREAD mkl_intel_thread HINTS ${DAE_MKL_LIB})
+    find_library(LIB_MKL_CORE mkl_core HINTS ${DAE_MKL_LIB})
+    find_library(LIB_INTEL_OPENMP iomp5 HINTS ${DAE_INTEL_LIB})
+    find_library(LIB_PTHREAD pthread)
+    find_library(LIB_MATH m)
+    find_library(LIB_DL dl)
+
+  endif(WIN32)
+
   foreach(EXAMPLE_NAME ${EXAMPLE_LIST})
-  
+
     FILE(GLOB SOURCES ${PROJECT_SOURCE_DIR}/examples/${EXAMPLE_NAME}/*.cpp)
 
     add_executable(${EXAMPLE_NAME} ${SOURCES})
 
     target_link_libraries(${EXAMPLE_NAME} daecpp_static)
-    target_link_libraries(${EXAMPLE_NAME} ${LIB_MKL_INTEL_LP64} ${LIB_MKL_GNU_THREAD} ${LIB_MKL_CORE} ${LIB_PTHREAD} ${LIB_MATH} ${LIB_DL})
+    target_link_libraries(${EXAMPLE_NAME} ${LIB_MKL_INTEL_LP64} ${LIB_MKL_THREAD} ${LIB_MKL_CORE} ${LIB_INTEL_OPENMP} ${LIB_PTHREAD} ${LIB_MATH} ${LIB_DL})
+
+    if(PLOTTING)
+      target_link_libraries(${PROJECT_NAME} ${PYTHON_LIB})
+    endif(PLOTTING)
 
     install(TARGETS ${EXAMPLE_NAME} DESTINATION bin)
-    
+
   endforeach()
-  
+
   if(DAE_TEST)
-  
+
     include(CTest)
-    
+
     foreach(EXAMPLE_NAME ${EXAMPLE_LIST})
       add_test(${EXAMPLE_NAME}_TEST ${EXAMPLE_NAME})
     endforeach()
-    
+
   endif(DAE_TEST)
-      
+
 endif(DAE_BUILD_EXAMPLES)
