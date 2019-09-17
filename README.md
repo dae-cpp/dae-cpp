@@ -141,7 +141,7 @@ git clone https://github.com/ikorotkin/dae-cpp.git
 
 Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and the target directory (it will contain Visual Studio project files). Press "Configure" button. If asked, leave default compiler for the project and default platform (Win32).
 
-If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see `More building options` above) and re-configure the project.
+If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see [More building options](https://github.com/ikorotkin/dae-cpp#more-building-options) above) and re-configure the project.
 
 If configuration is successful, press "Configure" again to update the cache and then "Generate". In the target directory you will find Visual Studio project files.
 
@@ -198,7 +198,7 @@ Note that `cmake` will try to find Intel MKL at its default location `/opt/intel
 
 Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install_path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
 
-**_Note_** that Apple-provided default C++ compiler (`clang`) does not support OpenMP out of the box. So you may need to install either OpenMP for `clang` or an alternative C++ compiler (e.g. `gcc`):
+*Note* that Apple-provided default C++ compiler (`clang`) does not support OpenMP out of the box. So you may need to install either OpenMP for `clang` or an alternative C++ compiler (e.g. `gcc`):
 
 ```bash
 brew install llvm libomp
