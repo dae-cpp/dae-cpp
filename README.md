@@ -86,14 +86,14 @@ The easiest way to install the library and compile all examples is just to creat
 cd dae-cpp
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=/install_path ..
+cmake .. -DCMAKE_INSTALL_PREFIX=/install_path
 make
 make install
 ```
 
 where `/install_path` is the user-defined path where the package should be installed.
 
-Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`..
+Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`.
 
 Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install_path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
 
@@ -126,14 +126,7 @@ Download and install compiler (e.g. [Microsoft Visual Studio](https://visualstud
 
 Download and install [Git](https://git-scm.com/download/win) and [CMake](https://cmake.org/download/) for Windows.
 
-Note if you install `git` for the first time you will need to configure it. Start `Git Bash` and use the following commands (change `Your Name` and `your@email` to your full name and email):
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email your@email
-```
-
-Then from `Git Bash` command line clone dae-cpp library (you may need to create a working directory first):
+From `Git Bash` command line clone dae-cpp library (you may need to create a working directory first):
 
 ```bash
 git clone https://github.com/ikorotkin/dae-cpp.git
@@ -157,11 +150,11 @@ An example of default solution file for Microsoft Visual Studio 15 (2017) is giv
 
 ### Mac
 
-Make sure you have installed: `git`, `cmake` and, optional, Python 3 with `numpy` and `matplotlib` modules (for plotting). If these packages are not installed yet, you may install [Homebrew](https://brew.sh/) (package manager for macOS), then install all necessary packages:
+Make sure you have installed: `git`, `cmake`, `gcc` and, optional, Python 3 with `numpy` and `matplotlib` modules (for plotting). If these packages are not installed yet, you may install [Homebrew](https://brew.sh/) (package manager for macOS), then install all necessary packages:
 
 ```bash
-brew install cmake git python
-pip install numpy matplotlib
+brew install cmake git gcc python
+pip3 install numpy matplotlib
 ```
 
 Note if you install `git` for the first time you will need to configure it (change `Your Name` and `your@email` to your full name and email):
@@ -171,42 +164,40 @@ git config --global user.name "Your Name"
 git config --global user.email your@email
 ```
 
-Then from a working directory download dae-cpp library source files:
+Then from the working directory download dae-cpp library source files:
 
 ```bash
 git clone https://github.com/ikorotkin/dae-cpp.git
 ```
 
-The easiest way to install the library and compile all examples is just to create the build directory, then execute `cmake` (providing installation path) and `make`:
+Check the version of `gcc` compiler by typing `gcc` and pressing `Tab` key a few times in the terminal, it will show you the version of `gcc` currently installed, for example, `gcc-9` (you could use the command `gcc --version` but it may point to `clang` compiler for Mac that does not support OpenMP out of the box).
+
+Create `build` directory:
 
 ```bash
 cd dae-cpp
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=/install_path ..
-make
+```
+
+Configure the project. *Make sure `g++` and `gcc` versions (9 in the example below) are correct*:
+
+```bash
+cmake .. -DCMAKE_CXX_COMPILER=g++-9 -DCMAKE_CC_COMPILER=gcc-9 -DCMAKE_INSTALL_PREFIX=$PWD
+```
+
+In the command above you may change the user-defined path where the package should be installed (type it instead of `$PWD`). By default the package will be installed into the current `build` directory.
+
+Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`.
+
+Instead of `cmake ..` you may consider using `ccmake ..`, a UI for `cmake` that will allow you to see and change all the options available before building the solver.
+
+Install dae-cpp:
+
+```bash
+make -j2
 make install
 ```
-
-where `/install_path` is the user-defined path where the package should be installed.
-
-Note that `cmake` will try to find Intel MKL at its default location `/opt/intel/mkl` or according to `MKLROOT` environment variable. If the installation path is different, please provide MKL root path with the following `cmake` option: `-DDAE_MKL_DIR=/path_to_intel_mkl`..
-
-Instead of `cmake -DCMAKE_INSTALL_PREFIX=/install_path ..` you might consider using `ccmake ..`, a GUI for `cmake` that will allow you to see all the options available before building the solver.
-
-*Note* that Apple-provided default C++ compiler (`clang`) does not support OpenMP out of the box. So you may need to install either OpenMP for `clang` or an alternative C++ compiler (e.g. `gcc`):
-
-```bash
-brew install llvm libomp
-```
-
-or
-
-```bash
-brew install gcc
-```
-
-If alternative compiler is installed (for example, `gcc-7`), provide its name for `cmake` using the following options: `-DCMAKE_CXX_COMPILER=g++-7` and `-DCMAKE_CC_COMPILER=gcc-7`.
 
 ## How to use
 
