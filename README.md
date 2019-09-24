@@ -34,7 +34,7 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 
 ## Installation
 
-This is a cross-platform software that should work on both Linux (e.g. Ubuntu) and Windows. It should work under macOS as well (but not tested yet). The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, the latest version and Full Package.
+This is a cross-platform software that should work on Linux (e.g. Ubuntu), Windows and macOS. The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, the latest version and Full Package.
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -132,15 +132,15 @@ From `Git Bash` command line clone dae-cpp library (you may need to create a wor
 git clone https://github.com/ikorotkin/dae-cpp.git
 ```
 
-Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and the target directory (it will contain Visual Studio project files). Press "Configure" button.
+Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and empty target directory (it will contain Visual Studio project files). Press "Configure" button.
 
 If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see [More building options](https://github.com/ikorotkin/dae-cpp#more-building-options) above) and re-configure the project.
 
 If configuration is successful, press "Configure" again to update the cache and then "Generate". In the target directory you will find Visual Studio project files.
 
-Double-click on `dae-cpp.sln` to open Visual Studio with the project. Do not forget to change Solution Configuration from `Debug` to `Release`. Compile the solution (`F7` by default). After compilation, the executable files can be found in `Release` folder.
+Double-click on `dae-cpp.sln` to open Visual Studio with the project. Do not forget to change Solution Configuration from `Debug` to `Release`. Build the solution (`F7` by default). After compilation, the executable files can be found in `Release` folder.
 
-Note that in order to execute the tests (for example, `robertson.exe`) from `Release` folder, you need to set up Intel MKL environment variables by executing `mklvars.bat intel64` or `mklvars.bat ia32` (depending on the target platform) from `cmd`. By default `mklvars.bat` is located in MKL root folder in `bin` subdirectory, for example:
+Note that in order to execute the tests (for example, `perovskite.exe`) from `Release` folder, you need to set up Intel MKL environment variables by executing `mklvars.bat intel64` or `mklvars.bat ia32` (depending on the target platform) from `cmd`. By default `mklvars.bat` is located in MKL root folder in `bin` subdirectory, for example:
 
 ```bash
 "C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" intel64
@@ -192,11 +192,12 @@ Note that `cmake` will try to find Intel MKL at its default location `/opt/intel
 
 Instead of `cmake ..` you may consider using `ccmake ..`, a UI for `cmake` that will allow you to see and change all the options available before building the solver.
 
-Install dae-cpp:
+Install dae-cpp and perform a quick self test:
 
 ```bash
 make -j2
 make install
+ctest
 ```
 
 ## How to use
@@ -295,7 +296,7 @@ int status = solve(x, t1);
 
 Here *t*<sub>1</sub> is the integration time (0 < *t* < *t*<sub>1</sub>), and **x** is the initial condition vector defined above.
 
-The solver returns 0 if integration is successful or error code otherwise. Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). The actual integration time *t*<sub>1</sub> will be returned (in case the solver terminates integration earlier). That's it!
+The solver returns 0 if integration is successful or error code otherwise. Solution at time *t*<sub>1</sub> will be written into vector **x** (initial conditions will be overwritten). The actual integration time *t*<sub>1</sub> will be returned (the solver may terminate integration earlier). That's it!
 
 #### Optional: Set up Observer
 
@@ -316,7 +317,7 @@ But a proper (and more efficient) way to get intermediate results is to override
 
 ### Step 7 (optional). Plot results
 
-Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:
+Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed and the solver was built with `PLOTTING=ON`, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:
 
 <p align="center">
   <img src="https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.png">
