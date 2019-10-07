@@ -36,11 +36,11 @@ class Solver
 
     MKL_INT m_size;  // System size
 
-    size_t m_steps = 0;  // Total time iteration counter
-    size_t m_calls = 0;  // Total linear algebra solver calls counter
+    std::size_t m_steps = 0;  // Total time iteration counter
+    std::size_t m_calls = 0;  // Total linear algebra solver calls counter
 
     // Count the number of the DAE solver calls (for output)
-    size_t m_dae_solver_calls = 0;
+    std::size_t m_dae_solver_calls = 0;
 
     // Timers
     double m_timer_lin = 0;
