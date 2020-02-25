@@ -96,17 +96,22 @@ public:
     // Intel MKL PARDISO parameters (iparam). More about iparam:
     // https://software.intel.com/en-us/mkl-developer-reference-c-pardiso-iparm-parameter
 
-    // iparam[3]: Controls preconditioned CGS.
+    // iparm[3]: Controls preconditioned CGS.
     // 0  - The factorization is always computed as required.
     // 31 - LU-preconditioned CGS iteration with a stopping criterion of 1.0E-3.
     // 61 - LU-preconditioned CGS iteration with a stopping criterion of 1.0E-6.
     MKL_INT preconditioned_CGS = 0;
 
-    // iparam[7]: Maximum number of iterative refinement steps.
+    // iparm[7]: Maximum number of iterative refinement steps.
     // 0  - The solver automatically performs two steps of iterative refinement.
     // >0 - Maximum number of iterative refinement steps that the solver
     //      performs.
     MKL_INT refinement_steps = 2;
+
+    // iparm[12]: Maximum weighted matching algorithm.
+    // 0 - OFF
+    // 1 - ON (may conflict with parallel_fact_control)
+    MKL_INT matching_alg = 1;
 
     // iparm[23]: Parallel factorization control.
     // 0  - Intel MKL PARDISO uses the classic algorithm for factorization.

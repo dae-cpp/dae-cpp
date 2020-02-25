@@ -41,7 +41,9 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
 
     iparm[10] = 1;  // Enable scaling. Default for nonsymmetric matrices.
     iparm[11] = 0;  // Conjugate transposed/transpose solve
-    iparm[12] = 1;  // Maximum weighted matching algorithm is switched-on
+
+    iparm[12] = matching_alg;  // Maximum weighted matching algorithm
+
     iparm[13] = 0;  // Output: Number of perturbed pivots
     iparm[14] = 0;  // Output: Peak memory on symbolic factorization
     iparm[15] = 0;  // Output: Permanent memory on symbolic factorization
@@ -53,6 +55,11 @@ void SolverOptions::set_iparm_for_pardiso(MKL_INT *iparm)
 
     iparm[23] = parallel_fact_control;  // Parallel factorization control
 
+    // Matching algorithm may lead to MKL crash if parallel_fact_control is ON
+    if(iparm[23] == 10)
+    {
+        iparm[12] = 0;  // Disable matching
+    }
     if(iparm[23] == 1)
     {
         iparm[10] = 0;  // Disable scaling
