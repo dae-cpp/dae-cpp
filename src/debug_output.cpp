@@ -9,6 +9,7 @@
 #include <string>    // std::string, std::to_string
 
 #include "RHS.h"
+#include "mass_matrix.h"
 #include "jacobian.h"
 
 namespace daecpp_namespace_name
@@ -34,6 +35,52 @@ void RHS::dump(const state_type &x, const double t)
     outFile << "i" << delimiter << "x[i]" << delimiter << "RHS[i]" << '\n';
     for(MKL_INT i = 0; i < size; i++)
         outFile << i << delimiter << x[i] << delimiter << f[i] << '\n';
+    outFile.close();
+}
+
+/*
+ * Helper function to write the Mass matrix to a file
+ */
+void MassMatrix::dump()
+{
+    sparse_matrix_holder M;
+
+    this->operator()(M);  // calls the Mass matrix operator
+
+    const MKL_INT size =
+        M.ia.size() - 1;  // derive the matrix size from ia index
+
+    std::ofstream outFile;
+
+    MKL_INT ja = 0;
+    MKL_INT ia = 0;
+
+    outFile.open("dump_Mass_matrix.txt");  // Mass matrix is static - one file
+    outFile << "i,j";
+    for(MKL_INT i = 0; i < size; i++)
+    {
+        outFile << delimiter << "i=" << i;
+    }
+    outFile << '\n';
+    for(MKL_INT j = 0; j < size; j++)
+    {
+        MKL_INT ent = M.ia[ia + 1] - M.ia[ia];  // Number of entries in line j
+
+        outFile << "j=" << j << delimiter;
+
+        for(MKL_INT i = 0; i < size; i++)
+        {
+            if(M.ja[ja] == i)
+            {
+                outFile << M.A[ja++];
+                if(!(--ent))
+                    break;
+            }
+            outFile << delimiter;
+        }
+
+        outFile << '\n';
+    }
     outFile.close();
 }
 

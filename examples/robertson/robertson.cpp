@@ -220,15 +220,20 @@ int main()
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass;
 
+    // Write the Mass Matrix to a file for debugging purposes.
+    // The content of the output file can be copied/pasted into MS Excel or any
+    // other spreadsheet sofware
+    mass.dump();
+
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
     SolverOptions opt;
 
-    opt.dt_init               = 1.0e-6;    // Change initial time step
-    opt.dt_max                = t1 / 100;  // Set maximum time step
-    opt.time_stepping         = 1;         // S-SATS works better here
-    opt.atol                  = 1e-6;      // Absolute tolerance
-    opt.bdf_order             = 6;         // Set BDF-6
+    opt.dt_init       = 1.0e-6;    // Change initial time step
+    opt.dt_max        = t1 / 100;  // Set maximum time step
+    opt.time_stepping = 1;         // S-SATS works better here
+    opt.atol          = 1e-6;      // Absolute tolerance
+    opt.bdf_order     = 6;         // Set BDF-6
 
     // We can override Jacobian class from dae-cpp library and provide
     // analytical Jacobian. We shall do this for single precision:

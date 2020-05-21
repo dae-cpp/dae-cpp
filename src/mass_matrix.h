@@ -26,6 +26,11 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix_holder &M) = 0;
+
+    /*
+     * Helper function to write the Mass matrix to a file
+     */
+    void dump();
 };
 
 /*
