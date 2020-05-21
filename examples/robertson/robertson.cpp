@@ -250,6 +250,10 @@ int main()
     Jacobian jac_est(rhs, 1e-10);  // Obviously this tolerance is
                                    // inacceptable for single precision
 
+    // Similar to the Mass matrix and the RHS, we can write the initial Jacobian
+    // matrix to a file:
+    jac_est.dump(x, 0);
+
     // Print Jacobian out for t = 0:
     // jac_est.print(x, 0);
 #endif

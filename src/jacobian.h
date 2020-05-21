@@ -24,6 +24,8 @@ class Jacobian
     const double m_eps = 1.0e-13;  // The order of the rounding unit
 #endif
 
+    std::size_t m_dump_file_counter = 0;
+
 public:
     explicit Jacobian(RHS &rhs) : m_rhs(rhs) {}
     Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol)
@@ -38,9 +40,14 @@ public:
                             const double t);
 
     /*
-     * Helper function to show Jacobian structure
+     * Helper function to show Jacobian structure on screen (in sparse format)
      */
     void print(const state_type &x, const double t);
+
+    /*
+     * Helper function to write Jacobian matrix to a file (in dense format)
+     */
+    void dump(const state_type &x, const double t);
 };
 
 }  // namespace daecpp_namespace_name

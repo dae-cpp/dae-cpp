@@ -50,13 +50,19 @@ void MassMatrix::dump()
     const MKL_INT size =
         M.ia.size() - 1;  // derive the matrix size from ia index
 
+    if(size > 10000)
+    {
+        std::cout << "\nMassMatrix::dump() -- Warning: the size of the Mass "
+                     "matrix for writting is bigger than 10000x10000.\n";
+        return;
+    }
+
     std::ofstream outFile;
 
     MKL_INT ja = 0;
-    MKL_INT ia = 0;
 
     outFile.open("dump_Mass_matrix.txt");  // Mass matrix is static - one file
-    outFile << "i,j";
+    outFile << "i,j:";
     for(MKL_INT i = 0; i < size; i++)
     {
         outFile << delimiter << "i=" << i;
@@ -64,7 +70,7 @@ void MassMatrix::dump()
     outFile << '\n';
     for(MKL_INT j = 0; j < size; j++)
     {
-        MKL_INT ent = M.ia[ia + 1] - M.ia[ia];  // Number of entries in line j
+        MKL_INT ent = M.ia[j + 1] - M.ia[j];  // Number of entries in line j
 
         outFile << "j=" << j << delimiter;
 
@@ -85,13 +91,66 @@ void MassMatrix::dump()
 }
 
 /*
- * Helper function to show Jacobian structure
+ * Helper function to write the Jacbian matrix to a file (in dense format)
+ */
+void Jacobian::dump(const state_type &x, const double t)
+{
+    sparse_matrix_holder M;
+
+    this->operator()(M, x, t);  // calls the Jacobian matrix operator
+
+    const MKL_INT size =
+        M.ia.size() - 1;  // derive the matrix size from ia index
+
+    if(size > 10000)
+    {
+        std::cout << "\nJacobian::dump() -- Warning: the size of the Jacobian "
+                     "matrix for writting is bigger than 10000x10000.\n";
+        return;
+    }
+
+    std::ofstream outFile;
+
+    MKL_INT ja = 0;
+
+    outFile.open("dump_Jacobian_" + std::to_string(m_dump_file_counter++) +
+                 ".txt");
+    outFile << "t=" << t;
+    for(MKL_INT i = 0; i < size; i++)
+    {
+        outFile << delimiter << "i=" << i;
+    }
+    outFile << '\n';
+    for(MKL_INT j = 0; j < size; j++)
+    {
+        MKL_INT ent = M.ia[j + 1] - M.ia[j];  // Number of entries in line j
+
+        outFile << "j=" << j << delimiter;
+
+        for(MKL_INT i = 0; i < size; i++)
+        {
+            if(M.ja[ja] == i)
+            {
+                outFile << M.A[ja++];
+                if(!(--ent))
+                    break;
+            }
+            outFile << delimiter;
+        }
+
+        outFile << '\n';
+    }
+    outFile.close();
+}
+
+/*
+ * Helper function to show Jacobian structure (in sparse format)
  */
 void Jacobian::print(const state_type &x, const double t)
 {
     if(x.size() > 1000)
     {
-        std::cout << "\nJacobian::print -- too much output. Skipped.\n";
+        std::cout << "\nJacobian::print() -- too much output. Skipped.\n";
         return;
     }
 
