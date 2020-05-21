@@ -213,6 +213,9 @@ int main()
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
     MyRHS rhs;
 
+    // We can write the initial RHS to a file for debugging purposes:
+    rhs.dump(x, 0);
+
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass;

@@ -30,7 +30,7 @@ void RHS::dump(const state_type &x, const double t)
     std::ofstream outFile;
 
     outFile.open("dump_RHS_" + std::to_string(m_dump_file_counter++) + ".txt");
-    outFile << "t = " << t << '\n';
+    outFile << "t = " << t << ":\n";
     outFile << "i" << delimiter << "x[i]" << delimiter << "RHS[i]" << '\n';
     for(MKL_INT i = 0; i < size; i++)
         outFile << i << delimiter << x[i] << delimiter << f[i] << '\n';
