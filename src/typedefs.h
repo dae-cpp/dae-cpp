@@ -5,6 +5,7 @@
 #pragma once
 
 #include <mkl_types.h>
+#include <cstddef>
 #include <vector>
 
 #include "cmake_config.h"

@@ -145,7 +145,7 @@ int Solver::operator()(state_type &x, double &t1)
     using time_unit = std::chrono::microseconds;
 
     // Counts linear solver calls
-    size_t calls = 0;
+    std::size_t calls = 0;
 
     if(m_opt.verbosity == 1)
     {

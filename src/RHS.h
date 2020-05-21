@@ -12,7 +12,7 @@ namespace daecpp_namespace_name
 
 class RHS
 {
-    size_t m_dump_file_counter = 0;
+    std::size_t m_dump_file_counter = 0;
 
 public:
     /*

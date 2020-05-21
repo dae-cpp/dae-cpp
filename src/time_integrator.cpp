@@ -166,7 +166,7 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
         J.ia.clear();
         J.ja.clear();
 
-        size_t nzmax = m_M.A.size() + m_J.A.size();
+        std::size_t nzmax = m_M.A.size() + m_J.A.size();
 
         // If new size is greater than the current capacity,
         // a reallocation happens

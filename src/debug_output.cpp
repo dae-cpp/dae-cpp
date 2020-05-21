@@ -59,7 +59,7 @@ void Jacobian::print(const state_type &x, const double t)
               << std::setw(10) << "J.ja |" << std::setw(8) << "J.ia";
     std::cout << "\n-----------------------------------------\n";
 
-    size_t size = (J.A.size() > J.ia.size()) ? J.A.size() : J.ia.size();
+    std::size_t size = (J.A.size() > J.ia.size()) ? J.A.size() : J.ia.size();
 
     for(std::size_t i = 0; i < size; i++)
     {
