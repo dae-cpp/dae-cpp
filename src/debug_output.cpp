@@ -7,6 +7,7 @@
 #include <iomanip>   // std::setw etc.
 #include <fstream>   // File output
 #include <string>    // std::string, std::to_string
+#include <cmath>     // std::abs
 
 #include "RHS.h"
 #include "mass_matrix.h"
@@ -54,7 +55,6 @@ void MassMatrix::dump()
     {
         std::cout << "\nMassMatrix::dump() -- Warning: the size of the Mass "
                      "matrix for writting is bigger than 10000x10000.\n";
-        return;
     }
 
     std::ofstream outFile;
@@ -106,15 +106,19 @@ void Jacobian::dump(const state_type &x, const double t)
     {
         std::cout << "\nJacobian::dump() -- Warning: the size of the Jacobian "
                      "matrix for writting is bigger than 10000x10000.\n";
-        return;
     }
 
     std::ofstream outFile;
 
     MKL_INT ja = 0;
 
-    outFile.open("dump_Jacobian_" + std::to_string(m_dump_file_counter++) +
-                 ".txt");
+    if(m_jac_type)
+        outFile.open("dump_Jacobian_" + std::to_string(m_dump_file_counter++) +
+                     "_numerical.txt");
+    else
+        outFile.open("dump_Jacobian_" + std::to_string(m_dump_file_counter++) +
+                     ".txt");
+
     outFile << "t=" << t;
     for(MKL_INT i = 0; i < size; i++)
     {
@@ -191,6 +195,91 @@ void Jacobian::print(const state_type &x, const double t)
 
         std::cout << std::endl;
     }
+}
+
+/*
+ * Helper function to compare two Jacobians and write the difference
+ */
+void Jacobian::compare(Jacobian jac, const state_type &x, const double t,
+                       const double tol)
+{
+    sparse_matrix_holder M, J;
+
+    this->operator()(M, x, t);  // calls the Jacobian matrix operator
+    jac(J, x, t);               // external Jacobian to compare with
+
+    const MKL_INT size =
+        M.ia.size() - 1;  // derive the matrix size from ia index
+
+    if((std::size_t)(size) != (J.ia.size() - 1))
+    {
+        std::cout << "\nJacobian::compare() -- ERROR: the sizes of the "
+                     "matrices do not match ('ia' indexes are different).";
+        return;
+    }
+
+    std::ofstream outFile;
+
+    MKL_INT ja_M = 0;
+    MKL_INT ja_J = 0;
+
+    outFile.open("dump_Jacobians_compare_" +
+                 std::to_string(m_compare_file_counter++) + ".txt");
+
+    outFile << "List of differences in Jacobians for t = " << t
+            << " and the tolerance tol = " << tol << ":\n";
+    outFile << "i" << delimiter << "j" << delimiter << "Jac_original"
+            << delimiter << "Jac_reference" << delimiter << "Rel_difference"
+            << '\n';
+
+    std::size_t ndiff = 0;  // counts differences
+
+    for(MKL_INT j = 0; j < size; j++)
+    {
+        MKL_INT ent_M = M.ia[j + 1] - M.ia[j];
+        MKL_INT ent_J = J.ia[j + 1] - J.ia[j];
+
+        for(MKL_INT i = 0; i < size; i++)
+        {
+            double MA = 0.0;
+            double JA = 0.0;
+            double diff;
+
+            if((!ent_M) && (!ent_J))
+                break;
+
+            if((M.ja[ja_M] == i) && ent_M)
+            {
+                MA = M.A[ja_M++];
+                ent_M--;
+            }
+            if((J.ja[ja_J] == i) && ent_J)
+            {
+                JA = J.A[ja_J++];
+                ent_J--;
+            }
+
+            if(JA != 0.0)
+            {
+                diff = (MA - JA) / std::abs(JA);
+            }
+            else
+            {
+                diff = (MA - JA);
+            }
+
+            if(std::abs(diff) > tol)
+            {
+                outFile << i << delimiter << j << delimiter << MA << delimiter
+                        << JA << delimiter << diff << '\n';
+                ndiff++;
+            }
+        }
+    }
+
+    outFile << "Total number of differences found: " << ndiff << '\n';
+
+    outFile.close();
 }
 
 }  // namespace daecpp_namespace_name

@@ -27,6 +27,8 @@ namespace daecpp_namespace_name
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
+    m_jac_type = 1;
+
     const MKL_INT size   = (MKL_INT)(x.size());
     const double  invtol = 1.0 / m_tol;
 

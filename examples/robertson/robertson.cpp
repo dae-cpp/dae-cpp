@@ -256,6 +256,14 @@ int main()
 
     // Print Jacobian out for t = 0:
     // jac_est.print(x, 0);
+
+    // We can also compare user-defined analytic Jacobian with the reference
+    // numerical Jacobian matrix:
+    MyJacobian jac(rhs);                   // Analytic Jacobian
+    jac.dump(x, 0);                        // Write it to file for debugging
+    jac.compare(jac_est, x, 1.234, 1e-4);  // Or compare it with jac_est at time
+                                           // t = 1.234 with the tolerance 1e-4
+                                           // and write the difference to a file
 #endif
 
     // Create an instance of the solver with particular RHS, Mass matrix,

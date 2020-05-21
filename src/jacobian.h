@@ -24,10 +24,15 @@ class Jacobian
     const double m_eps = 1.0e-13;  // The order of the rounding unit
 #endif
 
-    std::size_t m_dump_file_counter = 0;
+    std::size_t m_dump_file_counter    = 0;
+    std::size_t m_compare_file_counter = 0;
+
+    int m_jac_type = 0;  // This will be changed to 1
+                         // if numerical Jacobian is used
 
 public:
     explicit Jacobian(RHS &rhs) : m_rhs(rhs) {}
+
     Jacobian(RHS &rhs, const double tol) : m_rhs(rhs), m_tol(tol)
     {
         // TODO: Check user's tol parameter. Too small tol may lead to crash.
@@ -48,6 +53,14 @@ public:
      * Helper function to write Jacobian matrix to a file (in dense format)
      */
     void dump(const state_type &x, const double t);
+
+    /*
+     * Helper function to compare two Jacobians and write the differences.
+     * Comparison will be made with the external Jacobian jac (usually,
+     * numerical Jacobian) using vector x at time t.
+     */
+    void compare(Jacobian jac, const state_type &x, const double t,
+                 const double tol);
 };
 
 }  // namespace daecpp_namespace_name
