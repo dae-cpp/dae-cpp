@@ -20,7 +20,7 @@ For the numerical integration the solver uses implicit [BDF](https://en.wikipedi
 
 ### How does it work
 
-BDF time stepper reduces the original DAE system to a system of nonlinear equations being solved using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorization of Jacobian matrix, then numerical factorization, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method, variability of the solution and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
+BDF time stepper reduces the original DAE system to a system of nonlinear equations which is being solved using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorization of Jacobian matrix, then numerical factorization, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method, variability of the solution and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
 
 ### The main features of the solver
 
@@ -35,13 +35,13 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 
 ### Why?
 
-For my research project (power battery simulation), I was looking for a light-weight, easy to use, but a very powerful, cross-platform and parallel C++ solver able to solve not only simple ODEs, but a mixture of ODEs with algebraic equations. The packages I found were either extremely heavy (SUNDIALS, PETSc) with very high entry barriers, or they could deal with the systems of ODEs only. So I decided to develop my own DAE solver, and it worked amazingly well for my problem. It allows me to tackle 5-D thermo-electro-chemical problems related to batteries. This involves solution of extremely huge systems (about ten million of DAEs), and it works really fast even on a standard laptop. On the other hand, I have a full control on the solution process. It's not like a black box, everything can be adjusted if necessary.
+For my research project (power battery simulation), I was looking for a light-weight, easy to use, but very powerful, cross-platform and parallel C++ solver able to solve not only simple ODEs, but a mixture of ODEs with algebraic equations. The packages I found were either extremely heavy (SUNDIALS, PETSc) with very high entry barriers, or they could deal with the systems of ODEs only. So I decided to develop my own DAE solver, and it turned out it works amazingly well for my problem. It allows me to tackle 5-D thermo-electro-chemical problems related to batteries. This involves solution of extremely huge systems (about ten million of DAEs), and it works really fast even on a standard laptop. On the other hand, I have a full control on the solution process. It's not like a black box, everything can be adjusted if necessary.
 
-I hope this work will be useful for other people too. If you have any questions about the software, please, feel free to submit an [issue](https://github.com/ikorotkin/dae-cpp/issues). Do not forget to [cite](https://doi.org/10.5281/zenodo.3241870) the solver if you use it in your research. Thank you!
+I hope this work will be useful for other people too. If you have any questions about the software, please feel free to submit an [issue](https://github.com/ikorotkin/dae-cpp/issues). Do not forget to [cite](https://doi.org/10.5281/zenodo.3241870) the solver if you use it in your research. Thank you!
 
 ## Installation
 
-This is a cross-platform software that works on Linux (e.g. Ubuntu), Windows and macOS. The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, version 2019 (2020 is relatively new and may have some issues) and Full Package.
+This is a cross-platform software that works on Linux (e.g. Ubuntu), Windows and macOS. The main library (the DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, version 2019 (2020 is relatively new and may have some issues) and Full Package.
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -153,7 +153,7 @@ Note that in order to execute the tests (for example, `perovskite.exe`) from `Re
 "C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" intel64
 ```
 
-Alternatively, you may install [Windows Subsystem for Linux](https://docs.microsoft.com/en-gb/windows/wsl/install-win10?redirectedfrom=MSDN) and your preferred Linux Distribution (e.g. Ubuntu), and then just follow [installation instructions for Linux](#linux).
+**_Alternatively_**, you may install [Windows Subsystem for Linux](https://docs.microsoft.com/en-gb/windows/wsl/install-win10?redirectedfrom=MSDN) and your preferred Linux Distribution (e.g. Ubuntu), and then just follow [installation instructions for Linux](#linux).
 
 ### Mac
 
@@ -262,7 +262,7 @@ In this example we saved two RHS vectors, at time 0 and 0.1.
 
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format). See also [A note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
+Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format). See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -284,7 +284,7 @@ mass.dump();
 
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix. See also [A note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
+We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix. See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
@@ -406,7 +406,7 @@ M.ia[2] = 2;  // Column index of the third non-zero element
 M.ja[2] = 2;  // Raw index of the third non-zero element
 ```
 
-This form will be automatically converted to three-array sparse format compatible with Intel MKL. Do not forget to define all diagonal elements even if they are zero. Do not mix the elements up (fill in the first row from left to right, then second row, etc.).
+This form will be automatically converted to the three-array sparse format compatible with Intel MKL. Do not forget to define all diagonal elements even if they are zero. Do not mix the elements up (fill in the first row from left to right, then the second row, etc.).
 
 ## Contribution and feedback
 
