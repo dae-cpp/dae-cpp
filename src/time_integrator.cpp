@@ -17,6 +17,9 @@ TimeIntegrator::TimeIntegrator(RHS &rhs, Jacobian &jac, MassMatrix &mass,
     // Get static mass matrix
     m_mass(m_M);
 
+    // Convert it to Intel MKL three-array format if necessary
+    m_matrix_converter(m_M);
+
     // Extract the mass matrix size
     const MKL_INT size = m_M.ia.size() - 1;
 
@@ -148,6 +151,7 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
         // Calculate Jacobian
         auto tic0 = clock::now();
         m_jac(m_J, x, t);
+        m_matrix_converter(m_J);  // Converts Jacobian if necessary
         auto tic1 = clock::now();
 
         // Update Jacobian timer

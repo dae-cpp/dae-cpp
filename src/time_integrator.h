@@ -60,6 +60,14 @@ class TimeIntegrator
     sparse_matrix_t m_csrA;
 
     /*
+     * Sparse matrix converter from simple three-array format to Intel MKL
+     * three array format.
+     * Input: matrix holder M with simple three-array format
+     * Output: matrix holder M with Intel MKL three-array format
+     */
+    void m_matrix_converter(daecpp::sparse_matrix_holder &M);
+
+    /*
      * Sparse matrix checker
      */
     int m_matrix_checker(sparse_matrix_holder &A, MKL_INT size);

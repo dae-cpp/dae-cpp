@@ -30,6 +30,14 @@ class Jacobian
     int m_jac_type = 0;  // This will be changed to 1
                          // if numerical Jacobian is used
 
+    /*
+     * Sparse matrix converter from simple three-array format to Intel MKL
+     * three array format.
+     * Input: matrix holder M with simple three-array format
+     * Output: matrix holder M with Intel MKL three-array format
+     */
+    void m_matrix_converter(daecpp::sparse_matrix_holder &M);
+
 public:
     explicit Jacobian(RHS &rhs) : m_rhs(rhs) {}
 
@@ -57,7 +65,7 @@ public:
     /*
      * Helper function to compare two Jacobians and write the differences.
      * Comparison will be made with the external Jacobian jac (usually,
-     * numerical Jacobian) using vector x at time t.
+     * numerical Jacobian) using vector x at time t with the given tolerance.
      */
     void compare(Jacobian jac, const state_type &x, const double t,
                  const double tol);

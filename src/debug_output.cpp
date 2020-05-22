@@ -48,6 +48,8 @@ void MassMatrix::dump()
 
     this->operator()(M);  // calls the Mass matrix operator
 
+    m_matrix_converter(M);  // converts the matrix if it is in simple form
+
     const MKL_INT size =
         M.ia.size() - 1;  // derive the matrix size from ia index
 
@@ -98,6 +100,8 @@ void Jacobian::dump(const state_type &x, const double t)
     sparse_matrix_holder M;
 
     this->operator()(M, x, t);  // calls the Jacobian matrix operator
+
+    m_matrix_converter(M);  // converts the matrix if it is in simple form
 
     const MKL_INT size =
         M.ia.size() - 1;  // derive the matrix size from ia index
@@ -162,6 +166,8 @@ void Jacobian::print(const state_type &x, const double t)
 
     this->operator()(J, x, t);
 
+    m_matrix_converter(J);  // converts the matrix if it is in simple form
+
     std::cout << std::right;
     std::cout << "\nJacobian matrix at time t = " << t << ':';
     std::cout << "\n-----------------------------------------\n";
@@ -208,13 +214,16 @@ void Jacobian::compare(Jacobian jac, const state_type &x, const double t,
     this->operator()(M, x, t);  // calls the Jacobian matrix operator
     jac(J, x, t);               // external Jacobian to compare with
 
+    m_matrix_converter(M);  // converts the matrix M if it is in simple form
+    m_matrix_converter(J);  // converts the matrix J if it is in simple form
+
     const MKL_INT size =
         M.ia.size() - 1;  // derive the matrix size from ia index
 
     if((std::size_t)(size) != (J.ia.size() - 1))
     {
         std::cout << "\nJacobian::compare() -- ERROR: the sizes of the "
-                     "matrices do not match ('ia' indexes are different).";
+                     "matrices do not match ('ia' indexes are different).\n";
         return;
     }
 
