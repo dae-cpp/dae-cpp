@@ -14,6 +14,14 @@ namespace daecpp_namespace_name
  */
 class MassMatrix
 {
+    /*
+     * Sparse matrix converter from simple three-array format to Intel MKL
+     * three array format.
+     * Input: matrix holder M with simple three-array format
+     * Output: matrix holder M with Intel MKL three-array format
+     */
+    void m_matrix_converter(daecpp::sparse_matrix_holder &M);
+
 public:
     /*
      * The matrix should be defined in sparse format,
@@ -26,6 +34,11 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix_holder &M) = 0;
+
+    /*
+     * Helper function to write the Mass matrix to a file
+     */
+    void dump();
 };
 
 /*

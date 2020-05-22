@@ -119,7 +119,7 @@ public:
     //      scalability in case of parallel factorization on many OpenMP threads
     //      (more than eight).
     // 10 - Improved two-level factorization algorithm.
-    MKL_INT parallel_fact_control = 0;
+    MKL_INT parallel_fact_control = 10;
 
     // iparm[24]: Parallel forward/backward solve control.
     // 0 - Intel MKL PARDISO uses the sequential forward and backward solve.

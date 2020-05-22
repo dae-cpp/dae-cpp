@@ -130,6 +130,36 @@
             ]
         },
         {
+            "label": "debug-robertson",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-Wall",
+                "-std=c++11",
+                "-m64",
+                "-fopenmp",
+                "./examples/robertson/*.cpp",
+                "./src/*.cpp",
+                "-o",
+                "dbg.exe",
+                "-I/opt/intel/mkl/include",
+                "-I./src/external",
+                "-L/opt/intel/mkl/lib/intel64",
+                "-Wl,--no-as-needed",
+                "-lmkl_intel_lp64",
+                "-lmkl_gnu_thread",
+                "-lmkl_core",
+                "-lgomp",
+                "-lpthread",
+                "-lm",
+                "-ldl"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
             "label": "debug-diffusion_2d",
             "type": "shell",
             "command": "g++",

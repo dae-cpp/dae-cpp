@@ -20,7 +20,7 @@ For the numerical integration the solver uses implicit [BDF](https://en.wikipedi
 
 ### How does it work
 
-BDF time stepper reduces the original DAE system to a system of nonlinear equations that the solver resolves using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorization of Jacobian matrix, then numerical factorization, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method, variability of the solution and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
+BDF time stepper reduces the original DAE system to a system of nonlinear equations that is solved using iterative [Newton root-finding algorithm](https://en.wikipedia.org/wiki/Newton%27s_method). Each Newton iteration a system of linear algebraic equations is solved using Parallel Direct Sparse Solver ([Intel MKL PARDISO](https://software.intel.com/en-us/mkl-developer-reference-c-intel-mkl-pardiso-parallel-direct-sparse-solver-interface)). The sparse solver performs 3 steps: reordering and symbolic factorization of Jacobian matrix, then numerical factorization, and then back substitution + iterative refinement. Finally, depending on the convergence rate of the Newton method, variability of the solution and user-defined accuracy, the DAE solver may adjust the time step and initiate a new iteration in time.
 
 ### The main features of the solver
 
@@ -30,11 +30,18 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 -   Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
 -   A user can get access to the solution at each time step by overriding Observer function (this is optional).
 -   The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
+-   The user-defined RHS, Mass matrix and Jacobian can be saved to a file for debugging or visualisation if needed.
 -   Easy-to-follow examples (see, for example, [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
+
+### Why?
+
+For my research project (power battery simulation), I was looking for a light-weight, easy to use, but very powerful, cross-platform and parallel C++ solver able to solve not only simple ODEs, but a mixture of ODEs with algebraic equations. The packages I found were either extremely heavy (SUNDIALS, PETSc) with very high entry barriers, or they could deal with the systems of ODEs only. So I decided to develop my own DAE solver, and it turned out it works amazingly well for my problem. It allows me to tackle 5-D thermo-electro-chemical problems related to batteries. This involves solution of extremely huge systems (about ten million of DAEs), and it works really fast even on a standard laptop. On the other hand, I have a full control on the solution process. It's not like a black box, everything can be adjusted if necessary.
+
+I hope this work will be useful for other people too. If you have any questions about the software, please feel free to submit an [issue](https://github.com/ikorotkin/dae-cpp/issues). Do not forget to [cite](https://doi.org/10.5281/zenodo.3241870) the solver if you use it in your research. Thank you!
 
 ## Installation
 
-This is a cross-platform software that should work on Linux (e.g. Ubuntu), Windows and macOS. The main library (DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, the latest version and Full Package.
+This is a cross-platform software that works on Linux (e.g. Ubuntu), Windows and macOS. The main library (the DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, version 2019 (2020 is relatively new and may have some issues) and Full Package.
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -146,7 +153,7 @@ Note that in order to execute the tests (for example, `perovskite.exe`) from `Re
 "C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\bin\mklvars.bat" intel64
 ```
 
-An example of default solution file for Microsoft Visual Studio 15 (2017) is given in [msvc](https://github.com/ikorotkin/dae-cpp/tree/master/msvc) folder. Unpack the zip-archive into the current directory and open dae-cpp.sln. Note that you may need to retarget solution and change the paths to Intel MKL library.
+**_Alternatively_**, you may install [Windows Subsystem for Linux](https://docs.microsoft.com/en-gb/windows/wsl/install-win10?redirectedfrom=MSDN) and your preferred Linux Distribution (e.g. Ubuntu), and then just follow [installation instructions for Linux](#linux).
 
 ### Mac
 
@@ -180,10 +187,10 @@ mkdir build
 cd build
 ```
 
-Configure the project. *Make sure `g++` and `gcc` versions (9 in the example below) are correct*:
+Configure the project. *Make sure `g++` version (9 in the example below) is correct*:
 
 ```bash
-cmake .. -DCMAKE_CXX_COMPILER=g++-9 -DCMAKE_CC_COMPILER=gcc-9 -DCMAKE_INSTALL_PREFIX=$PWD
+cmake .. -DCMAKE_CXX_COMPILER=g++-9 -DCMAKE_INSTALL_PREFIX=$PWD
 ```
 
 In the command above you may change the user-defined path where the package should be installed (type it instead of `$PWD`). By default the package will be installed into the current `build` directory.
@@ -244,9 +251,18 @@ MyRHS rhs(p);
 
 In the child MyRHS class the user can also override `stop_condition` virtual function. By default (if not overridden) the function always returns `false`. The user may override this behaviour and set up one or several stop conditions for the solver depending on the solution **x** at the current time *t*. As soon as the function returns `true`, the solver will finalise the current time step and return the current solution. A trivial example of the stop condition function can be found in [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
 
+For the debugging purposes, the RHS can be saved to a file:
+
+```cpp
+rhs.dump(x, 0);
+rhs.dump(x, 0.1);
+```
+
+In this example we saved two RHS vectors, at time 0 and 0.1.
+
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format).
+Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format). See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -260,9 +276,15 @@ If the Mass matrix is a simple identity matrix, one can use `daecpp::MassMatrixI
 dae::MassMatrixIdentity mass(N);
 ```
 
+For the debugging purposes, you can save the Mass matrix to a file:
+
+```cpp
+mass.dump();
+```
+
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix.
+We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix. See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
@@ -271,6 +293,27 @@ dae::Jacobian jac(rhs, 1.0e-6);
 ```
 
 Note that we should pass an instance of the user-defined RHS in order to estimate numerical Jacobian.
+
+Again, for the debugging purposes, Jacobian can be saved to a file:
+
+```cpp
+jac.dump(x, 0);
+jac.dump(x, 0.1);
+```
+
+In the example above we saved two Jacobians, at time 0 and 0.1.
+
+In some cases the derivation and coding of the analytic Jacobian can be a tricky problem itself. So `dae::Jacobian` class provides additional functionality to compare two Jacobians (one of them is numerical) and write the differences:
+
+```cpp
+dae::Jacobian jac(rhs, 1.0e-6);  // Numerical Jacobian calculated automatically (slow)
+MyJacobian jac_user(rhs);        // Analytic Jacobian provided by the user
+
+// Comparison of jac and jac_user and writing the differences to a file
+jac_user.compare(jac, x, 0.1, 1e-4);
+```
+
+Here we compared two Jacobians at time 0.1 with the relative tolerance 10<sup>-4</sup>.
 
 ### Step 5. Set the solver options
 
@@ -338,6 +381,32 @@ The third example, [robertson](https://github.com/ikorotkin/dae-cpp/tree/master/
 </p>
 
 Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
+
+### A note about Sparse Matrix Format
+
+It should be noted that you must define all the diagonal elements of the matrix, even if they are zero. This greatly increases performance, and if some rows are skipped, the code will just stop working. Please double check your Mass matrix and Jacobian, they both should have the main diagonal filled in. Even if the given row is empty (all elements are zero), define zero on the main diagonal explicitly.
+
+If you are struggling with Intel MKL sparse format, you can use simple three-array format instead, where you need to define all non-zero elements and their indexes (coordinates) in the matrix. For example for the identity 3x3 matrix, you only need to define three non-zero elements and their position in the matrix:
+
+```cpp
+M.A.resize(3);   // Number of non-zero elements
+M.ia.resize(3);  // Number of non-zero elements
+M.ja.resize(3);  // Number of non-zero elements
+
+M.A[0] = 1;   // First non-zero or diagonal element
+M.ia[0] = 0;  // Column index of the first non-zero element
+M.ja[0] = 0;  // Raw index of the first non-zero element
+
+M.A[1] = 1;   // Second non-zero or diagonal element
+M.ia[1] = 1;  // Column index of the second non-zero element
+M.ja[1] = 1;  // Raw index of the second non-zero element
+
+M.A[2] = 1;   // Third non-zero or diagonal element
+M.ia[2] = 2;  // Column index of the third non-zero element
+M.ja[2] = 2;  // Raw index of the third non-zero element
+```
+
+This form will be automatically converted to the three-array sparse format compatible with Intel MKL. Do not forget to define all diagonal elements even if they are zero. Do not mix the elements up (fill in the first row from left to right, then the second row, etc.).
 
 ## Contribution and feedback
 

@@ -3,8 +3,6 @@
  * estimate numerical Jacobian matrix
  */
 
-#include <iostream>   // std::cout
-#include <iomanip>    // std::setw etc.
 #include <cmath>      // std::abs
 #include <algorithm>  // std::copy
 
@@ -29,6 +27,8 @@ namespace daecpp_namespace_name
 void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
                           const double t)
 {
+    m_jac_type = 1;
+
     const MKL_INT size   = (MKL_INT)(x.size());
     const double  invtol = 1.0 / m_tol;
 
@@ -174,56 +174,6 @@ void Jacobian::operator()(sparse_matrix_holder &J, const state_type &x,
     }
 
     J.ia.push_back(ci);
-}
-
-/*
- * Helper function to show Jacobian structure
- */
-void Jacobian::print(const state_type &x, const double t)
-{
-    if(x.size() > 1000)
-    {
-        std::cout << "\nJacobian::print -- too much output. Skipped.\n";
-        return;
-    }
-
-    sparse_matrix_holder J;
-
-    this->operator()(J, x, t);
-
-    std::cout << std::right;
-    std::cout << "\nJacobian matrix at time t = " << t << ':';
-    std::cout << "\n-----------------------------------------\n";
-    std::cout << std::setw(7) << "i" << std::setw(16) << "J.A |"
-              << std::setw(10) << "J.ja |" << std::setw(8) << "J.ia";
-    std::cout << "\n-----------------------------------------\n";
-
-    size_t size = (J.A.size() > J.ia.size()) ? J.A.size() : J.ia.size();
-
-    for(std::size_t i = 0; i < size; i++)
-    {
-        std::cout << std::setw(7) << i << ": ";
-        std::cout << std::setw(12);
-
-        if(i < J.A.size())
-            std::cout << J.A[i] ;
-        else
-            std::cout << ' ';
-
-        std::cout << " | " << std::setw(7);
-
-        if(i < J.ja.size())
-            std::cout << J.ja[i];
-        else
-            std::cout << ' ';
-
-        std::cout << " | ";
-
-        if(i < J.ia.size())
-            std::cout << std::setw(7) << J.ia[i];
-
-        std::cout << std::endl;
-    }
 }
 
 }  // namespace daecpp_namespace_name

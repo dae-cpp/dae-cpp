@@ -10,13 +10,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/dbg.exe",
             "args": [],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
-            //"environment": [{"LD_LIBRARY_PATH":"/opt/intel/mkl/lib/intel64/:/opt/intel/lib/intel64/"}],
-            "env": {
-                "LD_LIBRARY_PATH": "/opt/intel/mkl/lib/intel64/:/opt/intel/lib/intel64/"
-            },
-            "externalConsole": true,
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/opt/intel/mkl/lib/intel64/:/opt/intel/lib/intel64/"
+                }
+            ],
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -24,7 +26,8 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }

@@ -56,11 +56,10 @@ class MyMassMatrix : public MassMatrix
 public:
     void operator()(sparse_matrix_holder &M)
     {
-        M.A.resize(3);   // Matrix size
-        M.ja.resize(3);  // Matrix size
-        M.ia.resize(4);  // Matrix size + 1
+        M.A.resize(3);   // Number of non-zero elements
+        M.ja.resize(3);  // Number of non-zero elements
 
-        // Non-zero and/or diagonal elements
+        // Non-zero and diagonal elements
         M.A[0] = 1;
         M.A[1] = 1;
         M.A[2] = 0;
@@ -71,10 +70,18 @@ public:
         M.ja[2] = 2;
 
         // Index of the first element for each row
+        M.ia.resize(4);  // Matrix size + 1
         M.ia[0] = 0;
         M.ia[1] = 1;
         M.ia[2] = 2;
         M.ia[3] = 3;
+
+        // Alternatively, for ia, you can specify the row index of each
+        // non-zero element A:
+        // M.ia.resize(3);  // Number of non-zero elements
+        // M.ia[0] = 0;
+        // M.ia[1] = 1;
+        // M.ia[2] = 2;
     }
 };
 
@@ -156,9 +163,8 @@ public:
         // Initialize Jacobian in sparse format
         J.A.resize(9);
         J.ja.resize(9);
-        J.ia.resize(4);
 
-        // Non-zero elements
+        // Non-zero and diagonal elements
         J.A[0] = -0.04;
         J.A[1] = 1.0e4 * x[2];
         J.A[2] = 1.0e4 * x[1];
@@ -181,10 +187,23 @@ public:
         J.ja[8] = 2;
 
         // Index of the first element for each row
+        J.ia.resize(4);
         J.ia[0] = 0;
         J.ia[1] = 3;
         J.ia[2] = 6;
         J.ia[3] = 9;
+
+        // Alternatively, for ia, you may specify row index of each element:
+        // J.ia.resize(9);
+        // J.ia[0] = 0;
+        // J.ia[1] = 0;
+        // J.ia[2] = 0;
+        // J.ia[3] = 1;
+        // J.ia[4] = 1;
+        // J.ia[5] = 1;
+        // J.ia[6] = 2;
+        // J.ia[7] = 2;
+        // J.ia[8] = 2;
     }
 };
 
@@ -213,19 +232,27 @@ int main()
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
     MyRHS rhs;
 
+    // We can write the initial RHS to a file for debugging purposes:
+    rhs.dump(x, 0);
+
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass;
+
+    // Write the Mass Matrix to a file for debugging purposes.
+    // The content of the output file can be copied/pasted into MS Excel or any
+    // other spreadsheet sofware
+    mass.dump();
 
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
     SolverOptions opt;
 
-    opt.dt_init               = 1.0e-6;    // Change initial time step
-    opt.dt_max                = t1 / 100;  // Set maximum time step
-    opt.time_stepping         = 1;         // S-SATS works better here
-    opt.atol                  = 1e-6;      // Absolute tolerance
-    opt.bdf_order             = 6;         // Set BDF-6
+    opt.dt_init       = 1.0e-6;    // Change initial time step
+    opt.dt_max        = t1 / 100;  // Set maximum time step
+    opt.time_stepping = 1;         // S-SATS works better here
+    opt.atol          = 1e-6;      // Absolute tolerance
+    opt.bdf_order     = 6;         // Set BDF-6
 
     // We can override Jacobian class from dae-cpp library and provide
     // analytical Jacobian. We shall do this for single precision:
@@ -242,8 +269,20 @@ int main()
     Jacobian jac_est(rhs, 1e-10);  // Obviously this tolerance is
                                    // inacceptable for single precision
 
+    // Similar to the Mass matrix and the RHS, we can write the initial Jacobian
+    // matrix to a file:
+    jac_est.dump(x, 0);
+
     // Print Jacobian out for t = 0:
     // jac_est.print(x, 0);
+
+    // We can also compare user-defined analytic Jacobian with the reference
+    // numerical Jacobian matrix:
+    MyJacobian jac(rhs);                   // Analytic Jacobian
+    jac.dump(x, 0);                        // Write it to file for debugging
+    jac.compare(jac_est, x, 1.234, 1e-4);  // Or compare it with jac_est at time
+                                           // t = 1.234 with the tolerance 1e-4
+                                           // and write the difference to a file
 #endif
 
     // Create an instance of the solver with particular RHS, Mass matrix,

@@ -12,6 +12,8 @@ namespace daecpp_namespace_name
 
 class RHS
 {
+    std::size_t m_dump_file_counter = 0;
+
 public:
     /*
      * Takes vector x and time t and returns vector f.
@@ -28,6 +30,11 @@ public:
     {
         return false;
     }
+
+    /*
+     * Helper function to write the RHS vector to a file
+     */
+    void dump(const state_type &x, const double t);
 };
 
 }  // namespace daecpp_namespace_name
