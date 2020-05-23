@@ -23,8 +23,8 @@ const char delimiter = '\t';  // Delimiter of columns in output text files
  */
 void RHS::dump(const state_type &x, const double t)
 {
-    std::cout << "\nRHS::dump() -- INFO: Writing the RHS at time t = " << t
-              << "...\n";
+    std::cout << "RHS::dump()         -- INFO: Writing the RHS at time t = "
+              << t << "...\n";
 
     const MKL_INT size = x.size();
 
@@ -47,7 +47,7 @@ void RHS::dump(const state_type &x, const double t)
  */
 void MassMatrix::dump()
 {
-    std::cout << "\nMassMatrix::dump() -- INFO: Writing the Mass matrix...\n";
+    std::cout << "MassMatrix::dump()  -- INFO: Writing the Mass matrix...\n";
 
     sparse_matrix_holder M;
 
@@ -60,7 +60,7 @@ void MassMatrix::dump()
 
     if(size > 10000)
     {
-        std::cout << "\nMassMatrix::dump() -- WARNING: the size of the Mass "
+        std::cout << "MassMatrix::dump()  -- WARNING: the size of the Mass "
                      "matrix for writting is bigger than 10000x10000.\n";
     }
 
@@ -102,7 +102,7 @@ void MassMatrix::dump()
  */
 void Jacobian::dump(const state_type &x, const double t)
 {
-    std::cout << "\nJacobian::dump() -- INFO: ";
+    std::cout << "Jacobian::dump()    -- INFO: ";
 
     sparse_matrix_holder M;
 
@@ -121,7 +121,7 @@ void Jacobian::dump(const state_type &x, const double t)
 
     if(size > 10000)
     {
-        std::cout << "\nJacobian::dump() -- WARNING: the size of the Jacobian "
+        std::cout << "Jacobian::dump()    -- WARNING: the size of the Jacobian "
                      "matrix for writting is bigger than 10000x10000.\n";
     }
 
@@ -222,9 +222,9 @@ void Jacobian::print(const state_type &x, const double t)
 void Jacobian::compare(Jacobian jac, const state_type &x, const double t,
                        const double tol)
 {
-    std::cout << "\nJacobian::compare() -- INFO: Trying to compare two "
+    std::cout << "Jacobian::compare() -- INFO: Trying to compare two "
                  "Jacobians at time t = "
-              << t << "...\n";
+              << t << " and the tolerance tol = " << tol << "...\n";
 
     sparse_matrix_holder M, J;
 
@@ -239,7 +239,7 @@ void Jacobian::compare(Jacobian jac, const state_type &x, const double t,
 
     if((std::size_t)(size) != (J.ia.size() - 1))
     {
-        std::cout << "\nJacobian::compare() -- ERROR: the sizes of the "
+        std::cout << "Jacobian::compare() -- ERROR: the sizes of the "
                      "matrices do not match ('ia' indexes are different).\n";
         return;
     }
