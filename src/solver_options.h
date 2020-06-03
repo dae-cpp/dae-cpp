@@ -89,6 +89,10 @@ public:
     // Otherwise stop with error message.
     bool redo_newton = false;
 
+    // If Newton method fails to converge within max_Newton_iter iterations in a
+    // row, the solver will try to update Jacobian every single iteration.
+    int newton_failed_attempts = 3;
+
     // 1 - V-SATS will use NORM_infinity to estimate solution variability,
     // 2 - V-SATS will use NORM_2 (default)
     int vsats_norm = 2;
