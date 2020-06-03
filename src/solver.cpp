@@ -151,9 +151,6 @@ int Solver::operator()(state_type &x, double &t1)
     // max_Newton_iter iterations in a row.
     int n_iter_failed = 0;
 
-    // Can be set to true by the solver if it fails to converge
-    bool fact_every_iter = m_opt.fact_every_iter;
-
     if(m_opt.verbosity == 1)
     {
         std::cout << "Calculating...";
@@ -198,9 +195,10 @@ int Solver::operator()(state_type &x, double &t1)
             m_iterator_state.current_scheme++;
         }
 
-        fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
-                              ? true
-                              : m_opt.fact_every_iter;
+        // Can be set to true by the solver if it fails to converge
+        bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
+                                   ? true
+                                   : m_opt.fact_every_iter;
 
         int iter;  // Loop index. We need this value later
 
