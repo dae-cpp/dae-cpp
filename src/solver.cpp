@@ -152,7 +152,7 @@ int Solver::operator()(state_type &x, double &t1)
     int n_iter_failed = 0;
 
     // Can be set to true by the solver if it fails to converge
-    bool fact_every_iter = m_opt.fact_every_iter;
+    bool fact_every_iter;  // Equals to m_opt.fact_every_iter usually
 
     if(m_opt.verbosity == 1)
     {
