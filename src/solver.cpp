@@ -26,10 +26,10 @@ Solver::Solver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
     if(m_opt.verbosity > 1)
     {
         std::cout << "Float precision:     " << 8 * sizeof(float_type)
-            << " bit\n";
+                  << " bit\n";
         std::cout << "Integer precision:   " << 8 * sizeof(MKL_INT) << " bit\n";
         std::cout << "Numerical algorithm: BDF-" << m_opt.bdf_order
-            << std::endl;
+                  << std::endl;
     }
 
     // Initialises the internal solver memory pointer. This is only
@@ -147,6 +147,13 @@ int Solver::operator()(state_type &x, double &t1)
     // Counts linear solver calls
     std::size_t calls = 0;
 
+    // Counts how many times the Newton iterator failed to converge within
+    // max_Newton_iter iterations in a row.
+    int n_iter_failed = 0;
+
+    // Can be set to true by the solver if it fails to converge
+    bool fact_every_iter = m_opt.fact_every_iter;
+
     if(m_opt.verbosity == 1)
     {
         std::cout << "Calculating...";
@@ -191,12 +198,16 @@ int Solver::operator()(state_type &x, double &t1)
             m_iterator_state.current_scheme++;
         }
 
-        int iter;  // We need this value later
+        fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
+                              ? true
+                              : m_opt.fact_every_iter;
+
+        int iter;  // Loop index. We need this value later
 
         for(iter = 0; iter < m_opt.max_Newton_iter; iter++)
         {
             // Reordering, Symbolic and Numerical Factorization
-            if(m_opt.fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
+            if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
             {
                 // Time Integrator with updated Jacobian
                 m_ti->integrate(J, b, x, m_x_prev, m_iterator_state.t,
@@ -369,11 +380,16 @@ int Solver::operator()(state_type &x, double &t1)
         // Trying to reduce the time step.
         if(iter == m_opt.max_Newton_iter)
         {
+            n_iter_failed++;
             if(m_opt.verbosity > 1)
                 std::cout << " <- redo";
             if(m_reset_ti_state(x, m_x_prev))
                 return 3;  // Newton method failed to converge
             continue;
+        }
+        else
+        {
+            n_iter_failed = 0;
         }
 
         // The solver has reached the target time t1 or the stop condition
