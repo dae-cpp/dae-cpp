@@ -123,10 +123,7 @@ int Solver::m_reset_ti_state(state_type &x, const state_type_matrix &x_prev)
  */
 int Solver::m_reset_ti_scheme()
 {
-    if(m_iterator_state.step_counter_local && m_opt.bdf_order == 2)
-        return 2;  // BDF-2
-    else
-        return 1;  // BDF-1
+    return (m_iterator_state.current_scheme == 1) ? 1 : 2;
 }
 
 /*

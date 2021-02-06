@@ -83,7 +83,7 @@ void TimeIntegrator::integrate(sparse_matrix_holder &J, state_type &b,
     state_type dxdt(size);
 
     // Variable time stepper for BDF-2
-    if(m_scheme == 2 && m_opt.bdf_order == 2)
+    if(m_scheme == 2)
     {
         for(MKL_INT i = 0; i < size; i++)
         {
