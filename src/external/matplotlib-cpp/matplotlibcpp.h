@@ -45,6 +45,7 @@ namespace detail {
 static std::string s_backend;
 
 struct _interpreter {
+    PyObject* s_python_function_arrow;
     PyObject *s_python_function_show;
     PyObject *s_python_function_close;
     PyObject *s_python_function_draw;
@@ -54,6 +55,7 @@ struct _interpreter {
     PyObject *s_python_function_fignum_exists;
     PyObject *s_python_function_plot;
     PyObject *s_python_function_quiver;
+    PyObject* s_python_function_contour;
     PyObject *s_python_function_semilogx;
     PyObject *s_python_function_semilogy;
     PyObject *s_python_function_loglog;
@@ -73,13 +75,16 @@ struct _interpreter {
     PyObject *s_python_function_title;
     PyObject *s_python_function_axis;
     PyObject *s_python_function_axvline;
+    PyObject *s_python_function_axvspan;
     PyObject *s_python_function_xlabel;
     PyObject *s_python_function_ylabel;
     PyObject *s_python_function_gca;
     PyObject *s_python_function_xticks;
     PyObject *s_python_function_yticks;
+    PyObject* s_python_function_margins;
     PyObject *s_python_function_tick_params;
     PyObject *s_python_function_grid;
+    PyObject* s_python_function_cla;
     PyObject *s_python_function_clf;
     PyObject *s_python_function_errorbar;
     PyObject *s_python_function_annotate;
@@ -91,18 +96,36 @@ struct _interpreter {
     PyObject *s_python_function_text;
     PyObject *s_python_function_suptitle;
     PyObject *s_python_function_bar;
+    PyObject *s_python_function_barh;
     PyObject *s_python_function_colorbar;
     PyObject *s_python_function_subplots_adjust;
 
 
     /* For now, _interpreter is implemented as a singleton since its currently not possible to have
        multiple independent embedded python interpreters without patching the python source code
-       or starting a separate process for each.
-        http://bytes.com/topic/python/answers/793370-multiple-independent-python-interpreters-c-c-program
+       or starting a separate process for each. [1]
+       Furthermore, many python objects expect that they are destructed in the same thread as they
+       were constructed. [2] So for advanced usage, a `kill()` function is provided so that library
+       users can manually ensure that the interpreter is constructed and destroyed within the
+       same thread.
+
+         1: http://bytes.com/topic/python/answers/793370-multiple-independent-python-interpreters-c-c-program
+         2: https://github.com/lava/matplotlib-cpp/pull/202#issue-436220256
        */
 
     static _interpreter& get() {
+        return interkeeper(false);
+    }
+
+    static _interpreter& kill() {
+        return interkeeper(true);
+    }
+
+    // Stores the actual singleton object referenced by `get()` and `kill()`.
+    static _interpreter& interkeeper(bool should_kill) {
         static _interpreter ctx;
+        if (should_kill)
+            ctx.~_interpreter();
         return ctx;
     }
 
@@ -148,6 +171,11 @@ private:
         Py_SetProgramName(name);
         Py_Initialize();
 
+        wchar_t const *dummy_args[] = {L"Python", NULL};  // const is needed because literals must not be modified
+        wchar_t const **argv = dummy_args;
+        int             argc = sizeof(dummy_args)/sizeof(dummy_args[0])-1;
+        PySys_SetArgv(argc, const_cast<wchar_t **>(argv));
+
 #ifndef WITHOUT_NUMPY
         import_numpy(); // initialize numpy C-API
 #endif
@@ -185,6 +213,7 @@ private:
         Py_DECREF(pylabname);
         if (!pylabmod) { throw std::runtime_error("Error loading module pylab!"); }
 
+        s_python_function_arrow = safe_import(pymod, "arrow");
         s_python_function_show = safe_import(pymod, "show");
         s_python_function_close = safe_import(pymod, "close");
         s_python_function_draw = safe_import(pymod, "draw");
@@ -193,6 +222,7 @@ private:
         s_python_function_fignum_exists = safe_import(pymod, "fignum_exists");
         s_python_function_plot = safe_import(pymod, "plot");
         s_python_function_quiver = safe_import(pymod, "quiver");
+        s_python_function_contour = safe_import(pymod, "contour");
         s_python_function_semilogx = safe_import(pymod, "semilogx");
         s_python_function_semilogy = safe_import(pymod, "semilogy");
         s_python_function_loglog = safe_import(pymod, "loglog");
@@ -208,11 +238,13 @@ private:
         s_python_function_title = safe_import(pymod, "title");
         s_python_function_axis = safe_import(pymod, "axis");
         s_python_function_axvline = safe_import(pymod, "axvline");
+        s_python_function_axvspan = safe_import(pymod, "axvspan");
         s_python_function_xlabel = safe_import(pymod, "xlabel");
         s_python_function_ylabel = safe_import(pymod, "ylabel");
         s_python_function_gca = safe_import(pymod, "gca");
         s_python_function_xticks = safe_import(pymod, "xticks");
         s_python_function_yticks = safe_import(pymod, "yticks");
+        s_python_function_margins = safe_import(pymod, "margins");
         s_python_function_tick_params = safe_import(pymod, "tick_params");
         s_python_function_grid = safe_import(pymod, "grid");
         s_python_function_xlim = safe_import(pymod, "xlim");
@@ -220,6 +252,7 @@ private:
         s_python_function_ginput = safe_import(pymod, "ginput");
         s_python_function_save = safe_import(pylabmod, "savefig");
         s_python_function_annotate = safe_import(pymod,"annotate");
+        s_python_function_cla = safe_import(pymod, "cla");
         s_python_function_clf = safe_import(pymod, "clf");
         s_python_function_errorbar = safe_import(pymod, "errorbar");
         s_python_function_tight_layout = safe_import(pymod, "tight_layout");
@@ -228,6 +261,7 @@ private:
         s_python_function_text = safe_import(pymod, "text");
         s_python_function_suptitle = safe_import(pymod, "suptitle");
         s_python_function_bar = safe_import(pymod,"bar");
+        s_python_function_barh = safe_import(pymod, "barh");
         s_python_function_colorbar = PyObject_GetAttrString(pymod, "colorbar");
         s_python_function_subplots_adjust = safe_import(pymod,"subplots_adjust");
 #ifndef WITHOUT_NUMPY
@@ -707,6 +741,37 @@ bool fill_between(const std::vector<Numeric>& x, const std::vector<Numeric>& y1,
     return res;
 }
 
+template <typename Numeric>
+bool arrow(Numeric x, Numeric y, Numeric end_x, Numeric end_y, const std::string& fc = "r",
+           const std::string ec = "k", Numeric head_length = 0.25, Numeric head_width = 0.1625) {
+    PyObject* obj_x = PyFloat_FromDouble(x);
+    PyObject* obj_y = PyFloat_FromDouble(y);
+    PyObject* obj_end_x = PyFloat_FromDouble(end_x);
+    PyObject* obj_end_y = PyFloat_FromDouble(end_y);
+
+    PyObject* kwargs = PyDict_New();
+    PyDict_SetItemString(kwargs, "fc", PyString_FromString(fc.c_str()));
+    PyDict_SetItemString(kwargs, "ec", PyString_FromString(ec.c_str()));
+    PyDict_SetItemString(kwargs, "head_width", PyFloat_FromDouble(head_width));
+    PyDict_SetItemString(kwargs, "head_length", PyFloat_FromDouble(head_length));
+
+    PyObject* plot_args = PyTuple_New(4);
+    PyTuple_SetItem(plot_args, 0, obj_x);
+    PyTuple_SetItem(plot_args, 1, obj_y);
+    PyTuple_SetItem(plot_args, 2, obj_end_x);
+    PyTuple_SetItem(plot_args, 3, obj_end_y);
+
+    PyObject* res =
+            PyObject_Call(detail::_interpreter::get().s_python_function_arrow, plot_args, kwargs);
+
+    Py_DECREF(plot_args);
+    Py_DECREF(kwargs);
+    if (res)
+        Py_DECREF(res);
+
+    return res;
+}
+
 template< typename Numeric>
 bool hist(const std::vector<Numeric>& y, long bins=10,std::string color="b",
           double alpha=1.0, bool cumulative=false)
@@ -964,6 +1029,36 @@ bool bar(const std::vector<Numeric> &               y,
   return bar(x, y, ec, ls, lw, keywords);
 }
 
+
+template<typename Numeric>
+bool barh(const std::vector<Numeric> &x, const std::vector<Numeric> &y, std::string ec = "black", std::string ls = "-", double lw = 1.0, const std::map<std::string, std::string> &keywords = { }) {
+    PyObject *xarray = detail::get_array(x);
+    PyObject *yarray = detail::get_array(y);
+
+    PyObject *kwargs = PyDict_New();
+
+    PyDict_SetItemString(kwargs, "ec", PyString_FromString(ec.c_str()));
+    PyDict_SetItemString(kwargs, "ls", PyString_FromString(ls.c_str()));
+    PyDict_SetItemString(kwargs, "lw", PyFloat_FromDouble(lw));
+
+    for (std::map<std::string, std::string>::const_iterator it = keywords.begin(); it != keywords.end(); ++it) {
+        PyDict_SetItemString(kwargs, it->first.c_str(), PyUnicode_FromString(it->second.c_str()));
+    }
+
+    PyObject *plot_args = PyTuple_New(2);
+    PyTuple_SetItem(plot_args, 0, xarray);
+    PyTuple_SetItem(plot_args, 1, yarray);
+
+    PyObject *res = PyObject_Call(detail::_interpreter::get().s_python_function_barh, plot_args, kwargs);
+
+    Py_DECREF(plot_args);
+    Py_DECREF(kwargs);
+    if (res) Py_DECREF(res);
+
+    return res;
+}
+
+
 inline bool subplots_adjust(const std::map<std::string, double>& keywords = {})
 {
     detail::_interpreter::get();
@@ -1034,6 +1129,39 @@ bool plot(const std::vector<NumericX>& x, const std::vector<NumericY>& y, const 
 
     Py_DECREF(plot_args);
     if(res) Py_DECREF(res);
+
+    return res;
+}
+
+template <typename NumericX, typename NumericY, typename NumericZ>
+bool contour(const std::vector<NumericX>& x, const std::vector<NumericY>& y,
+             const std::vector<NumericZ>& z,
+             const std::map<std::string, std::string>& keywords = {}) {
+    assert(x.size() == y.size() && x.size() == z.size());
+
+    PyObject* xarray = get_array(x);
+    PyObject* yarray = get_array(y);
+    PyObject* zarray = get_array(z);
+
+    PyObject* plot_args = PyTuple_New(3);
+    PyTuple_SetItem(plot_args, 0, xarray);
+    PyTuple_SetItem(plot_args, 1, yarray);
+    PyTuple_SetItem(plot_args, 2, zarray);
+
+    // construct keyword args
+    PyObject* kwargs = PyDict_New();
+    for (std::map<std::string, std::string>::const_iterator it = keywords.begin();
+         it != keywords.end(); ++it) {
+        PyDict_SetItemString(kwargs, it->first.c_str(), PyUnicode_FromString(it->second.c_str()));
+    }
+
+    PyObject* res =
+            PyObject_Call(detail::_interpreter::get().s_python_function_contour, plot_args, kwargs);
+
+    Py_DECREF(kwargs);
+    Py_DECREF(plot_args);
+    if (res)
+        Py_DECREF(res);
 
     return res;
 }
@@ -1491,6 +1619,24 @@ inline void legend()
     Py_DECREF(res);
 }
 
+inline void legend(const std::map<std::string, std::string>& keywords)
+{
+  detail::_interpreter::get();
+
+  // construct keyword args
+  PyObject* kwargs = PyDict_New();
+  for(std::map<std::string, std::string>::const_iterator it = keywords.begin(); it != keywords.end(); ++it)
+  {
+    PyDict_SetItemString(kwargs, it->first.c_str(), PyString_FromString(it->second.c_str()));
+  }
+
+  PyObject* res = PyObject_Call(detail::_interpreter::get().s_python_function_legend, detail::_interpreter::get().s_python_empty_tuple, kwargs);
+  if(!res) throw std::runtime_error("Call to legend() failed.");
+
+  Py_DECREF(kwargs);
+  Py_DECREF(res);  
+}
+
 template<typename Numeric>
 void ylim(Numeric left, Numeric right)
 {
@@ -1667,6 +1813,38 @@ inline void yticks(const std::vector<Numeric> &ticks, const std::map<std::string
     yticks(ticks, {}, keywords);
 }
 
+template <typename Numeric> inline void margins(Numeric margin)
+{
+    // construct positional args
+    PyObject* args = PyTuple_New(1);
+    PyTuple_SetItem(args, 0, PyFloat_FromDouble(margin));
+
+    PyObject* res =
+            PyObject_CallObject(detail::_interpreter::get().s_python_function_margins, args);
+    if (!res)
+        throw std::runtime_error("Call to margins() failed.");
+
+    Py_DECREF(args);
+    Py_DECREF(res);
+}
+
+template <typename Numeric> inline void margins(Numeric margin_x, Numeric margin_y)
+{
+    // construct positional args
+    PyObject* args = PyTuple_New(2);
+    PyTuple_SetItem(args, 0, PyFloat_FromDouble(margin_x));
+    PyTuple_SetItem(args, 1, PyFloat_FromDouble(margin_y));
+
+    PyObject* res =
+            PyObject_CallObject(detail::_interpreter::get().s_python_function_margins, args);
+    if (!res)
+        throw std::runtime_error("Call to margins() failed.");
+
+    Py_DECREF(args);
+    Py_DECREF(res);
+}
+
+
 inline void tick_params(const std::map<std::string, std::string>& keywords, const std::string axis = "both")
 {
   detail::_interpreter::get();
@@ -1813,6 +1991,32 @@ inline void axvline(double x, double ymin = 0., double ymax = 1., const std::map
 
     PyObject* res = PyObject_Call(detail::_interpreter::get().s_python_function_axvline, args, kwargs);
 
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+
+    if(res) Py_DECREF(res);
+}
+
+inline void axvspan(double xmin, double xmax, double ymin = 0., double ymax = 1., const std::map<std::string, std::string>& keywords = std::map<std::string, std::string>())
+{
+    // construct positional args
+    PyObject* args = PyTuple_New(4);
+    PyTuple_SetItem(args, 0, PyFloat_FromDouble(xmin));
+    PyTuple_SetItem(args, 1, PyFloat_FromDouble(xmax));
+    PyTuple_SetItem(args, 2, PyFloat_FromDouble(ymin));
+    PyTuple_SetItem(args, 3, PyFloat_FromDouble(ymax));
+
+    // construct keyword args
+    PyObject* kwargs = PyDict_New();
+    for(std::map<std::string, std::string>::const_iterator it = keywords.begin(); it != keywords.end(); ++it)
+    {
+    if (it->first == "linewidth" || it->first == "alpha")
+            PyDict_SetItemString(kwargs, it->first.c_str(), PyFloat_FromDouble(std::stod(it->second)));
+    else
+            PyDict_SetItemString(kwargs, it->first.c_str(), PyString_FromString(it->second.c_str()));
+    }
+
+    PyObject* res = PyObject_Call(detail::_interpreter::get().s_python_function_axvspan, args, kwargs);
     Py_DECREF(args);
     Py_DECREF(kwargs);
 
@@ -2041,6 +2245,18 @@ inline void clf() {
     Py_DECREF(res);
 }
 
+inline void cla() {
+    detail::_interpreter::get();
+
+    PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_cla,
+                                        detail::_interpreter::get().s_python_empty_tuple);
+
+    if (!res)
+        throw std::runtime_error("Call to cla() failed.");
+
+    Py_DECREF(res);
+}
+
 inline void ion() {
     detail::_interpreter::get();
 
@@ -2154,6 +2370,8 @@ struct plot_impl<std::false_type>
     template<typename IterableX, typename IterableY>
     bool operator()(const IterableX& x, const IterableY& y, const std::string& format)
     {
+        detail::_interpreter::get();
+
         // 2-phase lookup for distance, begin, end
         using std::distance;
         using std::begin;
