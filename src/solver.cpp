@@ -185,7 +185,7 @@ int Solver::operator()(state_type &x, double &t1)
             std::cout << "\nStep " << std::setw(7) << m_steps
                       << " :: t = " << std::setw(12) << m_iterator_state.t
                       << " :: ";
-            std::cout.flush();
+            // std::cout.flush();  // This degrades performance in some cases
         }
 
         if(m_opt.verbosity > 2)
@@ -196,15 +196,6 @@ int Solver::operator()(state_type &x, double &t1)
         }
 
         m_ti->set_scheme(m_iterator_state.current_scheme);
-
-        if(m_iterator_state.current_scheme < m_opt.bdf_order)
-        {
-            if((m_iterator_state.current_scheme == 1) ||
-               (m_iterator_state.dt[0] == m_iterator_state.dt[1]))
-            {
-                m_iterator_state.current_scheme++;
-            }
-        }
 
         // Can be set to true by the solver if it fails to converge
         bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
@@ -375,7 +366,7 @@ int Solver::operator()(state_type &x, double &t1)
             if(m_opt.verbosity > 1)
             {
                 std::cout << "#";
-                std::cout.flush();
+                // std::cout.flush();  // This degrades performance in some cases
             }
 
             if(is_converged)
@@ -441,6 +432,16 @@ int Solver::operator()(state_type &x, double &t1)
             m_x_prev[d] = m_x_prev[d - 1];
         }
         m_x_prev[0] = x;
+
+        // Update the BDF order
+        if(m_iterator_state.current_scheme < m_opt.bdf_order)
+        {
+            if((m_iterator_state.current_scheme == 1) ||
+               (m_iterator_state.dt[0] == m_iterator_state.dt[1]))
+            {
+                m_iterator_state.current_scheme++;
+            }
+        }
 
         // Update time step history
         m_iterator_state.dt[1] = m_iterator_state.dt[0];
@@ -536,6 +537,7 @@ int Solver::operator()(state_type &x, double &t1)
         ss << "\n\n";
 
         std::cout << ss.str();
+        std::cout.flush();
     }
 
     // Success
