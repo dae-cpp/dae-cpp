@@ -335,7 +335,7 @@ int Solver::operator()(state_type &x, double &t1)
                     }
                     else
                     {
-                        return 2;
+                        return 2;  // Newton iterations diverged
                     }
                 }
 
@@ -376,13 +376,14 @@ int Solver::operator()(state_type &x, double &t1)
 
         // Newton iterator failed to converge within max_Newton_iter iterations.
         // Trying to reduce the time step.
-        if(iter == m_opt.max_Newton_iter)
+        if(iter >= m_opt.max_Newton_iter)
         {
             n_iter_failed++;
             if(m_opt.verbosity > 1)
                 std::cout << " <- redo";
-            if(m_reset_ti_state(x, m_x_prev))
-                return 3;  // Newton method failed to converge
+            if(m_reset_ti_state(x, m_x_prev) == -1)
+                return 3;  // The time step was reduced to dt_min,
+                           // but the solver still cannot converge
             continue;
         }
         else
@@ -406,12 +407,12 @@ int Solver::operator()(state_type &x, double &t1)
             continue;  // Re-run the current time step
 
         // Looks like the solver has reached the target time t1
-        if(m_iterator_state.t + m_iterator_state.dt_eval >= t1)
+        if((m_iterator_state.t + m_iterator_state.dt_eval) >= (t1 - m_opt.dt_min))
         {
             // Adjust the last time step size
             double dt_max = t1 - m_iterator_state.t;
 
-            if(std::abs(dt_max) < m_opt.dt_eps_m)
+            if(std::abs(dt_max) < m_opt.dt_eps_m)  // Should never happen
             {
                 break;  // The solver has reached t1
             }
