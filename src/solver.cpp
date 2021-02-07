@@ -96,6 +96,13 @@ int Solver::operator()(state_type &x, double &t1)
             : m_iterator_state.dt[0];
     m_iterator_state.dt[0] = m_iterator_state.dt_eval;
 
+    // Roll back to BDF-2 if the time step has changed
+    if((m_iterator_state.dt[0] != m_iterator_state.dt[1]) &&
+       (m_iterator_state.current_scheme > 1))
+    {
+        m_iterator_state.current_scheme = 2;
+    }
+
     // Initialize the time integrator state structure.
     m_iterator_state.step_counter_local = 0;
     m_iterator_state.final_time_step    = false;
@@ -178,7 +185,7 @@ int Solver::operator()(state_type &x, double &t1)
             std::cout << "\nStep " << std::setw(7) << m_steps
                       << " :: t = " << std::setw(12) << m_iterator_state.t
                       << " :: ";
-            std::cout.flush();
+            // std::cout.flush();  // This degrades performance in some cases
         }
 
         if(m_opt.verbosity > 2)
@@ -189,11 +196,6 @@ int Solver::operator()(state_type &x, double &t1)
         }
 
         m_ti->set_scheme(m_iterator_state.current_scheme);
-
-        if(m_iterator_state.current_scheme < m_opt.bdf_order)
-        {
-            m_iterator_state.current_scheme++;
-        }
 
         // Can be set to true by the solver if it fails to converge
         bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
@@ -364,7 +366,7 @@ int Solver::operator()(state_type &x, double &t1)
             if(m_opt.verbosity > 1)
             {
                 std::cout << "#";
-                std::cout.flush();
+                // std::cout.flush();  // This degrades performance in some cases
             }
 
             if(is_converged)
@@ -407,7 +409,8 @@ int Solver::operator()(state_type &x, double &t1)
             continue;  // Re-run the current time step
 
         // Looks like the solver has reached the target time t1
-        if((m_iterator_state.t + m_iterator_state.dt_eval) >= (t1 - m_opt.dt_min))
+        if((m_iterator_state.t + m_iterator_state.dt_eval) >=
+           (t1 - m_opt.dt_min))
         {
             // Adjust the last time step size
             double dt_max = t1 - m_iterator_state.t;
@@ -430,9 +433,26 @@ int Solver::operator()(state_type &x, double &t1)
         }
         m_x_prev[0] = x;
 
+        // Update the BDF order
+        if(m_iterator_state.current_scheme < m_opt.bdf_order)
+        {
+            if((m_iterator_state.current_scheme == 1) ||
+               (m_iterator_state.dt[0] == m_iterator_state.dt[1]))
+            {
+                m_iterator_state.current_scheme++;
+            }
+        }
+
         // Update time step history
         m_iterator_state.dt[1] = m_iterator_state.dt[0];
         m_iterator_state.dt[0] = m_iterator_state.dt_eval;
+
+        // Roll back to BDF-2 if the time step has changed
+        if((m_iterator_state.dt[0] != m_iterator_state.dt[1]) &&
+           (m_opt.bdf_order > 1))
+        {
+            m_iterator_state.current_scheme = 2;
+        }
 
         // Call Observer to provide a user with intermediate results
         observer(x, m_iterator_state.t);
@@ -517,6 +537,7 @@ int Solver::operator()(state_type &x, double &t1)
         ss << "\n\n";
 
         std::cout << ss.str();
+        std::cout.flush();
     }
 
     // Success
