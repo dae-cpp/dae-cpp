@@ -72,13 +72,20 @@ if(PLOTTING)
     set(PYTHON_INCLUDE "" CACHE STRING "Path to Python include file (Python.h) for plotting")
     set(PYTHON_LIB "" CACHE STRING "Python library for plotting")
   endif(PYTHONLIBS_FOUND)
+  # A very rude attempt to find numpy library (numpy/arrayobject.h) for plotting
   find_path(PYTHON_NUMPY_INCLUDE numpy/arrayobject.h PATHS
     /usr/local/lib/python3.5/dist-packages/numpy/core/include
     /usr/local/lib/python3.6/dist-packages/numpy/core/include
     /usr/local/lib/python3.7/dist-packages/numpy/core/include
+    /usr/local/lib/python3.8/dist-packages/numpy/core/include
     /usr/local/lib/python3.5/site-packages/numpy/core/include
     /usr/local/lib/python3.6/site-packages/numpy/core/include
     /usr/local/lib/python3.7/site-packages/numpy/core/include
+    /usr/local/lib/python3.8/site-packages/numpy/core/include
+    ~/.local/lib/python3.5/site-packages/numpy/core/include
+    ~/.local/lib/python3.6/site-packages/numpy/core/include
+    ~/.local/lib/python3.7/site-packages/numpy/core/include
+    ~/.local/lib/python3.8/site-packages/numpy/core/include
     ${PYTHON_INCLUDE}/../Lib/site-packages/numpy/core/include
     ${PYTHON_LIB}/../Lib/site-packages/numpy/core/include
     DOC "Path to Python numpy include file (numpy/arrayobject.h) for plotting")
