@@ -27,21 +27,15 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 -   Can resolve DAE systems of 10<sup>8</sup> equations and even more (depending on the Jacobian matrix sparsity and machine's RAM).
 -   A user can provide analytical Jacobian matrix for better performance or use built-in parallel function provided by the solver to estimate numerical Jacobian.
 -   Utilises all available cores on the machine for better performance (this can be overridden by a user).
--   Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance. On the other hand, this is optional. Default values should work fine in most cases.
+-   Allows a user to adjust most of the parameters related to the solution process in order to achieve better accuracy and performance.
 -   A user can get access to the solution at each time step by overriding Observer function (this is optional).
 -   The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
 -   The user-defined RHS, Mass matrix and Jacobian can be saved to a file for debugging or visualisation if needed.
--   Easy-to-follow examples (see, for example, [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
-
-### Why?
-
-For my research project (power battery simulation), I was looking for a light-weight, easy to use, but very powerful, cross-platform and parallel C++ solver able to solve not only simple ODEs, but a mixture of ODEs with algebraic equations. The packages I found were either extremely heavy (SUNDIALS, PETSc) with very high entry barriers, or they could deal with the systems of ODEs only. So I decided to develop my own DAE solver, and it turned out it works amazingly well for my problem. It allows me to tackle 5-D thermo-electro-chemical problems related to batteries. This involves solution of extremely huge systems (about ten million of DAEs), and it works really fast even on a standard laptop. On the other hand, I have a full control on the solution process. It's not like a black box, everything can be adjusted if necessary.
-
-I hope this work will be useful for other people too. If you have any questions about the software, please feel free to submit an [issue](https://github.com/ikorotkin/dae-cpp/issues). Do not forget to [cite](https://doi.org/10.5281/zenodo.3241870) the solver if you use it in your research. Thank you!
+-   Easy-to-follow examples (see, for example, [simple_dae.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
 
 ## Installation
 
-This is a cross-platform software that works on Linux (e.g. Ubuntu), Windows and macOS. The main library (the DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS, version 2019 (2020 is relatively new and may have some issues) and Full Package.
+This is a cross-platform software that works on Linux (e.g. Ubuntu), Windows and macOS. The main library (the DAE solver itself) and all examples have only one external dependency: [Intel Math Kernel Library](https://software.intel.com/en-us/mkl), a fast and very well optimised math library. So the first step in the installation process is to download and install Intel MKL: [Linux](https://software.intel.com/en-us/mkl/choose-download/linux), [Windows](https://software.intel.com/en-us/mkl/choose-download/windows), [macOS](https://software.intel.com/en-us/mkl/choose-download/macos). Note that you may need to register in order to download the library. When asked, choose Intel Math Kernel Library for your OS and the Full Package.
 
 An alternative and probably the most convenient way to download and install Intel MKL on Ubuntu (using APT Repository) is the following.
 
@@ -94,7 +88,7 @@ cd dae-cpp
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/install_path
-make
+make -j4
 make install
 ```
 
@@ -202,14 +196,14 @@ Instead of `cmake ..` you may consider using `ccmake ..`, a UI for `cmake` that 
 Install dae-cpp and perform a quick self test:
 
 ```bash
-make -j2
+make -j4
 make install
 ctest
 ```
 
 ## How to use
 
-Please refer to [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
+Please refer to [simple_dae.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
@@ -324,8 +318,8 @@ The solver has lots of options related to the solution process. They all have so
 // parameters defined in solver_options.h
 dae::SolverOptions opt;
 
-// For example, let's change the absolute tolerance
-opt.atol = 1.0e-6;
+// For example, let's change the initial time step
+opt.dt_init = 0.01;
 ```
 
 ### Step 6. Solve the system
