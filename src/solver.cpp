@@ -426,6 +426,9 @@ int Solver::operator()(state_type &x, double &t1)
             }
         }
 
+        // Call Observer to provide a user with intermediate results
+        observer(x, m_iterator_state.t);
+
         // Rewrite solution history
         for(int d = m_opt.bdf_order - 1; d > 0; d--)
         {
@@ -454,9 +457,6 @@ int Solver::operator()(state_type &x, double &t1)
             m_iterator_state.current_scheme = 2;
         }
 
-        // Call Observer to provide a user with intermediate results
-        observer(x, m_iterator_state.t);
-
     }  // while t
 
     // Stop timer
@@ -465,15 +465,15 @@ int Solver::operator()(state_type &x, double &t1)
     // Update solution time
     t1 = m_iterator_state.t;
 
+    // Catch up the last time step
+    observer(x, m_iterator_state.t);
+
     // Update solution history
     for(int d = m_opt.bdf_order - 1; d > 0; d--)
     {
         m_x_prev[d] = m_x_prev[d - 1];
     }
     m_x_prev[0] = x;
-
-    // Catch up the last time step
-    observer(x, m_iterator_state.t);
 
     // Restore the previous time step size
     m_iterator_state.dt_eval = m_iterator_state.dt[1];

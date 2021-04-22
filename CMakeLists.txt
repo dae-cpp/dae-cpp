@@ -142,7 +142,7 @@ add_subdirectory(src)
 
 if(DAE_BUILD_EXAMPLES)
 
-  set(EXAMPLE_LIST "perovskite" "diffusion_2d" "robertson" "simple_dae")
+  set(EXAMPLE_LIST "perovskite" "diffusion_2d" "robertson" "simple_dae" "two_bodies")
 
   if(WIN32)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
