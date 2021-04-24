@@ -1,25 +1,37 @@
 /*
- * Two bodies with with masses m and 10*m head to each other.
- * The friction force F is constant and depends on the sign of velocity v:
- * F = -sign(v) * F0.
+ * Two bodies with masses m and 10*m head to each other.
+ * The friction force F is proportional to the velocity v and has the opposite
+ * sign: F = -v * f0, where f0 is a constant.
+ *
  * After collision, the body with mass m bounces in the other direction
- * (and hence flips the sign of the friction force).
+ * (and hence the sign of the friction force instantly changes to the opposite).
  *
  * The system of equations is the following:
  *
- * dv1/dt = -sign(v1) * F0 / m
- * dv2/dt = -sign(v2) * F0 / (10 * m)
+ * dv1/dt = -v1 * f0 / m
+ * dv2/dt = -v2 * f0 / (10 * m)
  * dx1/dt = v1
  * dx2/dt = v2
  *
- * Here v1 and x1 is the velocity and the coordinate of the first body,
- * v2 and x2 is the velocity and the coordinate of the second body.
+ * Here v1 and x1 are the velocity and the coordinate of the first body,
+ * v2 and x2 are the velocity and the coordinate of the second body.
  *
  * When x1 reaches x2, the velocity direction of the body with mass m changes to
  * the opposite.
  *
  * As an example, let us consider the following initial conditions:
- * v1 = 10, v2 = -2, x1 = 0, x2 = 5 for t = 0.
+ * v1 = 10, v2 = -2, x1 = 0, x2 = 4 for t = 0.
+ *
+ * Constants f0 = 2, m = 1.
+ *
+ * This is a very simplified collision model but the goal is to demostrate how
+ * the Observer function can be used as the event function, where the user can
+ * update the state vector (change velocity direction, for example) during the
+ * time integration.
+ *
+ * Note that in the solver options, the time step is restricted (in order to
+ * better resolve the collision event in time) and we use BDF-1 time integrator
+ * to avoid oscillations.
  */
 
 #include <iostream>
@@ -43,7 +55,7 @@ namespace plt = matplotlibcpp;
  */
 class MyRHS : public RHS
 {
-    const double f0 = 10.0;
+    const double f0 = 2.0;
     const double m  = 1.0;
 
 public:
@@ -53,8 +65,8 @@ public:
      */
     void operator()(const state_type &x, state_type &f, const double t)
     {
-        double F1 = -std::copysign(1.0, x[0]) * f0;
-        double F2 = -std::copysign(1.0, x[1]) * f0;
+        double F1 = -x[0] * f0;
+        double F2 = -x[1] * f0;
 
         f[0] = F1 / m;
         f[1] = F2 / (10.0 * m);
@@ -64,12 +76,8 @@ public:
 };
 
 /*
- * (Optional) Observer
+ * Observer (event) function implementation
  * =============================================================================
- * Every time step checks that
- * (1) x*x + y*y = 1, and
- * (2) x(t) - sin(t) = 0 for t <= pi/2, x(t) = 1 for t > pi/2
- * and prints solution and errors to console.
  */
 class MySolver : public Solver
 {
@@ -89,6 +97,7 @@ public:
      */
     void observer(state_type &x, const double t)
     {
+        // Print solution to screen every time step
         std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << x[2] << '\t'
                   << x[3] << '\n';
 
@@ -110,25 +119,6 @@ public:
 };
 
 /*
- * (Optional) Analytical Jacobian in simplified 3-array sparse format
- * =============================================================================
- */
-class MyJacobian : public Jacobian
-{
-public:
-    explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
-
-    /*
-     * Receives the current solution vector x and the current time t. Defines
-     * the analytical Jacobian matrix J.
-     */
-    void operator()(sparse_matrix_holder &J, const state_type &x,
-                    const double t)
-    {
-    }
-};
-
-/*
  * MAIN FUNCTION
  * =============================================================================
  * Returns '0' if solution comparison is OK or '1' if solution error is above
@@ -137,7 +127,7 @@ public:
 int main()
 {
     // Solution time 0 <= t <= t1
-    double t1 = 1.0;
+    double t1 = 1;
 
     // Define the state vector for 4 equations
     state_type x(4);
@@ -146,7 +136,7 @@ int main()
     x[0] = 10;  // Initial velocity v1
     x[1] = -2;  // Initial velocity v2
     x[2] = 0;   // Initial coordinate x1
-    x[3] = 5;   // Initial coordinate x2
+    x[3] = 4;   // Initial coordinate x2
 
     // Set up the RHS of the problem.
     // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -165,18 +155,14 @@ int main()
     opt.bdf_order = 1;      // Use BDF-1
     opt.verbosity = 0;      // Suppress output to screen (we have our own output
                             // defined in Observer function above)
-    opt.dt_init = 0.01;     // Change the initial time step
-    opt.dt_max  = 0.01;     // Restrict the maximum time step
+    opt.dt_init = 0.001;    // Change the initial time step
+    opt.dt_max  = 0.001;    // Restrict the maximum time step
 
-    // We can override Jacobian class from dae-cpp library and provide
-    // analytical Jacobian.
-    // MyJacobian jac(rhs);
-
-    // Or we can use numerically estimated Jacobian with the given tolerance.
+    // We can use numerically estimated Jacobian with the given tolerance
     Jacobian jac(rhs, 1e-8);
 
-    // Create an instance of the solver with particular RHS, Mass matrix,
-    // Jacobian and solver options
+    // Create an instance of the solver with the RHS, Mass matrix, Jacobian and
+    // the solver options
     MySolver solve(rhs, jac, mass, opt);
 
     // Now we are ready to solve the set of DAEs
@@ -188,19 +174,22 @@ int main()
 
     // Plot the solution
 #ifdef PLOTTING
-    // plt::figure();
-    // plt::figure_size(640, 480);
-    // plt::named_semilogx("x", solve.x_axis, solve.x0);
-    // plt::named_semilogx("y", solve.x_axis, solve.x1);
-    // plt::xlabel("time");
-    // plt::title("Two bodies");
-    // plt::grid(true);
-    // plt::legend();
+    plt::figure();
+    plt::figure_size(640, 480);
+    plt::named_plot("x1", solve.x_axis, solve.x1, "b--");
+    plt::named_plot("x2", solve.x_axis, solve.x2, "r--");
+    plt::named_plot("v1", solve.x_axis, solve.v1, "b-");
+    plt::named_plot("v2", solve.x_axis, solve.v2, "r-");
+    plt::xlabel("time");
+    plt::ylabel("coordinate and velocity");
+    plt::title("Two bodies");
+    plt::grid(true);
+    plt::legend();
 
-    // // Save figure
-    // const char *filename = "two_bodies.png";
-    // std::cout << "Saving result to " << filename << "...\n";
-    // plt::save(filename);
+    // Save figure
+    const char *filename = "two_bodies.png";
+    std::cout << "Saving result to " << filename << "...\n";
+    plt::save(filename);
 #endif
 
     if(status)

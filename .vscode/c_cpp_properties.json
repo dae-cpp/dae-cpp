@@ -3,9 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src",
                 "/opt/intel/mkl/include",
-                "/usr/include/python3.6m"
+                "/usr/include/python3.8"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
