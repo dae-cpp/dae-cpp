@@ -220,11 +220,11 @@ void Jacobian::print(const state_type &x, const double t)
  * Helper function to compare two Jacobians and write the difference
  */
 int Jacobian::compare(Jacobian jac, const state_type &x, const double t,
-                       const double tol)
+                      const double tol)
 {
-    std::cout << "Jacobian::compare() -- INFO: Trying to compare two "
-                 "Jacobians at time t = "
-              << t << " and the tolerance tol = " << tol << "...\n";
+    // std::cout << "Jacobian::compare() -- INFO: Trying to compare two "
+    //              "Jacobians at time t = "
+    //           << t << " and the tolerance tol = " << tol << "...\n";
 
     sparse_matrix_holder M, J;
 
@@ -304,8 +304,8 @@ int Jacobian::compare(Jacobian jac, const state_type &x, const double t,
     }
 
     outFile << "Total number of differences found: " << ndiff << '\n';
-    std::cout << "Jacobian::compare() -- INFO: Found " << ndiff
-              << " difference(s).\n";
+    // std::cout << "Jacobian::compare() -- INFO: Found " << ndiff
+    //           << " difference(s).\n";
 
     outFile.close();
 
