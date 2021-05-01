@@ -46,6 +46,8 @@ public:
         // TODO: Check user's tol parameter. Too small tol may lead to crash.
     }
 
+    virtual ~Jacobian() {}
+
     /*
      * Can be overriden to provide analytical Jacobian
      */

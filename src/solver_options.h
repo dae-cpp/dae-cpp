@@ -136,6 +136,8 @@ public:
 
     SolverOptions() = default;
 
+    virtual ~SolverOptions() = default;
+
     // Initialises Intel MKL PARDISO parameters (iparam) array
     void set_iparm_for_pardiso(MKL_INT *iparm);
 
