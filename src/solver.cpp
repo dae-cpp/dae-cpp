@@ -229,7 +229,7 @@ int Solver::operator()(state_type &x, double &t1)
                         m_mkl_a, m_ia, m_ja, &m_idum, &m_nrhs, m_iparm,
                         &m_msglvl, &m_ddum, &m_ddum, &m_error);
 
-                if(m_opt.verbosity > 2)
+                if(m_opt.verbosity > 3)
                 {
                     if(m_iparm[14] > peak_mem1 || m_iparm[15] > peak_mem2 ||
                        m_iparm[16] > peak_mem3)
