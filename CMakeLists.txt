@@ -49,13 +49,20 @@ if(WIN32)
     set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/ia32_win")
   endif()
 else(WIN32)
+  # MKL library
   if(EXISTS ${DAE_MKL_DIR}/lib/intel64)
     set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib/intel64")
-    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib/intel64")
-  else(EXISTS ${DAE_MKL_DIR}/lib/intel64)
+  elseif(EXISTS ${DAE_MKL_DIR}/lib/intel64)
     set(DAE_MKL_LIB "${DAE_MKL_DIR}/lib")
-    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib")
   endif(EXISTS ${DAE_MKL_DIR}/lib/intel64)
+  # Intel OMP library
+  if(EXISTS ${DAE_MKL_DIR}/../lib/intel64)
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib/intel64")
+  elseif(EXISTS ${DAE_MKL_DIR}/../lib)
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../lib")
+  elseif(EXISTS ${DAE_MKL_DIR}/../compiler/lib/intel64)
+    set(DAE_INTEL_LIB "${DAE_MKL_DIR}/../compiler/lib/intel64")
+  endif(EXISTS ${DAE_MKL_DIR}/../lib/intel64)
 endif(WIN32)
 
 
