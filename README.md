@@ -34,8 +34,24 @@ A simple but powerful header-only C++ solver for systems of Differential and Alg
 
 ### A note about Sparse Matrix Format
 
-## Contribution and feedback
+## Contribution and Feedback
+
+Thank you for considering contributing to the project! Whether you're an experienced developer or just starting out, your ideas and improvements can make this project even better. No contribution is too small!
+
+### How to contribute
+
+0. Create a GitHub issue if you want to suggest or discuss your changes.
+1. Fork the repository and clone it to your local machine.
+2. Create a new branch for your contributions.
+3. Make your changes and ensure they adhere to our coding standards.
+4. Add tests and examples (if relevant), test your changes thoroughly.
+5. Submit a pull request with a clear description of your changes and why they are beneficial.
+
+### Feedback
+
+Feel free to create a [GitHub issue](https://github.com/ikorotkin/dae-cpp/issues) for any questions, suggestions, or feedback you may have.
 
 ## Licensing
 
-- dae-cpp is fully open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
+- [dae-cpp](https://github.com/ikorotkin/dae-cpp) is open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
+- [autodiff](https://github.com/autodiff/autodiff) is open source under [MIT license](https://github.com/autodiff/autodiff/blob/main/LICENSE).
