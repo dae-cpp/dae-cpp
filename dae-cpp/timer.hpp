@@ -17,7 +17,8 @@
  * Copyright (c) 2024 Ivan Korotkin
  */
 
-#pragma once
+#ifndef DAECPP_TIMER_H
+#define DAECPP_TIMER_H
 
 #include <chrono>
 
@@ -27,7 +28,7 @@ namespace daecpp_namespace_name
 {
 
 /*
- * Specific timers (a singleton)
+ * Specific timers (a singleton) TODO: static vars would be enough?
  */
 class Timers
 {
@@ -73,3 +74,5 @@ public:
 };
 
 } // namespace daecpp_namespace_name
+
+#endif // DAECPP_TIMER_H

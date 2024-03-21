@@ -9,11 +9,10 @@
  * Copyright (c) 2024 Ivan Korotkin
  */
 
-#pragma once
+#ifndef DAECPP_ASSERT_CUSTOM_H
+#define DAECPP_ASSERT_CUSTOM_H
 
 #include <iostream>
-
-#include "typedefs.hpp"
 
 namespace daecpp_namespace_name
 {
@@ -145,3 +144,5 @@ namespace daecpp_namespace_name
 #endif // #ifdef DEBUG
 
 } // namespace daecpp_namespace_name
+
+#endif // DAECPP_ASSERT_CUSTOM_H
