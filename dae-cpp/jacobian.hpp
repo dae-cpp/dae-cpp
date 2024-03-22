@@ -14,7 +14,7 @@
 #ifndef DAECPP_JACOBIAN_H
 #define DAECPP_JACOBIAN_H
 
-#include "RHS.hpp"
+#include "rhs.hpp"
 #include "typedefs.hpp"
 
 namespace daecpp_namespace_name
@@ -38,10 +38,11 @@ class Jacobian
 public:
     explicit Jacobian(const RHS &rhs) : _rhs(rhs) {}
     Jacobian() : _rhs(_rhs_empty) {}
+
     /*
      * Can be overriden to provide analytical Jacobian
      */
-    virtual void operator()(sparse_matrix &J, const state_type &x, const double t);
+    virtual void operator()(sparse_matrix &J, const state_type &x, const double t) const;
 
     // /*
     //  * Helper function to show Jacobian structure on screen (in sparse format)
@@ -67,7 +68,7 @@ public:
  * TODO: Numerical Jacobian. Parallel version.
  * Calls RHS up to 2*N times, hence O(N^2) operations.
  */
-void Jacobian::operator()(sparse_matrix &J, const state_type &x, const double t)
+void Jacobian::operator()(sparse_matrix &J, const state_type &x, const double t) const
 {
 }
 

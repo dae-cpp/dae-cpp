@@ -29,7 +29,7 @@ public:
      * Vector f is already pre-allocated with f.size() == x.size() and filled with 0.
      * This function is pure virtual and must be overriden.
      */
-    virtual void operator()(const state_type &x, state_type &f, const double t) = 0;
+    virtual void operator()(const state_type &x, state_type &f, const double t) const = 0;
 
     // TODO: Events
     // /*
@@ -45,7 +45,7 @@ public:
 class RHS_empty : public RHS
 {
 public:
-    void operator()(const state_type &x, state_type &f, const double t)
+    void operator()(const state_type &x, state_type &f, const double t) const
     {
         // Generally, the empty RHS should never be called
         ERROR("Empty RHS function called.");

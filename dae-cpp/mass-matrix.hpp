@@ -42,7 +42,7 @@ public:
      *
      * This function is pure virtual and must be overriden.
      */
-    virtual void operator()(sparse_matrix &M) = 0;
+    virtual void operator()(sparse_matrix &M) const = 0;
 };
 
 /*
@@ -56,7 +56,7 @@ public:
     MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
 
     // TODO: Redo
-    void operator()(daecpp::sparse_matrix &M)
+    void operator()(daecpp::sparse_matrix &M) const
     {
         M.A.resize(_N, 1);
         M.j.resize(_N);

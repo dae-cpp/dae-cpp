@@ -55,3 +55,4 @@ Feel free to create a [GitHub issue](https://github.com/ikorotkin/dae-cpp/issues
 
 - [dae-cpp](https://github.com/ikorotkin/dae-cpp) is licensed under the [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
 - [autodiff](https://github.com/autodiff/autodiff) is licensed under the [MIT license](https://github.com/autodiff/autodiff/blob/main/LICENSE).
+- [Eigen]() ...

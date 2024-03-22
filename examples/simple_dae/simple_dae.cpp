@@ -18,11 +18,13 @@
  * with the absolute tolerance at least 1e-6.
  */
 
+// g++ simple_dae.cpp -o simple_dae -I/home/ivan/workspace/dae-cpp
+
 #include <iostream>
 // #include <cmath>
 // #include <algorithm>  // for std::max_element
 
-#include <dae-cpp/Eigen/Dense>
+// #include <dae-cpp/Eigen/Dense>
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
 using namespace daecpp;
@@ -37,23 +39,23 @@ using namespace daecpp;
 class MyMassMatrix : public MassMatrix
 {
 public:
-    void operator()(sparse_matrix &M)
+    void operator()(sparse_matrix &M) const
     {
-        M.A.resize(2); // Number of non-zero and diagonal elements
-        M.i.resize(2); // Number of non-zero and diagonal elements
-        M.j.resize(2); // Number of non-zero and diagonal elements
+        M.A.resize(1); // Number of non-zero elements
+        M.i.resize(1); // Number of non-zero elements
+        M.j.resize(1); // Number of non-zero elements
 
-        // Non-zero and diagonal elements
+        // Non-zero elements
         M.A[0] = 1;
-        M.A[1] = 0;
+        // M.A[1] = 0;
 
         // Column index of each element given above
         M.j[0] = 0;
-        M.j[1] = 1;
+        // M.j[1] = 1;
 
         // Row index of each element in M.A:
         M.i[0] = 0;
-        M.i[1] = 1;
+        // M.i[1] = 1;
     }
 };
 
@@ -68,7 +70,7 @@ public:
      * Receives current solution vector x and the current time t.
      * Defines the RHS f.
      */
-    void operator()(const state_type &x, state_type &f, const double t)
+    void operator()(const state_type &x, state_type &f, const double t) const
     {
         f[0] = x[1];
         f[1] = x[0] * x[0] + x[1] * x[1] - 1.0;
@@ -138,7 +140,7 @@ public:
      * Receives current solution vector x and the current time t. Defines the
      * analytical Jacobian matrix J.
      */
-    void operator()(sparse_matrix &J, const state_type &x, const double t)
+    void operator()(sparse_matrix &J, const state_type &x, const double t) const
     {
         // Initialize Jacobian in simplified sparse format
         J.A.resize(4);
@@ -212,15 +214,6 @@ int main()
     // Or we can use numerically estimated Jacobian with the given tolerance.
     // Jacobian jac_est(rhs, 1e-6);
 
-    // This will decrease the error (1) for x*x + y*y = 1
-    // #ifdef DAE_SINGLE
-    //     opt.atol = 1e-6;  // Redefine absolute tolerance for single precision
-    //     opt.rtol = 1e-6;  // Redefine relative tolerance for single precision
-    // #else
-    //     opt.atol = 1e-8;  // Redefine absolute tolerance for double precision
-    //     opt.rtol = 1e-8;  // Redefine relative tolerance for double precision
-    // #endif
-
     // Create an instance of the solver with particular RHS, Mass matrix,
     // Jacobian and solver options
     // MySolver solve(rhs, jac, mass);
@@ -233,14 +226,14 @@ int main()
     // Solve the system
     int status = solve(x, t);
 
-    using Eigen::MatrixXd;
+    // using Eigen::MatrixXd;
 
-    MatrixXd m(2, 2);
-    m(0, 0) = 3;
-    m(1, 0) = 2.5;
-    m(0, 1) = -1;
-    m(1, 1) = m(1, 0) + m(0, 1);
-    std::cout << m << std::endl;
+    // MatrixXd m(2, 2);
+    // m(0, 0) = 3;
+    // m(1, 0) = 2.5;
+    // m(0, 1) = -1;
+    // m(1, 1) = m(1, 0) + m(0, 1);
+    // std::cout << m << std::endl;
 
     // Check errors
     //     double max_err1 = *std::max_element(solve.err1.begin(), solve.err1.end());
@@ -251,23 +244,6 @@ int main()
     //     std::cout << "Maximum absolute error (2) x(t) - sin(t) = 0 for t <= pi/2 "
     //                  "or x(t) = 1 for t > pi/2: "
     //               << max_err2 << '\n';
-
-    //     // Plot the solution
-    // #ifdef PLOTTING
-    //     plt::figure();
-    //     plt::figure_size(640, 480);
-    //     plt::named_semilogx("x", solve.x_axis, solve.x0);
-    //     plt::named_semilogx("y", solve.x_axis, solve.x1);
-    //     plt::xlabel("time");
-    //     plt::title("Simple 2x2 DAE system");
-    //     plt::grid(true);
-    //     plt::legend();
-
-    //     // Save figure
-    //     const char *filename = "simple_dae.png";
-    //     std::cout << "Saving result to " << filename << "...\n";
-    //     plt::save(filename);
-    // #endif
 
     // #ifdef DAE_SINGLE
     //     const bool check_result = (max_err1 > 1e-6 || max_err2 > 1e-6 || status);

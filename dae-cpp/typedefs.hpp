@@ -51,11 +51,18 @@ struct sparse_matrix
     ivec i; // Row index (i) of the element A_{ij}
     ivec j; // Column index (j) of the element A_{ij}
 
-    void check() const; // Checks the matrix structure
+    inline int_type size() const noexcept; // Returns the matrix size
+    inline void check() const noexcept;                    // Performs basic checks of the matrix structure
 };
 
+// Returns the matrix size.
+inline int_type sparse_matrix::size() const noexcept
+{
+    return A.size();
+}
+
 // Checks the matrix structure. Throws an error if fails.
-void sparse_matrix::check() const
+inline void sparse_matrix::check() const noexcept
 {
     ASSERT(A.size() > 0, ""); // TODO: Cannot we define a 0 matrix?
     ASSERT(A.size() == i.size(), "");
