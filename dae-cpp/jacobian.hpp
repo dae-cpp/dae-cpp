@@ -15,7 +15,7 @@
 #define DAECPP_JACOBIAN_H
 
 #include "rhs.hpp"
-#include "typedefs.hpp"
+#include "sparse-matrix.hpp"
 
 namespace daecpp_namespace_name
 {

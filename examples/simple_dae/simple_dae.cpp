@@ -36,26 +36,37 @@ using namespace daecpp;
  * M = |1 0|
  *     |0 0|
  */
-class MyMassMatrix : public MassMatrix
+// class MyMassMatrix : public MassMatrix
+// {
+// public:
+//     void operator()(sparse_matrix &M) const
+//     {
+//         // M.A.resize(1); // Number of non-zero elements
+//         // M.i.resize(1); // Number of non-zero elements
+//         // M.j.resize(1); // Number of non-zero elements
+
+//         // // Non-zero elements
+//         // M.A[0] = 1;
+//         // // M.A[1] = 0;
+
+//         // // Column index of each element given above
+//         // M.j[0] = 0;
+//         // // M.j[1] = 1;
+
+//         // // Row index of each element in M.A:
+//         // M.i[0] = 0;
+//         // // M.i[1] = 1;
+//         M.reserve(1);
+//         M.add_element(1.0, 0, 0);
+//     }
+// };
+
+struct MyMassMatrix : MassMatrix
 {
-public:
-    void operator()(sparse_matrix &M) const
+    void operator()(sparse_matrix &M, const double t) const
     {
-        M.A.resize(1); // Number of non-zero elements
-        M.i.resize(1); // Number of non-zero elements
-        M.j.resize(1); // Number of non-zero elements
-
-        // Non-zero elements
-        M.A[0] = 1;
-        // M.A[1] = 0;
-
-        // Column index of each element given above
-        M.j[0] = 0;
-        // M.j[1] = 1;
-
-        // Row index of each element in M.A:
-        M.i[0] = 0;
-        // M.i[1] = 1;
+        M.reserve(1);
+        M(1.0, 0, 0);
     }
 };
 
@@ -73,7 +84,7 @@ public:
     void operator()(const state_type &x, state_type &f, const double t) const
     {
         f[0] = x[1];
-        f[1] = x[0] * x[0] + x[1] * x[1] - 1.0;
+        f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
     }
 };
 
@@ -131,39 +142,47 @@ public:
  * (Optional) Analytical Jacobian in simplified 3-array sparse format
  * =============================================================================
  */
-class MyJacobian : public Jacobian
-{
-public:
-    // explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
+// class MyJacobian : public Jacobian
+// {
+// public:
+//     // explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
 
-    /*
-     * Receives current solution vector x and the current time t. Defines the
-     * analytical Jacobian matrix J.
-     */
+//     /*
+//      * Receives current solution vector x and the current time t. Defines the
+//      * analytical Jacobian matrix J.
+//      */
+//     void operator()(sparse_matrix &J, const state_type &x, const double t) const
+//     {
+//         // Initialize Jacobian in simplified sparse format
+//         J.A.resize(3);
+//         J.i.resize(3);
+//         J.j.resize(3);
+
+//         // Non-zero and diagonal elements
+//         J.A[0] = 1.0;
+//         J.A[1] = 1.0;
+//         J.A[2] = 1.0;
+
+//         // Row index of each non-zero or diagonal element of A
+//         J.i[0] = 0;
+//         J.i[1] = 1;
+//         J.i[2] = 1;
+
+//         // Column index of each element given above
+//         J.j[0] = 1;
+//         J.j[1] = 0;
+//         J.j[2] = 1;
+//     }
+// };
+
+struct MyJacobian : Jacobian
+{
     void operator()(sparse_matrix &J, const state_type &x, const double t) const
     {
-        // Initialize Jacobian in simplified sparse format
-        J.A.resize(4);
-        J.i.resize(4);
-        J.j.resize(4);
-
-        // Non-zero and diagonal elements
-        J.A[0] = 0.0;
-        J.A[1] = 1.0;
-        J.A[2] = 2.0 * x[0];
-        J.A[3] = 2.0 * x[1];
-
-        // Column index of each element given above
-        J.j[0] = 0;
-        J.j[1] = 1;
-        J.j[2] = 0;
-        J.j[3] = 1;
-
-        // Row index of each non-zero or diagonal element of A
-        J.i[0] = 0;
-        J.i[1] = 0;
-        J.i[2] = 1;
-        J.i[3] = 1;
+        J.reserve(3);
+        J(1.0, 0, 1);
+        J(1.0, 1, 0);
+        J(1.0, 1, 1);
     }
 };
 
@@ -175,6 +194,10 @@ public:
  */
 int main()
 {
+    double time=0.0;
+    {
+        Timer timer(&time);
+
     // Solution time 0 <= t <= pi
     double t{1.0};
 
@@ -192,6 +215,7 @@ int main()
     // Set up the Mass Matrix of the problem.
     // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
     MyMassMatrix mass;
+    // MassMatrixIdentity mass(2);
 
     // Create an instance of the solver options and update some of the solver
     // parameters defined in solver_options.h
@@ -254,7 +278,9 @@ int main()
     //     if(check_result)
     //         std::cout << "...Test FAILED\n\n";
     //     else
-    std::cout << "...done\n\n";
+    }
+
+    std::cout << "...done. Time = " << time << "\n\n";
 
     return 0;
 }

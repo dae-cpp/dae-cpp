@@ -12,12 +12,10 @@
 #ifndef DAECPP_SOLVER_H
 #define DAECPP_SOLVER_H
 
-#include <Eigen/Sparse>
-
 #include "jacobian.hpp"
 #include "mass-matrix.hpp"
 #include "rhs.hpp"
-#include "typedefs.hpp"
+#include "timer.hpp"
 
 namespace daecpp_namespace_name
 {
@@ -110,57 +108,43 @@ public:
      */
     int operator()(state_type &x, double &t)
     {
-
-        typedef Eigen::Triplet<double> T;
-        std::vector<T> jac_tr;
-        std::vector<T> mass_tr;
-
-        sparse_matrix J;
-        _jac(J, x, t);
-        J.check();
-
-        sparse_matrix M;
-        _mass(M); // TODO: Function of x and t
-        M.check();
-
-        jac_tr.reserve(J.size());
-        mass_tr.reserve(M.size());
-
-        for (int_type i = 0; i < J.size(); ++i)
+        // Timers::reset();
+        // MySingleton::getInstance();
         {
-            jac_tr.push_back(T(J.i[i], J.j[i], J.A[i]));
+            Timer timer(&core::Timers::get().total);
+
+            sparse_matrix J;
+            _jac(J, x, t);
+            J.check();
+
+            sparse_matrix M;
+            _mass(M, t);
+            M.check();
+
+            auto jac = J.convert(x.size());
+            auto mass = M.convert(x.size());
+
+            std::cout << "Mass:\n"
+                      << mass.toDense() << '\n';
+            std::cout << "Jac:\n"
+                      << jac.toDense() << '\n';
+
+            Eigen::SparseMatrix<double> sum(x.size(), x.size());
+
+            sum = mass;
+            sum += jac;
+            // sum = mass + jac; // TODO: check performance
+
+            std::cout << "Sum:\n"
+                      << sum.toDense() << '\n';
+
+            std::cout << "Print Jac:\n"
+                      << J.dense(x.size()) << '\n';
         }
 
-        for (int_type i = 0; i < M.size(); ++i)
-        {
-            mass_tr.push_back(T(M.i[i], M.j[i], M.A[i]));
-        }
-
-        Eigen::SparseMatrix<double> jac(x.size(), x.size());
-        Eigen::SparseMatrix<double> mass(x.size(), x.size());
-
-        jac.setFromTriplets(jac_tr.begin(), jac_tr.end());
-        mass.setFromTriplets(mass_tr.begin(), mass_tr.end());
-
-        std::cout << "Mass:\n"
-                  << mass.toDense() << '\n';
-        std::cout << "Jac:\n"
-                  << jac.toDense() << '\n';
-
-        // TODO: check x.size() and sparse matrix size is consistent.
-
-        Eigen::SparseMatrix<double> sum(x.size(), x.size());
-
-        sum = mass;
-        sum += jac;
-        // sum = mass + jac; // TODO: check performance
-
-        std::cout << "Sum:\n"
-                  << sum.toDense() << '\n';
-
+        std::cout << "Time: " << core::Timers::get().total << '\n';
         return 0;
     }
-
     // /*
     //  * Virtual Observer. Called by the solver every time step.
     //  * Receives current solution vector and the current time.

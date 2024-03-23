@@ -26,28 +26,32 @@
 
 namespace daecpp_namespace_name
 {
+namespace core
+{
 
 /*
- * Specific timers (a singleton) TODO: static vars would be enough?
+ * Specific timers (a singleton)
  */
 class Timers
 {
-    static Timers *_instance;
-
-    Timers() {}
-
 public:
     double total{0.0}; // Total time
 
-    static Timers *getInstance()
+    static Timers &get()
     {
-        if (_instance == nullptr)
-        {
-            _instance = new Timers();
-        }
-        return _instance;
+        static Timers instance;
+        volatile int dummy{}; // So the function call will not be optimised away
+        return instance;
     }
+
+private:
+    Timers() = default;
+    ~Timers() = default;
+    Timers(const Timers &) = delete;
+    Timers &operator=(const Timers &) = delete;
 };
+
+} // namespace core
 
 /*
  * Main timer class
@@ -61,7 +65,7 @@ class Timer
     // Starts timer
     std::chrono::time_point<clock> tic = clock::now();
 
-    // Stores time
+    // Points to a specific timer
     double *_t;
 
 public:

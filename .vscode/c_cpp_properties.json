@@ -3,7 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}"
+                "${workspaceFolder}",
+                "${workspaceFolder}/googletest/build/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

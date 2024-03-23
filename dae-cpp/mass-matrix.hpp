@@ -12,7 +12,7 @@
 #ifndef DAECPP_MASS_MATRIX_H
 #define DAECPP_MASS_MATRIX_H
 
-#include "typedefs.hpp"
+#include "sparse-matrix.hpp"
 
 namespace daecpp_namespace_name
 {
@@ -42,7 +42,7 @@ public:
      *
      * This function is pure virtual and must be overriden.
      */
-    virtual void operator()(sparse_matrix &M) const = 0;
+    virtual void operator()(sparse_matrix &M, const double t) const = 0;
 };
 
 /*
@@ -55,24 +55,37 @@ class MassMatrixIdentity : public MassMatrix
 public:
     MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
 
-    // TODO: Redo
-    void operator()(daecpp::sparse_matrix &M) const
+    // TODO: Can we setup identity matrix in Eigen straight away?
+    void operator()(sparse_matrix &M, const double t) const
     {
-        M.A.resize(_N, 1);
+        M.A.resize(_N, 1.0);
+        M.i.resize(_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
         M.j.resize(_N);
-        M.i.resize(_N + 1);
 
         for (int_type i = 0; i < _N; ++i)
         {
             M.i[i] = i;
             M.j[i] = i;
         }
-
-        M.i[_N] = _N;
     }
 };
 
 // TODO: Zero matrix
+class MassMatrixZero : public MassMatrix
+{
+    // const int_type _N{0}; // Zero matrix size
+
+public:
+    MassMatrixZero() : MassMatrix() {}
+
+    // TODO: Can we setup zero matrix in Eigen straight away?
+    void operator()(sparse_matrix &M, const double t) const
+    {
+        M.A.clear();
+        M.i.clear();
+        M.j.clear();
+    }
+};
 
 } // namespace daecpp_namespace_name
 

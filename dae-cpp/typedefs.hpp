@@ -21,18 +21,18 @@
 namespace daecpp_namespace_name
 {
 
-// Floating point scalar
-#ifdef DAECPP_SINGLE
-typedef float float_type;
-#else
-typedef double float_type;
-#endif
-
 // Integer type
 #ifdef DAECPP_LONG
 typedef u_int64_t int_type;
 #else
 typedef u_int32_t int_type;
+#endif
+
+// Floating point scalar
+#ifdef DAECPP_SINGLE
+typedef float float_type;
+#else
+typedef double float_type;
 #endif
 
 // Integer vector
@@ -43,31 +43,6 @@ typedef std::vector<float_type> fvec;
 
 // State vector
 typedef fvec state_type;
-
-// Sparse matrix holder in 3-array format
-struct sparse_matrix
-{
-    fvec A; // Non-zero element A_{ij}
-    ivec i; // Row index (i) of the element A_{ij}
-    ivec j; // Column index (j) of the element A_{ij}
-
-    inline int_type size() const noexcept; // Returns the matrix size
-    inline void check() const noexcept;                    // Performs basic checks of the matrix structure
-};
-
-// Returns the matrix size.
-inline int_type sparse_matrix::size() const noexcept
-{
-    return A.size();
-}
-
-// Checks the matrix structure. Throws an error if fails.
-inline void sparse_matrix::check() const noexcept
-{
-    ASSERT(A.size() > 0, ""); // TODO: Cannot we define a 0 matrix?
-    ASSERT(A.size() == i.size(), "");
-    ASSERT(A.size() == j.size(), "");
-}
 
 } // namespace daecpp_namespace_name
 
