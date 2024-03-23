@@ -1,5 +1,6 @@
 /*
  * The RHS class.
+ * Defines the RHS `f` of `M x = f`.
  * This class is abstract and must be inherited.
  *
  * This file is part of dae-cpp.
@@ -19,7 +20,9 @@ namespace daecpp_namespace_name
 {
 
 /*
- * The RHS class. This class is abstract and must be inherited.
+ * The RHS class.
+ * Defines the RHS `f` of `M x = f`.
+ * This class is abstract and must be inherited.
  */
 class RHS
 {
@@ -30,28 +33,25 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(const state_type &x, state_type &f, const double t) const = 0;
-
-    // TODO: Events
-    // /*
-    //  * User-defined condition, when the solver should stop and return the
-    //  * solution at the current time step
-    //  */
-    // virtual bool stop_condition(const state_type &x, const double t)
-    // {
-    //     return false;
-    // }
 };
 
+namespace core
+{
+
+/*
+ * Defines empty RHS for internal purposes
+ */
 class RHS_empty : public RHS
 {
 public:
     void operator()(const state_type &x, state_type &f, const double t) const
     {
-        // Generally, the empty RHS should never be called
-        ERROR("Empty RHS function called.");
+        // Generally, empty RHS should never be called
+        ERROR("Empty RHS function has been called.");
     }
 };
 
+} // namespace core
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_RHS_H

@@ -24,7 +24,7 @@ class Jacobian
 {
     const RHS &_rhs;
 
-    RHS_empty _rhs_empty;
+    core::RHS_empty _rhs_empty;
 
     // TODO: Matrix converter
     // /*

@@ -1,5 +1,7 @@
 /*
- * Mass matrix classes.
+ * Mass matrix class.
+ * Defines the Mass matrix `M` of `M x = f`.
+ * This class is abstract and must be inherited.
  *
  * This file is part of dae-cpp.
  *
@@ -18,51 +20,38 @@ namespace daecpp_namespace_name
 {
 
 /*
- * Parent Mass Matrix class. This class is abstract and must be inherited.
+ * Mass matrix class.
+ * Defines the Mass matrix `M` of `M x = f`.
+ * This class is abstract and must be inherited.
  */
 class MassMatrix
 {
-    // TODO: Matrix converter
-    // /*
-    //  * Sparse matrix converter from simple three-array format to Intel MKL
-    //  * three array format.
-    //  * Input: matrix holder M with simple three-array format
-    //  * Output: matrix holder M with Intel MKL three-array format
-    //  */
-    // void m_matrix_converter(daecpp::sparse_matrix_holder &M);
-
 public:
     /*
-     * The matrix should be defined in sparse format,
-     * see three array sparse format decription on
-     * https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format
-     *
-     * The Mass matrix is static, i.e. it does not depend on time t and
-     * the vector x
-     *
+     * The Mass matrix should be defined in 3-array sparse format and can depend on time t.
+     * Matrix M is empty and should be filled with non-zero elements.
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix &M, const double t) const = 0;
 };
 
 /*
- * Helper child class to create identity Mass matrix of size N
+ * Helper class to create identity Mass matrix of size N
  */
 class MassMatrixIdentity : public MassMatrix
 {
-    const int_type _N{0}; // Indentity matrix size
+    const std::size_t _N{0}; // Indentity matrix size
 
 public:
-    MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
+    MassMatrixIdentity(const std::size_t N) : MassMatrix(), _N(N) {}
 
-    // TODO: Can we setup identity matrix in Eigen straight away?
     void operator()(sparse_matrix &M, const double t) const
     {
         M.A.resize(_N, 1.0);
         M.i.resize(_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
         M.j.resize(_N);
 
-        for (int_type i = 0; i < _N; ++i)
+        for (std::size_t i = 0; i < _N; ++i)
         {
             M.i[i] = i;
             M.j[i] = i;
@@ -70,15 +59,14 @@ public:
     }
 };
 
-// TODO: Zero matrix
+/*
+ * Helper class to create zero Mass matrix
+ */
 class MassMatrixZero : public MassMatrix
 {
-    // const int_type _N{0}; // Zero matrix size
-
 public:
     MassMatrixZero() : MassMatrix() {}
 
-    // TODO: Can we setup zero matrix in Eigen straight away?
     void operator()(sparse_matrix &M, const double t) const
     {
         M.A.clear();

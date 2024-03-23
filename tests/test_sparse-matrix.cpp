@@ -54,10 +54,11 @@ TEST(SparseMatrix, Check)
 {
     sparse_matrix M;
 
-    M.reserve(2);
+    M.reserve(3);
 
     M.add_element(1e-6, 0, 1);
     M.add_element(1e3, 10, 0);
+    M.add_element(2e3, 10, 0); // Duplicate element is OK
 
     EXPECT_DOUBLE_EQ(M.A[0], 1e-6);
     EXPECT_DOUBLE_EQ(M.A[1], 1000.0);
@@ -78,9 +79,29 @@ TEST(SparseMatrix, CheckZero)
     M.check();
 }
 
+TEST(SparseMatrix, Dense)
+{
+    sparse_matrix M;
+
+    M.reserve(4);
+    M.add_element(1.0, 0, 0);
+    M.add_element(2.0, 0, 1);
+    M.add_element(3.0, 1, 0);
+    M.add_element(4.0, 1, 1);
+
+    M.check();
+
+    auto A = M.dense(2);
+
+    EXPECT_DOUBLE_EQ(A.coeffRef(0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(A.coeffRef(0, 1), 2.0);
+    EXPECT_DOUBLE_EQ(A.coeffRef(1, 0), 3.0);
+    EXPECT_DOUBLE_EQ(A.coeffRef(1, 1), 4.0);
+}
+
 TEST(SparseMatrix, Convert)
 {
-    sparse_matrix M1, M2;
+    sparse_matrix M1, M2, M3;
 
     M1.reserve(4);
     M1.add_element(1.0, 0, 0);
@@ -88,48 +109,63 @@ TEST(SparseMatrix, Convert)
     M1.add_element(3.0, 1, 0);
     M1.add_element(4.0, 1, 1);
 
-    M2.reserve(2);
+    M2.reserve(3);
     M2.add_element(-5.0, 0, 0);
-    M2.add_element(5.0, 1, 1);
+    M2.add_element(2.5, 1, 1);
+    M2.add_element(2.5, 1, 1); // Duplicate element -- should be added
 
     M1.check();
     M2.check();
+    M3.check(); // Empty (zero) matrix
 
     auto A1 = M1.convert(2);
     auto A2 = M2.convert(2);
+    auto A3 = M3.convert(2);
 
-    auto A3 = A1 + A2;
-    auto A4 = 2.0 * A1 + A2;
+    EXPECT_DOUBLE_EQ(A1.toDense().coeffRef(0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(A1.toDense().coeffRef(0, 1), 2.0);
+    EXPECT_DOUBLE_EQ(A1.toDense().coeffRef(1, 0), 3.0);
+    EXPECT_DOUBLE_EQ(A1.toDense().coeffRef(1, 1), 4.0);
 
-    EXPECT_DOUBLE_EQ(A3.sum(), 10);
-    EXPECT_DOUBLE_EQ(A4.sum(), 20);
+    EXPECT_DOUBLE_EQ(A2.toDense().coeffRef(0, 0), -5.0);
+    EXPECT_DOUBLE_EQ(A2.toDense().coeffRef(0, 1), 0.0);
+    EXPECT_DOUBLE_EQ(A2.toDense().coeffRef(1, 0), 0.0);
+    EXPECT_DOUBLE_EQ(A2.toDense().coeffRef(1, 1), 5.0);
+
+    EXPECT_DOUBLE_EQ(A3.toDense().coeffRef(0, 0), 0.0);
+    EXPECT_DOUBLE_EQ(A3.toDense().coeffRef(0, 1), 0.0);
+    EXPECT_DOUBLE_EQ(A3.toDense().coeffRef(1, 0), 0.0);
+    EXPECT_DOUBLE_EQ(A3.toDense().coeffRef(1, 1), 0.0);
+
+    auto SUM = 2.0 * A1 + A2 + 10.0 * A3;
+
+    EXPECT_DOUBLE_EQ(SUM.toDense().coeffRef(0, 0), -3.0);
+    EXPECT_DOUBLE_EQ(SUM.toDense().coeffRef(0, 1), 4.0);
+    EXPECT_DOUBLE_EQ(SUM.toDense().coeffRef(1, 0), 6.0);
+    EXPECT_DOUBLE_EQ(SUM.toDense().coeffRef(1, 1), 13.0);
+
+    EXPECT_DOUBLE_EQ(SUM.sum(), 20);
 }
 
-TEST(SparseMatrix, Dense)
+TEST(SparseMatrix, NonZeros)
 {
-    sparse_matrix M1, M2;
+    sparse_matrix M;
 
-    M1.reserve(4);
-    M1.add_element(1.0, 0, 0);
-    M1.add_element(2.0, 0, 1);
-    M1.add_element(3.0, 1, 0);
-    M1.add_element(4.0, 1, 1);
+    M.reserve(4);
+    M.add_element(1.0, 0, 0);
+    M.add_element(2.0, 0, 1);
+    M.add_element(3.0, 1, 0);
+    M.add_element(4.0, 1, 1);
 
-    M2.reserve(2);
-    M2.add_element(-5.0, 0, 0);
-    M2.add_element(5.0, 1, 1);
+    M.check();
 
-    M1.check();
-    M2.check();
+    EXPECT_EQ(M.N_elements(), 4);
 
-    auto A1 = M1.dense(2);
-    auto A2 = M2.dense(2);
+    sparse_matrix Z; // Empty matrix
 
-    auto A3 = A1 + A2;
-    auto A4 = 2.0 * A1 + A2;
+    Z.check();
 
-    EXPECT_DOUBLE_EQ(A3.sum(), 10);
-    EXPECT_DOUBLE_EQ(A4.sum(), 20);
+    EXPECT_EQ(Z.N_elements(), 0);
 }
 
 } // namespace

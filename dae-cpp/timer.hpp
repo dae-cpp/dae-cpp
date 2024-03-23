@@ -26,6 +26,31 @@
 
 namespace daecpp_namespace_name
 {
+
+/*
+ * Main timer class
+ */
+class Timer
+{
+    // Sets up clock
+    using clock = std::chrono::steady_clock;
+    using time_unit = std::chrono::microseconds;
+
+    // Starts timer
+    std::chrono::time_point<clock> tic = clock::now();
+
+    // Points to a specific timer
+    double *_t;
+
+public:
+    Timer(double *t) : _t(t) {}
+
+    ~Timer()
+    {
+        *_t += std::chrono::duration_cast<time_unit>(clock::now() - tic).count() * 1e-3; // ms
+    }
+};
+
 namespace core
 {
 
@@ -52,31 +77,6 @@ private:
 };
 
 } // namespace core
-
-/*
- * Main timer class
- */
-class Timer
-{
-    // Sets up clock
-    using clock = std::chrono::steady_clock;
-    using time_unit = std::chrono::microseconds;
-
-    // Starts timer
-    std::chrono::time_point<clock> tic = clock::now();
-
-    // Points to a specific timer
-    double *_t;
-
-public:
-    Timer(double *t) : _t(t) {}
-
-    ~Timer()
-    {
-        *_t += std::chrono::duration_cast<time_unit>(clock::now() - tic).count() * 1e-3; // ms
-    }
-};
-
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_TIMER_H
