@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)  # To match googletest requirement
 
 project(dae-cpp)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# TODO: Add examples here
 
 #include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include ${BOOST_INCLUDE})
 
@@ -23,27 +25,19 @@ FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/*.cpp)
 
 add_executable(${PROJECT_TEST} ${SOURCES_TEST})
 
-include_directories("${PROJECT_SOURCE_DIR}/googletest/build/include" "${PROJECT_SOURCE_DIR}")
+set(BUILD_GMOCK OFF CACHE BOOL "Builds the googlemock subproject")
+set(INSTALL_GTEST OFF CACHE BOOL "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)")
 
-link_directories("${PROJECT_SOURCE_DIR}/googletest/build/lib")
+add_subdirectory(googletest)
 
-find_library(GTEST_MAIN gtest_main HINTS ${PROJECT_SOURCE_DIR}/googletest/build/lib)
-find_library(GTEST gtest HINTS ${PROJECT_SOURCE_DIR}/googletest/build/lib)
+include_directories("${PROJECT_SOURCE_DIR}/googletest/googletest/include" "${PROJECT_SOURCE_DIR}")
 
-if(EXISTS "${GTEST}" AND EXISTS "${GTEST_MAIN}")
-    message(STATUS "Found GoogleTest: ${GTEST}")
-else(EXISTS "${GTEST}" AND EXISTS "${GTEST_MAIN}")
-    message(FATAL_ERROR "Could not find GoogleTest library")
-endif(EXISTS "${GTEST}" AND EXISTS "${GTEST_MAIN}")
-
-target_link_libraries(${PROJECT_TEST} ${GTEST_MAIN} ${GTEST} pthread)
+target_link_libraries(${PROJECT_TEST} gtest_main gtest)
 
 target_compile_definitions(${PROJECT_TEST} PRIVATE "TESTING")
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_TEST})
-
-# file(COPY ${PROJECT_SOURCE_DIR}/examples DESTINATION ${CMAKE_BINARY_DIR})
 
 
 #### Install ####
