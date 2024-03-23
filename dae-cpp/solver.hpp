@@ -20,11 +20,24 @@
 namespace daecpp_namespace_name
 {
 
+struct SolverOptions
+{
+    int option{1};
+};
+
 class Solver
 {
     const RHS &_rhs;         // RHS
     const Jacobian &_jac;    // Jacobian matrix
     const MassMatrix &_mass; // Mass matrix
+
+    const SolverOptions &_opt;
+    const fvec &_out;
+
+    const SolverOptions _opt_default;
+    const fvec _out_empty;
+
+    // JacobianNumerical _jac_num(_rhs);
 
     // TimeIntegrator *m_ti;  // Pointer to the time integrator
 
@@ -91,7 +104,9 @@ public:
      * Receives user-defined RHS, Jacobian, Mass matrix and solver options.
      * Defined in solver.cpp
      */
-    Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac) : _mass(mass), _rhs(rhs), _jac(jac) {}
+    Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac) : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default), _out(_out_empty) {}
+    Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt), _out(_out_empty) {}
+
     // Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt)
 
     // /*

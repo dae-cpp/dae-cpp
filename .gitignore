@@ -1,2 +1,3 @@
 # Executables and builds
 build/
+*.exe

@@ -18,7 +18,7 @@
  * with the absolute tolerance at least 1e-6.
  */
 
-// g++ simple_dae.cpp -o simple_dae -I/home/ivan/workspace/dae-cpp
+// g++ simple_dae.cpp -o simple_dae.exe -I/home/ivan/workspace/dae-cpp
 
 #include <iostream>
 // #include <cmath>
