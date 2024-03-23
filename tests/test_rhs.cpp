@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 // Testing:
-// class RHS, RHS_empty
+// class RHS
 
 namespace
 {
@@ -14,7 +14,7 @@ TEST(RHS, Definition)
 {
     struct TestRHS : public RHS
     {
-        void operator()(const state_type &x, state_type &f, const double t) const
+        void operator()(state_type &f, const state_type &x, const double t) const
         {
             EXPECT_EQ(x.size(), 2);
 
@@ -30,17 +30,12 @@ TEST(RHS, Definition)
 
     constexpr double t{10.0};
 
-    rhs(x, f, t);
+    rhs(f, x, t);
 
     EXPECT_DOUBLE_EQ(f[0], 4.0);
-    EXPECT_DOUBLE_EQ(f[1], 60.0);
+    EXPECT_DOUBLE_EQ(f[1], 6.0 * t);
 
     EXPECT_EQ(f.size(), 2);
-}
-
-TEST(RHS, EmptyRHS)
-{
-    core::RHS_empty rhs;
 }
 
 } // namespace

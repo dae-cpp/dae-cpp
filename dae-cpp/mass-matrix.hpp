@@ -1,6 +1,6 @@
 /*
  * Mass matrix class.
- * Defines the Mass matrix `M` of `M x = f`.
+ * Defines the Mass matrix `M` of the DAE system `M dx/dt = f`.
  * This class is abstract and must be inherited.
  *
  * This file is part of dae-cpp.
@@ -21,13 +21,13 @@ namespace daecpp_namespace_name
 
 /*
  * Mass matrix class.
- * Defines the Mass matrix `M` of `M x = f`.
  * This class is abstract and must be inherited.
  */
 class MassMatrix
 {
 public:
     /*
+     * Defines the Mass matrix `M` of the DAE system `M dx/dt = f`.
      * The Mass matrix should be defined in 3-array sparse format and can depend on time t.
      * Matrix M is empty and should be filled with non-zero elements.
      * This function is pure virtual and must be overriden.

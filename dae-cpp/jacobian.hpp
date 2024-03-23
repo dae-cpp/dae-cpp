@@ -1,7 +1,7 @@
 /*
  * Jacobian matrix class.
- * If not overridden by the user, performs automatic (algorithmic) differentiation of the RHS
- * using autodiff package to estimate Jacobian matrix numerically.
+ * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
+ * This class is abstract and must be inherited.
  *
  * This file is part of dae-cpp.
  *
@@ -20,57 +20,41 @@
 namespace daecpp_namespace_name
 {
 
+/*
+ * Jacobian matrix class.
+ * This class is abstract and must be inherited.
+ */
 class Jacobian
 {
-    const RHS &_rhs;
-
-    core::RHS_empty _rhs_empty;
-
-    // TODO: Matrix converter
-    // /*
-    //  * Sparse matrix converter from simple three-array format to Intel MKL
-    //  * three array format.
-    //  * Input: matrix holder M with simple three-array format
-    //  * Output: matrix holder M with Intel MKL three-array format
-    //  */
-    // void m_matrix_converter(daecpp::sparse_matrix &M);
-
 public:
-    explicit Jacobian(const RHS &rhs) : _rhs(rhs) {}
-    Jacobian() : _rhs(_rhs_empty) {}
-
     /*
-     * Can be overriden to provide analytical Jacobian
+     * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
+     * Takes vector x and time t and returns the Jacobian matrix J.
+     * Matrix J is empty and should be filled with non-zero elements.
+     * This function is pure virtual and must be overriden to provide analytical Jacobian.
      */
-    virtual void operator()(sparse_matrix &J, const state_type &x, const double t) const;
-
-    // /*
-    //  * Helper function to show Jacobian structure on screen (in sparse format)
-    //  */
-    // void print(const state_type &x, const double t);
-
-    // /*
-    //  * Helper function to write Jacobian matrix to a file (in dense format)
-    //  */
-    // void dump(const state_type &x, const double t);
-
-    // /*
-    //  * Helper function to compare two Jacobians and write the differences.
-    //  * Comparison will be made with the external Jacobian jac (usually,
-    //  * numerical Jacobian) using vector x at time t with the given tolerance.
-    //  * Returns the number of differences found.
-    //  */
-    // int compare(Jacobian jac, const state_type &x, const double t,
-    //             const double tol);
+    virtual void operator()(sparse_matrix &J, const state_type &x, const double t) const = 0;
 };
 
 /*
  * TODO: Numerical Jacobian. Parallel version.
- * Calls RHS up to 2*N times, hence O(N^2) operations.
+ * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
  */
-void Jacobian::operator()(sparse_matrix &J, const state_type &x, const double t) const
+class JacobianNumerical : public Jacobian
 {
-}
+    const RHS &_rhs; // The RHS for differentiation
+
+public:
+    explicit JacobianNumerical(const RHS &rhs) : Jacobian(), _rhs(rhs) {}
+
+    /*
+     * TODO: Numerical Jacobian. Parallel version.
+     * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
+     */
+    void operator()(sparse_matrix &J, const state_type &x, const double t) const
+    {
+    }
+};
 
 } // namespace daecpp_namespace_name
 

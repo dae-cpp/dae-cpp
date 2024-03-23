@@ -16,6 +16,8 @@ TEST(MassMatrix, Definition)
     {
         void operator()(sparse_matrix &M, const double t) const
         {
+            EXPECT_EQ(M.N_elements(), 0);
+
             M.reserve(2);
             M(1.0, 0, 0);
             M(2.0 * t, 1, 1);

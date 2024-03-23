@@ -81,7 +81,7 @@ public:
      * Receives current solution vector x and the current time t.
      * Defines the RHS f.
      */
-    void operator()(const state_type &x, state_type &f, const double t) const
+    void operator()(state_type &f, const state_type &x, const double t) const
     {
         f[0] = x[1];
         f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
@@ -142,38 +142,6 @@ public:
  * (Optional) Analytical Jacobian in simplified 3-array sparse format
  * =============================================================================
  */
-// class MyJacobian : public Jacobian
-// {
-// public:
-//     // explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
-
-//     /*
-//      * Receives current solution vector x and the current time t. Defines the
-//      * analytical Jacobian matrix J.
-//      */
-//     void operator()(sparse_matrix &J, const state_type &x, const double t) const
-//     {
-//         // Initialize Jacobian in simplified sparse format
-//         J.A.resize(3);
-//         J.i.resize(3);
-//         J.j.resize(3);
-
-//         // Non-zero and diagonal elements
-//         J.A[0] = 1.0;
-//         J.A[1] = 1.0;
-//         J.A[2] = 1.0;
-
-//         // Row index of each non-zero or diagonal element of A
-//         J.i[0] = 0;
-//         J.i[1] = 1;
-//         J.i[2] = 1;
-
-//         // Column index of each element given above
-//         J.j[0] = 1;
-//         J.j[1] = 0;
-//         J.j[2] = 1;
-//     }
-// };
 
 struct MyJacobian : Jacobian
 {
