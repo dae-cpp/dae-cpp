@@ -162,90 +162,92 @@ struct MyJacobian : Jacobian
  */
 int main()
 {
-    double time=0.0;
+    double time = 0.0;
     {
         Timer timer(&time);
 
-    // Solution time 0 <= t <= pi
-    double t{1.0};
+        // Solution time 0 <= t <= pi
+        double t{1.0};
 
-    // Define the state vector
-    state_type x(2);
+        // Define the state vector
+        state_type x(2);
 
-    // Initial conditions
-    x[0] = 1;
-    x[1] = -1;
+        // Initial conditions
+        x[0] = 1;
+        x[1] = -1;
 
-    // Set up the RHS of the problem.
-    // Class MyRHS inherits abstract RHS class from dae-cpp library.
-    MyRHS rhs;
+        // Set up the RHS of the problem.
+        // Class MyRHS inherits abstract RHS class from dae-cpp library.
+        MyRHS rhs;
 
-    // Set up the Mass Matrix of the problem.
-    // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
-    MyMassMatrix mass;
-    // MassMatrixIdentity mass(2);
+        // Set up the Mass Matrix of the problem.
+        // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
+        MyMassMatrix mass;
+        // MassMatrixIdentity mass(2);
 
-    // Create an instance of the solver options and update some of the solver
-    // parameters defined in solver_options.h
-    // SolverOptions opt;
+        // Create an instance of the solver options and update some of the solver
+        // parameters defined in solver_options.h
+        // SolverOptions opt;
 
-    // opt.dt_init = 1.0e-2;   // Change the initial time step.
-    //                         // It should be relatively small, because the first
-    //                         // step in time is first order accuracy.
-    //                         // Reducing dt_init decreases the error (2)
-    // opt.time_stepping = 1;  // Use simple stability-based adaptive time stepping
-    //                         // algorithm.
-    // opt.bdf_order = 6;      // Use BDF-6
-    // opt.verbosity = 0;      // Suppress output to screen (we have our own output
-    //                         // defined in Observer function above)
+        // opt.dt_init = 1.0e-2;   // Change the initial time step.
+        //                         // It should be relatively small, because the first
+        //                         // step in time is first order accuracy.
+        //                         // Reducing dt_init decreases the error (2)
+        // opt.time_stepping = 1;  // Use simple stability-based adaptive time stepping
+        //                         // algorithm.
+        // opt.bdf_order = 6;      // Use BDF-6
+        // opt.verbosity = 0;      // Suppress output to screen (we have our own output
+        //                         // defined in Observer function above)
 
-    // We can override Jacobian class from dae-cpp library and provide
-    // analytical Jacobian.
-    MyJacobian jac;
+        // We can override Jacobian class from dae-cpp library and provide
+        // analytical Jacobian.
+        MyJacobian jac;
 
-    // Or we can use numerically estimated Jacobian with the given tolerance.
-    // Jacobian jac_est(rhs, 1e-6);
+        // Or we can use numerically estimated Jacobian with the given tolerance.
+        // Jacobian jac_est(rhs, 1e-6);
 
-    // Create an instance of the solver with particular RHS, Mass matrix,
-    // Jacobian and solver options
-    // MySolver solve(rhs, jac, mass);
-    Solver solve(mass, rhs, jac);
+        // Create an instance of the solver with particular RHS, Mass matrix,
+        // Jacobian and solver options
+        // MySolver solve(rhs, jac, mass);
+        System simple_dae(mass, rhs, jac);
 
-    // Now we are ready to solve the set of DAEs
-    std::cout << "Starting DAE solver...\n";
-    // std::cout << "time\tx\ty\terror1\terror2\n";
+        // Now we are ready to solve the set of DAEs
+        std::cout << "Starting DAE solver...\n";
+        // std::cout << "time\tx\ty\terror1\terror2\n";
 
-    // Solve the system
-    int status = solve(x, t);
+        // Solve the system
 
-    // using Eigen::MatrixXd;
+        fvec t_out {1,2,3,4,5};
+        int status = simple_dae.solve(x, t, t_out);
 
-    // MatrixXd m(2, 2);
-    // m(0, 0) = 3;
-    // m(1, 0) = 2.5;
-    // m(0, 1) = -1;
-    // m(1, 1) = m(1, 0) + m(0, 1);
-    // std::cout << m << std::endl;
+        // using Eigen::MatrixXd;
 
-    // Check errors
-    //     double max_err1 = *std::max_element(solve.err1.begin(), solve.err1.end());
-    //     double max_err2 = *std::max_element(solve.err2.begin(), solve.err2.end());
+        // MatrixXd m(2, 2);
+        // m(0, 0) = 3;
+        // m(1, 0) = 2.5;
+        // m(0, 1) = -1;
+        // m(1, 1) = m(1, 0) + m(0, 1);
+        // std::cout << m << std::endl;
 
-    //     std::cout << "\nMaximum absoulte error (1) x*x + y*y = 1: " << max_err1
-    //               << '\n';
-    //     std::cout << "Maximum absolute error (2) x(t) - sin(t) = 0 for t <= pi/2 "
-    //                  "or x(t) = 1 for t > pi/2: "
-    //               << max_err2 << '\n';
+        // Check errors
+        //     double max_err1 = *std::max_element(solve.err1.begin(), solve.err1.end());
+        //     double max_err2 = *std::max_element(solve.err2.begin(), solve.err2.end());
 
-    // #ifdef DAE_SINGLE
-    //     const bool check_result = (max_err1 > 1e-6 || max_err2 > 1e-6 || status);
-    // #else
-    //     const bool check_result = (max_err1 > 1e-15 || max_err2 > 1e-6 || status);
-    // #endif
+        //     std::cout << "\nMaximum absoulte error (1) x*x + y*y = 1: " << max_err1
+        //               << '\n';
+        //     std::cout << "Maximum absolute error (2) x(t) - sin(t) = 0 for t <= pi/2 "
+        //                  "or x(t) = 1 for t > pi/2: "
+        //               << max_err2 << '\n';
 
-    //     if(check_result)
-    //         std::cout << "...Test FAILED\n\n";
-    //     else
+        // #ifdef DAE_SINGLE
+        //     const bool check_result = (max_err1 > 1e-6 || max_err2 > 1e-6 || status);
+        // #else
+        //     const bool check_result = (max_err1 > 1e-15 || max_err2 > 1e-6 || status);
+        // #endif
+
+        //     if(check_result)
+        //         std::cout << "...Test FAILED\n\n";
+        //     else
     }
 
     std::cout << "...done. Time = " << time << "\n\n";

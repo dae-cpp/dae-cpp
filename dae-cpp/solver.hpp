@@ -15,29 +15,22 @@
 #include "jacobian.hpp"
 #include "mass-matrix.hpp"
 #include "rhs.hpp"
+#include "solver-options.hpp"
 #include "timer.hpp"
 
 namespace daecpp_namespace_name
 {
 
-struct SolverOptions
+class System
 {
-    int option{1};
-};
-
-class Solver
-{
-    const RHS &_rhs;         // RHS
-    const Jacobian &_jac;    // Jacobian matrix
-    const MassMatrix &_mass; // Mass matrix
-
-    const SolverOptions &_opt;
-    const fvec &_out;
+    const RHS &_rhs;           // RHS
+    const Jacobian &_jac;      // Jacobian matrix
+    const MassMatrix &_mass;   // Mass matrix
+    const SolverOptions &_opt; // Solver options
 
     const SolverOptions _opt_default;
-    const fvec _out_empty;
 
-    // JacobianNumerical _jac_num(_rhs);
+    // core::JacobianDefault _jac_default;
 
     // TimeIntegrator *m_ti;  // Pointer to the time integrator
 
@@ -100,19 +93,10 @@ class Solver
     //     SolverOptions &m_opt;  // Solver options
 
 public:
-    /*
-     * Receives user-defined RHS, Jacobian, Mass matrix and solver options.
-     * Defined in solver.cpp
-     */
-    Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac) : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default), _out(_out_empty) {}
-    Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt), _out(_out_empty) {}
-
-    // Solver(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt)
-
-    // /*
-    //  * Releases memory. Defined in solver.cpp.
-    //  */
-    // virtual ~Solver();
+    System(const MassMatrix &mass, const RHS &rhs) : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(_opt_default) {}
+    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac) : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default) {}
+    System(const MassMatrix &mass, const RHS &rhs, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(opt) {}
+    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt) {}
 
     /*
      * Integrates the system of DAEs on the interval t = [t0; t1] and returns
@@ -121,11 +105,16 @@ public:
      * The data stored in x (initial conditions) will be overwritten.
      * Returns 0 in case of success or error code if integration is failed.
      */
-    int operator()(state_type &x, double &t)
+    // int solve(state_type &x, double &t, fvec &t_output)
+    // {
+
+    // }
+
+    int solve(state_type &x, double &t, const fvec &t_output = fvec())
     {
-        // Timers::reset();
-        // MySingleton::getInstance();
         {
+            std::cout << "\nt_out:" << t_output.size() << '\n';
+            
             Timer timer(&core::Timers::get().total);
 
             sparse_matrix J;
@@ -160,6 +149,7 @@ public:
         std::cout << "Time: " << core::Timers::get().total << '\n';
         return 0;
     }
+
     // /*
     //  * Virtual Observer. Called by the solver every time step.
     //  * Receives current solution vector and the current time.
