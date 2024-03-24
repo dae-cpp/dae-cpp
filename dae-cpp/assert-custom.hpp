@@ -60,6 +60,24 @@ namespace daecpp_namespace_name
 #endif
 
 /*
+ * PRINT(condition, message)
+ *
+ * Prints a message (or not), depending on the condition (e.g., verbosity level).
+ *
+ * Example:
+ * NOTE(verbosity > 1, "v = " << v);
+ */
+#ifdef TESTING
+#define PRINT(condition, msg)
+#else
+#define PRINT(condition, msg)          \
+    if (condition)                     \
+    {                                  \
+        std::cout << msg << std::endl; \
+    }
+#endif
+
+/*
  * ASSERT(expression, error message)
  *
  * Prints error message and aborts with error code -1 if expression is false.

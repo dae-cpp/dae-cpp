@@ -6,6 +6,8 @@ A simple but powerful header-only C++ solver for systems of Differential and Alg
 
 ### How does it work
 
+Quasi-Newton method
+
 ### The main features of the solver
 
 ## Installation
@@ -28,7 +30,9 @@ make
 ctest
 ```
 
-## How to use
+## Quick start
+
+## How to use -- move to Documentation
 
 ### Step 0. Include dae-cpp into the project
 

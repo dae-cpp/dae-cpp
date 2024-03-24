@@ -20,18 +20,15 @@
 
 namespace daecpp_namespace_name
 {
-// Constants constants.hpp
 namespace core
 {
 
-constexpr int MAX_ORDER{2};
-
 struct SolverState
 {
-    double t[core::MAX_ORDER];  // Current and previous integration times
-    double dt[core::MAX_ORDER]; // Current and previous time steps
+    double t[MAX_ORDER];  // Current and previous integration times
+    double dt[MAX_ORDER]; // Current and previous time steps
 
-    std::array<state_type, core::MAX_ORDER> x; // Current and previous states
+    std::array<state_type, MAX_ORDER> x; // Current and previous states
 
     int order{1}; // Current integration order (always starts from 1)
 };
@@ -57,10 +54,17 @@ class System
     std::size_t _calls{0}; // Total linear algebra solver calls counter
 
 public:
-    System(const MassMatrix &mass, const RHS &rhs) : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(_opt_default) {}
-    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac) : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default) {}
-    System(const MassMatrix &mass, const RHS &rhs, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(opt) {}
-    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt) {}
+    System(const MassMatrix &mass, const RHS &rhs)
+        : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(_opt_default) {}
+
+    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac)
+        : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default) {}
+
+    System(const MassMatrix &mass, const RHS &rhs, const SolverOptions &opt)
+        : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(opt) {}
+
+    System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac, const SolverOptions &opt)
+        : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt) {}
 
     /*
      * Integrates the system of DAEs on the interval t = [t0; t1] and returns
@@ -69,7 +73,6 @@ public:
      * The data stored in x (initial conditions) will be overwritten.
      * Returns 0 in case of success or error code if integration is failed.
      */
-    int solve(state_type &x, double &t, const fvec t_output = fvec())
     // t_output will be move-constructed if the user provides an
     // r-value (either directly from a temporary, or by moving from an lvalue)
 
@@ -83,7 +86,7 @@ public:
     // Test t;
     // t.someFunction(std::move(items)); // move items - we don't keep a copy
     // or t.someFunction({ "1", "2", "3" });
-
+    int solve(state_type &x, double &t, const fvec t_output = fvec())
     {
         // Timer
         {
@@ -94,11 +97,11 @@ public:
             _t_out = std::move(t_output);
 
             // Initial output
-            if (_opt.verbosity > verbosity::silent)
-            {
-                std::cout << "Float precision:   " << 8 * sizeof(float_type) << " bit\n";
-                std::cout << "Integer precision: " << 8 * sizeof(int_type) << " bit\n";
-            }
+            PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
+            PRINT(_opt.verbosity >= 2, "Float size:   " << 8 * sizeof(float_type) << " bit");
+            PRINT(_opt.verbosity >= 2, "Integer size: " << 8 * sizeof(int_type) << " bit");
+            PRINT(_opt.verbosity >= 1, "System size:  "
+                                           << " equations");
 
             // Initial time
             _state.t[0] = 0.0;

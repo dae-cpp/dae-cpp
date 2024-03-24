@@ -22,7 +22,6 @@ namespace verbosity
 enum VerbosityLevel
 {
     silent,
-    low,
     medium,
     loud
 };
@@ -35,10 +34,16 @@ enum VerbosityLevel
 struct SolverOptions
 {
     verbosity::VerbosityLevel verbosity{verbosity::silent};
-    
+
     double dt_init{0.001}; // Initial time step
 };
 
+namespace core
+{
+
+constexpr int MAX_ORDER{2};
+
+} // namespace core
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_SOLVER_OPTIONS_H
