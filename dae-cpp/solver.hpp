@@ -20,6 +20,23 @@
 
 namespace daecpp_namespace_name
 {
+// Constants constants.hpp
+namespace core
+{
+
+constexpr int MAX_ORDER{2};
+
+struct SolverState
+{
+    double t[core::MAX_ORDER];  // Current and previous integration times
+    double dt[core::MAX_ORDER]; // Current and previous time steps
+
+    std::array<state_type, core::MAX_ORDER> x; // Current and previous states
+
+    int order{1}; // Current integration order (always starts from 1)
+};
+
+} // namespace core
 
 class System
 {
@@ -30,67 +47,14 @@ class System
 
     const SolverOptions _opt_default;
 
-    // core::JacobianDefault _jac_default;
+    fvec _t_out; // Output times
 
-    // TimeIntegrator *m_ti;  // Pointer to the time integrator
+    core::SolverState _state; // Solver state
 
-    // struct m_iterator_state_struct  // Keeps the current time layer state
-    // {
-    //     double t;                   // current time
-    //     double dt[2];               // current and previous time steps
-    //     double dt_eval;             // new time step
-    //     int    current_scheme;      // current BDF order
-    //     int    step_counter_local;  // local time step counter
-    //     bool   final_time_step;     // do final time step
-    // } m_iterator_state;
+    int_type _size{0}; // System size
 
-    // MKL_INT m_size;  // System size
-
-    // std::size_t m_steps = 0;  // Total time iteration counter
-    // std::size_t m_calls = 0;  // Total linear algebra solver calls counter
-
-    // // Count the number of the DAE solver calls (for output)
-    // std::size_t m_dae_solver_calls = 0;
-
-    // // Timers
-    // double m_timer_lin = 0;
-    // double m_timer_rhs = 0;
-    // double m_timer_jac = 0;
-    // double m_timer_tot = 0;
-
-    // // Contains a few latest successful time steps for the time integrator
-    // state_type_matrix m_x_prev;
-
-    // // Intel MKL PARDISO control parameters
-
-    // // Simple yet efficient Adaptive Time Stepping
-    // int m_adaptive_time_stepping(state_type &x, const state_type_matrix &x_prev,
-    //                              int iter);
-
-    // // Scrapes the current time iteration and decreases the time step
-    // // Return -1 in case the time step is below dt_min
-    // int m_reset_ti_state(state_type &x, const state_type_matrix &x_prev);
-
-    // // Updates time integrator scheme when the time step changes
-    // int m_reset_ti_scheme();
-
-    // // Increases the time step
-    // void m_increase_dt();
-
-    // // Decreases the time step
-    // void m_decrease_dt();
-
-    // // Checks if dt is within the interval defined in solver_options.h
-    // int m_check_dt();
-
-    // // Checks PARDISO solver error messages
-    // void m_check_pardiso_error(MKL_INT err);
-
-    // protected:
-    //     /*
-    //      * Expose solver options for the observer in the children classes
-    //      */
-    //     SolverOptions &m_opt;  // Solver options
+    std::size_t _steps{0}; // Total time iteration counter
+    std::size_t _calls{0}; // Total linear algebra solver calls counter
 
 public:
     System(const MassMatrix &mass, const RHS &rhs) : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(_opt_default) {}
@@ -105,17 +69,51 @@ public:
      * The data stored in x (initial conditions) will be overwritten.
      * Returns 0 in case of success or error code if integration is failed.
      */
-    // int solve(state_type &x, double &t, fvec &t_output)
-    // {
+    int solve(state_type &x, double &t, const fvec t_output = fvec())
+    // t_output will be move-constructed if the user provides an
+    // r-value (either directly from a temporary, or by moving from an lvalue)
 
-    // }
+    // Keep a copy:
+    // std::vector<string> items = { "1", "2", "3" };
+    // Test t;
+    // t.someFunction(items); // pass items directly - we keep a copy
 
-    int solve(state_type &x, double &t, const fvec &t_output = fvec())
+    // Don't keep a copy:
+    // std::vector<string> items = { "1", "2", "3" };
+    // Test t;
+    // t.someFunction(std::move(items)); // move items - we don't keep a copy
+    // or t.someFunction({ "1", "2", "3" });
+
     {
+        // Timer
         {
-            std::cout << "\nt_out:" << t_output.size() << '\n';
-            
-            Timer timer(&core::Timers::get().total);
+            // Measures total time
+            Timer timer(&core::Timers::get().total_time);
+
+            // Initialize output times
+            _t_out = std::move(t_output);
+
+            // Initial output
+            if (_opt.verbosity > verbosity::silent)
+            {
+                std::cout << "Float precision:   " << 8 * sizeof(float_type) << " bit\n";
+                std::cout << "Integer precision: " << 8 * sizeof(int_type) << " bit\n";
+            }
+
+            // Initial time
+            _state.t[0] = 0.0;
+            _state.t[1] = 0.0;
+
+            // Initial time step
+            _state.dt[0] = _opt.dt_init;
+            _state.dt[1] = 0.0;
+
+            // Copy initial state
+            _state.x[0] = x;
+
+            // *****************************************
+
+            std::cout << "\nt_out:" << _t_out.size() << '\n';
 
             sparse_matrix J;
             _jac(J, x, t);
@@ -146,7 +144,7 @@ public:
                       << J.dense(x.size()) << '\n';
         }
 
-        std::cout << "Time: " << core::Timers::get().total << '\n';
+        std::cout << "Total time: " << core::Timers::get().total_time << '\n';
         return 0;
     }
 

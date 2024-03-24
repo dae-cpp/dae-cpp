@@ -60,12 +60,12 @@ namespace core
 class Timers
 {
 public:
-    double total{0.0}; // Total time
+    double total_time{0.0}; // Total time
 
     static Timers &get()
     {
         static Timers instance;
-        volatile int dummy{}; // So the function call will not be optimised away
+        volatile int dummy{}; // So the function call will not be optimized away
         return instance;
     }
 

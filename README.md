@@ -12,7 +12,7 @@ A simple but powerful header-only C++ solver for systems of Differential and Alg
 
 ## Testing
 
-If you already cloned the project without `--recurse-submodules`, you can initialise and update `googletest` submodule by running
+If you already cloned the project without `--recurse-submodules`, you can initialize and update `googletest` submodule by running
 
 ```bash
 git submodule update --init

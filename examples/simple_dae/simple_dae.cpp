@@ -187,7 +187,7 @@ int main()
 
         // Create an instance of the solver options and update some of the solver
         // parameters defined in solver_options.h
-        // SolverOptions opt;
+        SolverOptions opt;
 
         // opt.dt_init = 1.0e-2;   // Change the initial time step.
         //                         // It should be relatively small, because the first
@@ -196,7 +196,9 @@ int main()
         // opt.time_stepping = 1;  // Use simple stability-based adaptive time stepping
         //                         // algorithm.
         // opt.bdf_order = 6;      // Use BDF-6
-        // opt.verbosity = 0;      // Suppress output to screen (we have our own output
+
+        opt.verbosity = verbosity::loud; // Suppress output to screen (we have our own output
+
         //                         // defined in Observer function above)
 
         // We can override Jacobian class from dae-cpp library and provide
@@ -209,7 +211,7 @@ int main()
         // Create an instance of the solver with particular RHS, Mass matrix,
         // Jacobian and solver options
         // MySolver solve(rhs, jac, mass);
-        System simple_dae(mass, rhs, jac);
+        System simple_dae(mass, rhs, jac, opt);
 
         // Now we are ready to solve the set of DAEs
         std::cout << "Starting DAE solver...\n";
@@ -217,8 +219,11 @@ int main()
 
         // Solve the system
 
-        fvec t_out {1,2,3,4,5};
-        int status = simple_dae.solve(x, t, t_out);
+        fvec t_out{1, 2, 3, 4, 5};
+        // int status = simple_dae.solve(x, t);
+        // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
+        int status = simple_dae.solve(x, t, std::move(t_out));
+        std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
 

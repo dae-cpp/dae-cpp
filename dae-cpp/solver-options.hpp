@@ -16,13 +16,27 @@
 
 namespace daecpp_namespace_name
 {
+namespace verbosity
+{
+
+enum VerbosityLevel
+{
+    silent,
+    low,
+    medium,
+    loud
+};
+
+} // namespace verbosity
 
 /*
  * Defines DAE solver options.
  */
 struct SolverOptions
 {
-    int option{1};
+    verbosity::VerbosityLevel verbosity{verbosity::silent};
+    
+    double dt_init{0.001}; // Initial time step
 };
 
 } // namespace daecpp_namespace_name
