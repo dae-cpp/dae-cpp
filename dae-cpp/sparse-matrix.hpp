@@ -33,11 +33,11 @@ struct sparse_matrix
      * Duplicated elements will be summed up.
      *
      * Parameters:
-     *     A_ij - non-zero element (float-type)
+     *     A_ij - non-zero element (float_type)
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
      */
-    inline void operator()(float_type A_ij, int_type ind_i, int_type ind_j)
+    inline void operator()(const float_type A_ij, const int_type ind_i, const int_type ind_j)
     {
         A.push_back(A_ij);
         i.push_back(ind_i);
@@ -49,19 +49,19 @@ struct sparse_matrix
      * Duplicated elements will be summed up.
      *
      * Parameters:
-     *     A_ij - non-zero element (float-type)
+     *     A_ij - non-zero element (float_type)
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
      */
-    inline void add_element(const float_type A, const int_type i, const int_type j)
+    inline void add_element(const float_type A_ij, const int_type ind_i, const int_type ind_j)
     {
-        operator()(A, i, j);
+        operator()(A_ij, ind_i, ind_j);
     }
 
     /*
      * Reserves memory for `N_elements` non-zero elements
      */
-    inline void reserve(int_type N_elements)
+    inline void reserve(const int_type N_elements)
     {
         A.reserve(N_elements);
         i.reserve(N_elements);
@@ -74,8 +74,9 @@ struct sparse_matrix
      */
     inline void check() const noexcept
     {
-        ASSERT(A.size() == i.size(), "");
-        ASSERT(A.size() == j.size(), "");
+        const char *msg = "Three-array sparse matrix check failed. Inconsistent array size.";
+        ASSERT(A.size() == i.size(), msg);
+        ASSERT(A.size() == j.size(), msg);
     }
 
     /*

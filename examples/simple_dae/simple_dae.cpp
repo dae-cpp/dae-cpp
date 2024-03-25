@@ -219,7 +219,7 @@ int main()
 
         // Solve the system
 
-        fvec t_out{1, 2, 3, 4, 5};
+        std::vector<double> t_out{1, 2, 3, 4, 5};
         // int status = simple_dae.solve(x, t);
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         int status = simple_dae.solve(x, t, std::move(t_out));

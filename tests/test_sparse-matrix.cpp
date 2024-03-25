@@ -112,7 +112,7 @@ TEST(SparseMatrix, Convert)
     M2.reserve(3);
     M2.add_element(-5.0, 0, 0);
     M2.add_element(2.5, 1, 1);
-    M2.add_element(2.5, 1, 1); // Duplicate element -- should be added
+    M2.add_element(2.5, 1, 1); // Duplicate element -- should be summed up
 
     M1.check();
     M2.check();

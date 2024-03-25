@@ -23,6 +23,9 @@ namespace daecpp_namespace_name
 namespace core
 {
 
+/*
+ * Stores the solver state
+ */
 struct SolverState
 {
     double t[MAX_ORDER];  // Current and previous integration times
@@ -35,6 +38,9 @@ struct SolverState
 
 } // namespace core
 
+/*
+ * The main solver class
+ */
 class System
 {
     const RHS &_rhs;           // RHS
@@ -42,23 +48,20 @@ class System
     const MassMatrix &_mass;   // Mass matrix
     const SolverOptions &_opt; // Solver options
 
-    const SolverOptions _opt_default;
-
-    fvec _t_out; // Output times
-
     core::SolverState _state; // Solver state
 
-    int_type _size{0}; // System size
+    std::vector<double> _t_out; // Output times
 
-    std::size_t _steps{0}; // Total time iteration counter
-    std::size_t _calls{0}; // Total linear algebra solver calls counter
+    std::size_t _size{0};  // System size
+    std::size_t _steps{0}; // Counts number of time steps
+    std::size_t _calls{0}; // Counts total linear algebra solver calls
 
 public:
     System(const MassMatrix &mass, const RHS &rhs)
-        : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(_opt_default) {}
+        : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(SolverOptions()) {}
 
     System(const MassMatrix &mass, const RHS &rhs, const Jacobian &jac)
-        : _mass(mass), _rhs(rhs), _jac(jac), _opt(_opt_default) {}
+        : _mass(mass), _rhs(rhs), _jac(jac), _opt(SolverOptions()) {}
 
     System(const MassMatrix &mass, const RHS &rhs, const SolverOptions &opt)
         : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(opt) {}
@@ -86,22 +89,22 @@ public:
     // Test t;
     // t.someFunction(std::move(items)); // move items - we don't keep a copy
     // or t.someFunction({ "1", "2", "3" });
-    int solve(state_type &x, double &t, const fvec t_output = fvec())
+    int solve(state_type &x, double &t, const std::vector<double> t_output = {})
     {
         // Timer
         {
             // Measures total time
             Timer timer(&core::Timers::get().total_time);
 
+            // Initial output
+            PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
+
             // Initialize output times
             _t_out = std::move(t_output);
 
-            // Initial output
-            PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
-            PRINT(_opt.verbosity >= 2, "Float size:   " << 8 * sizeof(float_type) << " bit");
-            PRINT(_opt.verbosity >= 2, "Integer size: " << 8 * sizeof(int_type) << " bit");
-            PRINT(_opt.verbosity >= 1, "System size:  "
-                                           << " equations");
+            // System size
+            _size = x.size();
+            ASSERT(_size > 0, "Initial condition vector is empty.");
 
             // Initial time
             _state.t[0] = 0.0;
@@ -111,10 +114,49 @@ public:
             _state.dt[0] = _opt.dt_init;
             _state.dt[1] = 0.0;
 
+            // TODO: Reserve memory for the solution history
+
             // Copy initial state
             _state.x[0] = x;
 
-            // *****************************************
+            // TODO: Check user-defined solver options
+            // _opt.check();
+
+            // We don't need to do anything if t == 0. Throw an error if t < 0.
+            if (t == 0.0)
+            {
+                NOTE("Target time t = 0. The initial condition is the solution.");
+                return 0;
+            }
+            else if (t < 0.0)
+            {
+                ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
+            }
+
+            // TODO: Check initial time step is less than t
+
+            // Full Jacobian matrix holder
+            // sparse_matrix_holder J;
+
+            // Full RHS vector
+            // state_type b(m_size);
+
+            // Solution vector used for Newton iterations
+            // state_type xk(m_size);
+
+            // Counts how many times the Newton iterator failed to converge within
+            // max_Newton_iter iterations in a row.
+            // int n_iter_failed = 0;
+
+            // Output of initialization
+            PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
+            PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
+            PRINT(_opt.verbosity >= 1, "DAE system size: " << _size << " equations");
+            PRINT(_opt.verbosity >= 1, "Calculating...");
+
+            /*
+             * Time loop
+             */
 
             std::cout << "\nt_out:" << _t_out.size() << '\n';
 

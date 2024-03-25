@@ -29,13 +29,16 @@ enum VerbosityLevel
 } // namespace verbosity
 
 /*
- * Defines DAE solver options.
+ * Defines DAE solver options
  */
 struct SolverOptions
 {
+    // Verbosity level.
+    // Can be `silent` (no output), `medium` (basic output), `loud` (full output).
     verbosity::VerbosityLevel verbosity{verbosity::silent};
 
-    double dt_init{0.001}; // Initial time step
+    // Initial time step
+    double dt_init{0.1};
 };
 
 namespace core
