@@ -106,6 +106,12 @@ public:
             _size = x.size();
             ASSERT(_size > 0, "Initial condition vector is empty.");
 
+            // Reserve memory for the solution history
+            for (auto &x_ : _state.x)
+            {
+                x_.reserve(_size);
+            }
+
             // Initial time
             _state.t[0] = 0.0;
             _state.t[1] = 0.0;
@@ -114,26 +120,11 @@ public:
             _state.dt[0] = _opt.dt_init;
             _state.dt[1] = 0.0;
 
-            // TODO: Reserve memory for the solution history
-
             // Copy initial state
             _state.x[0] = x;
 
             // TODO: Check user-defined solver options
             // _opt.check();
-
-            // We don't need to do anything if t == 0. Throw an error if t < 0.
-            if (t == 0.0)
-            {
-                NOTE("Target time t = 0. The initial condition is the solution.");
-                return 0;
-            }
-            else if (t < 0.0)
-            {
-                ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
-            }
-
-            // TODO: Check initial time step is less than t
 
             // Full Jacobian matrix holder
             // sparse_matrix_holder J;
@@ -148,45 +139,110 @@ public:
             // max_Newton_iter iterations in a row.
             // int n_iter_failed = 0;
 
-            // Output of initialization
+            // Sort vector of output times and erase duplicates
+            _t_out.push_back(t);
+            std::sort(_t_out.begin(), _t_out.end());
+            _t_out.erase(std::unique(_t_out.begin(), _t_out.end()), _t_out.end());
+
+            // We don't need to do anything if t == 0. Throw an error if t < 0.
+            // if (_t_out.back() == 0.0) // TODO: Do at least one iteration
+            // {
+            //     NOTE("Target time t = 0. The initial condition is the solution.");
+            //     return 0;
+            // }
+            // else if (_t_out.back() < 0.0)
+            // {
+            //     ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
+            // }
+
+            // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
             PRINT(_opt.verbosity >= 1, "DAE system size: " << _size << " equations");
             PRINT(_opt.verbosity >= 1, "Calculating...");
 
             /*
-             * Time loop
+             * Output time loop
              */
+            for (const auto &t1 : _t_out)
+            {
+                PRINT(_opt.verbosity >= 2, "-- Integration time t = " << t1 << ":");
+                if (t1 < 0.0)
+                {
+                    WARNING("Negative integration time t = " << t1 << ". Skipped.");
+                    continue;
+                }
 
-            std::cout << "\nt_out:" << _t_out.size() << '\n';
+                // TODO: Check initial time step is less than t
 
-            sparse_matrix J;
-            _jac(J, x, t);
-            J.check();
+                /*
+                 * Time loop
+                 */
+                while (_state.t[0] < (t1 + _state.dt[0] * 0.5))
+                {
 
-            sparse_matrix M;
-            _mass(M, t);
-            M.check();
+                    // m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
 
-            auto jac = J.convert(x.size());
-            auto mass = M.convert(x.size());
+                    // m_iterator_state.step_counter_local++;
+                    // m_steps++;
 
-            std::cout << "Mass:\n"
-                      << mass.toDense() << '\n';
-            std::cout << "Jac:\n"
-                      << jac.toDense() << '\n';
+                    // if(m_opt.verbosity > 1)
+                    // {
+                    //     std::cout << std::left;
+                    //     std::cout << "\nStep " << std::setw(7) << m_steps
+                    //               << " :: t = " << std::setw(12) << m_iterator_state.t
+                    //               << " :: ";
+                    //     // std::cout.flush();  // This degrades performance in some cases
+                    // }
 
-            Eigen::SparseMatrix<double> sum(x.size(), x.size());
+                    // if(m_opt.verbosity > 2)
+                    // {
+                    //     std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
+                    //     std::cout << "dt=" << m_iterator_state.dt[0]
+                    //               << ", dt_prev=" << m_iterator_state.dt[1] << ": ";
+                    // }
 
-            sum = mass;
-            sum += jac;
-            // sum = mass + jac; // TODO: check performance
+                    // m_ti->set_scheme(m_iterator_state.current_scheme);
 
-            std::cout << "Sum:\n"
-                      << sum.toDense() << '\n';
+                    // // Can be set to true by the solver if it fails to converge
+                    // bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
+                    //                            ? true
+                    //                            : m_opt.fact_every_iter;
 
-            std::cout << "Print Jac:\n"
-                      << J.dense(x.size()) << '\n';
+                    // int iter;  // Loop index. We need this value later
+
+                    break;
+
+                } //
+            }     // for (const auto &t1 : _t_out)
+
+            // sparse_matrix J;
+            // _jac(J, x, t);
+            // J.check();
+
+            // sparse_matrix M;
+            // _mass(M, t);
+            // M.check();
+
+            // auto jac = J.convert(x.size());
+            // auto mass = M.convert(x.size());
+
+            // std::cout << "Mass:\n"
+            //           << mass.toDense() << '\n';
+            // std::cout << "Jac:\n"
+            //           << jac.toDense() << '\n';
+
+            // Eigen::SparseMatrix<double> sum(x.size(), x.size());
+
+            // sum = mass;
+            // sum += jac;
+            // // sum = mass + jac; // TODO: check performance
+
+            // std::cout << "Sum:\n"
+            //           << sum.toDense() << '\n';
+
+            // std::cout << "Print Jac:\n"
+            //           << J.dense(x.size()) << '\n';
         }
 
         std::cout << "Total time: " << core::Timers::get().total_time << '\n';

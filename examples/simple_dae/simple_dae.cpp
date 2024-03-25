@@ -198,7 +198,6 @@ int main()
         // opt.bdf_order = 6;      // Use BDF-6
 
         opt.verbosity = verbosity::loud; // Suppress output to screen (we have our own output
-
         //                         // defined in Observer function above)
 
         // We can override Jacobian class from dae-cpp library and provide
@@ -214,12 +213,12 @@ int main()
         System simple_dae(mass, rhs, jac, opt);
 
         // Now we are ready to solve the set of DAEs
-        std::cout << "Starting DAE solver...\n";
+        // std::cout << "Starting DAE solver...\n";
         // std::cout << "time\tx\ty\terror1\terror2\n";
 
         // Solve the system
 
-        std::vector<double> t_out{1, 2, 3, 4, 5};
+        std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
         // int status = simple_dae.solve(x, t);
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         int status = simple_dae.solve(x, t, std::move(t_out));
