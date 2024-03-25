@@ -56,6 +56,8 @@ class System
     std::size_t _steps{0}; // Counts number of time steps
     std::size_t _calls{0}; // Counts total linear algebra solver calls
 
+    core::Time _time;
+
 public:
     System(const MassMatrix &mass, const RHS &rhs)
         : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(SolverOptions()) {}
@@ -94,7 +96,8 @@ public:
         // Timer
         {
             // Measures total time
-            Timer timer(&core::Timers::get().total_time);
+            // Timer timer(&core::Timers::get().total_time);
+            Timer timer(&_time.total);
 
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
@@ -260,7 +263,8 @@ public:
             //           << J.dense(x.size()) << '\n';
         }
 
-        std::cout << "Total time: " << core::Timers::get().total_time << '\n';
+        // std::cout << "Total time: " << core::Timers::get().total_time << '\n';
+        std::cout << "Total time: " << _time.total << '\n';
         return 0;
     }
 

@@ -55,25 +55,11 @@ namespace core
 {
 
 /*
- * Specific timers (a singleton)
+ * Specific timers
  */
-class Timers
+struct Time
 {
-public:
-    double total_time{0.0}; // Total time
-
-    static Timers &get()
-    {
-        static Timers instance;
-        volatile int dummy{}; // So the function call will not be optimized away
-        return instance;
-    }
-
-private:
-    Timers() = default;
-    ~Timers() = default;
-    Timers(const Timers &) = delete;
-    Timers &operator=(const Timers &) = delete;
+    double total{0.0}; // Total time
 };
 
 } // namespace core
