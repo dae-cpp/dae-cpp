@@ -144,16 +144,11 @@ public:
             std::sort(_t_out.begin(), _t_out.end());
             _t_out.erase(std::unique(_t_out.begin(), _t_out.end()), _t_out.end());
 
-            // We don't need to do anything if t == 0. Throw an error if t < 0.
-            // if (_t_out.back() == 0.0) // TODO: Do at least one iteration
-            // {
-            //     NOTE("Target time t = 0. The initial condition is the solution.");
-            //     return 0;
-            // }
-            // else if (_t_out.back() < 0.0)
-            // {
-            //     ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
-            // }
+            // Throw an error if target time t < 0
+            if (_t_out.back() < 0.0)
+            {
+                ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
+            }
 
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
@@ -167,6 +162,7 @@ public:
             for (const auto &t1 : _t_out)
             {
                 PRINT(_opt.verbosity >= 2, "-- Integration time t = " << t1 << ":");
+
                 if (t1 < 0.0)
                 {
                     WARNING("Negative integration time t = " << t1 << ". Skipped.");
@@ -174,17 +170,16 @@ public:
                 }
 
                 // TODO: Check initial time step is less than t
+                // TODO: For t=0 do at least one iteration
 
                 /*
                  * Time loop
                  */
                 while (_state.t[0] < (t1 + _state.dt[0] * 0.5))
                 {
+                    _state.t[0] += _state.dt[0]; // Time step lapse
 
-                    // m_iterator_state.t += m_iterator_state.dt[0];  // Time step lapse
-
-                    // m_iterator_state.step_counter_local++;
-                    // m_steps++;
+                    _steps++; // Number of time steps
 
                     // if(m_opt.verbosity > 1)
                     // {
@@ -202,14 +197,34 @@ public:
                     //               << ", dt_prev=" << m_iterator_state.dt[1] << ": ";
                     // }
 
-                    // m_ti->set_scheme(m_iterator_state.current_scheme);
-
                     // // Can be set to true by the solver if it fails to converge
                     // bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
                     //                            ? true
                     //                            : m_opt.fact_every_iter;
 
-                    // int iter;  // Loop index. We need this value later
+                    u_int32_t iter; // Newton iteration loop index - we will need this value later
+
+                    /*
+                     * Newton iteration loop
+                     */
+                    for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
+                    {
+                        // Reordering, Symbolic and Numerical Factorization (slow) + recalculate Jac
+                        // if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
+
+                        // Time integrator - find full Jb and b (from x,t,dt - state)
+
+                        // Solve linear system Jb dx = b
+
+                        // calls++;
+
+                        // Check error and convergence -- loop for i
+                        // Checks NaN, atol, rtol, and x[i] -= dx[i]
+
+                        // Print # - one char
+
+                        // break if convereged
+                    }
 
                     break;
 

@@ -39,6 +39,8 @@ struct SolverOptions
 
     // Initial time step
     double dt_init{0.1};
+
+    u_int32_t max_Newton_iter{30};
 };
 
 namespace core
