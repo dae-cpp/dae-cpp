@@ -14,6 +14,8 @@
 
 #include <vector>
 
+#include <Eigen/Sparse>
+
 #define daecpp_namespace_name daecpp
 
 #include "assert-custom.hpp"
@@ -44,6 +46,17 @@ typedef std::vector<float_type> fvec;
 // State vector
 typedef fvec state_type;
 
+namespace core
+{
+
+// Eigen vector type
+#ifdef DAECPP_SINGLE
+typedef Eigen::VectorXf eivec;
+#else
+typedef Eigen::VectorXd eivec;
+#endif
+
+} // namespace core
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_TYPEDEFS_H

@@ -48,11 +48,8 @@ class System
     const MassMatrix &_mass;   // Mass matrix
     const SolverOptions &_opt; // Solver options
 
-    core::SolverState _state; // Solver state
-
     std::vector<double> _t_out; // Output times
 
-    std::size_t _size{0};  // System size
     std::size_t _steps{0}; // Counts number of time steps
     std::size_t _calls{0}; // Counts total linear algebra solver calls
 
@@ -91,7 +88,7 @@ public:
     // Test t;
     // t.someFunction(std::move(items)); // move items - we don't keep a copy
     // or t.someFunction({ "1", "2", "3" });
-    int solve(state_type &x, double &t, const std::vector<double> t_output = {})
+    int solve(state_type &x, double &t_end, const std::vector<double> t_output = {})
     {
         // Timer
         {
@@ -105,26 +102,30 @@ public:
             // Initialize output times
             _t_out = std::move(t_output);
 
+            // Solver state
+            core::SolverState state;
+
             // System size
-            _size = x.size();
-            ASSERT(_size > 0, "Initial condition vector is empty.");
+            std::size_t size = x.size();
+            ASSERT(size > 0, "Initial condition vector is empty.");
 
             // Reserve memory for the solution history
-            for (auto &x_ : _state.x)
+            for (auto &x_ : state.x)
             {
-                x_.reserve(_size);
+                x_.reserve(size);
             }
 
             // Initial time
-            _state.t[0] = 0.0;
-            _state.t[1] = 0.0;
+            state.t[0] = 0.0;
+            state.t[1] = 0.0;
 
             // Initial time step
-            _state.dt[0] = _opt.dt_init;
-            _state.dt[1] = 0.0;
+            state.dt[0] = _opt.dt_init;
+            state.dt[1] = 0.0;
 
             // Copy initial state
-            _state.x[0] = x;
+            state.x[0] = x;
+            state.x[1].resize(size);
 
             // TODO: Check user-defined solver options
             // _opt.check();
@@ -143,7 +144,7 @@ public:
             // int n_iter_failed = 0;
 
             // Sort vector of output times and erase duplicates
-            _t_out.push_back(t);
+            _t_out.push_back(t_end);
             std::sort(_t_out.begin(), _t_out.end());
             _t_out.erase(std::unique(_t_out.begin(), _t_out.end()), _t_out.end());
 
@@ -156,8 +157,14 @@ public:
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
-            PRINT(_opt.verbosity >= 1, "DAE system size: " << _size << " equations");
+            PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
             PRINT(_opt.verbosity >= 1, "Calculating...");
+
+            state_type xk = x; // TODO:
+            state_type f(size);
+            core::eivec dxdt(size); // TODO: Can be single
+
+            // state_type b
 
             /*
              * Output time loop
@@ -178,9 +185,11 @@ public:
                 /*
                  * Time loop
                  */
-                while (_state.t[0] < (t1 + _state.dt[0] * 0.5))
+                while (state.t[0] < (t1 + state.dt[0] * 0.5))
                 {
-                    _state.t[0] += _state.dt[0]; // Time step lapse
+                    std::cout << state.t[0] << "\t" << state.x[0][0] << "\t" << state.x[0][1] << "\t" << std::exp(-state.t[0]) << "\t" << -std::exp(-state.t[0]) << '\n';
+
+                    state.t[0] += state.dt[0]; // Time step lapse
 
                     _steps++; // Number of time steps
 
@@ -212,12 +221,70 @@ public:
                      */
                     for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
                     {
+                        // std::cout << "  -- "<< iter << "\t" << state.x[0][0] << "\t" << state.x[0][1] << '\n';
+
                         // Reordering, Symbolic and Numerical Factorization (slow) + recalculate Jac
                         // if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
 
                         // Time integrator - find full Jb and b (from x,t,dt - state)
+                        double alpha;
+                        double *dt = state.dt;
+                        if (state.order == 1)
+                        {
+                            for (int_type i = 0; i < size; ++i)
+                            {
+                                dxdt[i] = (xk[i] - state.x[0][i]) / state.dt[0];
+                            }
+                            alpha = 1.0 / state.dt[0];
+                        }
+                        else
+                        {
+                            for (int_type i = 0; i < size; ++i)
+                            {
+                                dxdt[i] = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1])) * xk[i] -
+                                          (dt[0] + dt[1]) / (dt[0] * dt[1]) * state.x[0][i] +
+                                          dt[0] / (dt[1] * (dt[0] + dt[1])) * state.x[1][i];
+                            }
+                            alpha = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1]));
+                        }
+
+                        // Get RHS
+                        _rhs(f, xk, state.t[0]);
+                        Eigen::Map<core::eivec> f_(f.data(), f.size()); // Does not copy data... check
+
+                        // If above crashes due to alignment:
+                        // core::eivec f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size()); // Makes a copy
+
+                        // Get Mass Matrix
+                        sparse_matrix M; // Create in advance then reset
+                        _mass(M, state.t[0]);
+                        M.check();
+                        auto M_ = M.convert(size);
+
+                        // Get Jac
+                        sparse_matrix J; // Create in advance then reset
+                        _jac(J, xk, state.t[0]);
+                        J.check();
+                        auto Jb = J.convert(size);
+
+                        // b = M(t) * dxdt - f // Note it's with '-'
+                        core::eivec b = M_ * dxdt;
+                        b -= f_;
+
+                        // Jb = J - d/dx (M * [dx/dt])
+                        Jb -= M_ * alpha; /// state.dt[0];
 
                         // Solve linear system Jb dx = b
+                        Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
+                        auto xk_ = lu.solve(b);
+
+                        // x_k+1 = x_k - delta_x
+                        for (int_type i = 0; i < size; ++i)
+                            xk[i] += xk_[i];
+
+                        // std::cout << "  -- "<< iter << "\t" << state.x[0][0] << "\t" << state.x[0][1] << '\n';
+
+                        // break;
 
                         // calls++;
 
@@ -229,38 +296,21 @@ public:
                         // break if convereged
                     }
 
-                    break;
+                    for (int_type i = 0; i < size; ++i)
+                    {
+                        state.x[1][i] = state.x[0][i];
+                        state.x[0][i] = xk[i];
+                    }
+
+                    state.order = 2;
+
+                    state.dt[1] = state.dt[0];
+                    state.dt[0] = 0.09;
+
+                    // break;
 
                 } //
             }     // for (const auto &t1 : _t_out)
-
-            // sparse_matrix J;
-            // _jac(J, x, t);
-            // J.check();
-
-            // sparse_matrix M;
-            // _mass(M, t);
-            // M.check();
-
-            // auto jac = J.convert(x.size());
-            // auto mass = M.convert(x.size());
-
-            // std::cout << "Mass:\n"
-            //           << mass.toDense() << '\n';
-            // std::cout << "Jac:\n"
-            //           << jac.toDense() << '\n';
-
-            // Eigen::SparseMatrix<double> sum(x.size(), x.size());
-
-            // sum = mass;
-            // sum += jac;
-            // // sum = mass + jac; // TODO: check performance
-
-            // std::cout << "Sum:\n"
-            //           << sum.toDense() << '\n';
-
-            // std::cout << "Print Jac:\n"
-            //           << J.dense(x.size()) << '\n';
         }
 
         // std::cout << "Total time: " << core::Timers::get().total_time << '\n';

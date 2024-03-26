@@ -38,9 +38,9 @@ struct SolverOptions
     verbosity::VerbosityLevel verbosity{verbosity::silent};
 
     // Initial time step
-    double dt_init{0.1};
+    double dt_init{0.01};
 
-    u_int32_t max_Newton_iter{30};
+    u_int32_t max_Newton_iter{5};
 };
 
 namespace core

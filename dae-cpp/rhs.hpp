@@ -29,7 +29,7 @@ public:
     /*
      * Defines the RHS `f` of the DAE system `M dx/dt = f`.
      * Takes vector x and time t and returns the RHS vector f.
-     * Vector f is already pre-allocated with f.size() == x.size() and filled with 0.
+     * Vector f is already pre-allocated with f.size() == x.size().
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(state_type &f, const state_type &x, const double t) const = 0;

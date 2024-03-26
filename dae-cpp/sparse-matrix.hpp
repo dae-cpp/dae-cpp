@@ -12,8 +12,6 @@
 #ifndef DAECPP_SPARSE_MATRIX_H
 #define DAECPP_SPARSE_MATRIX_H
 
-#include <Eigen/Sparse>
-
 #include "typedefs.hpp"
 
 namespace daecpp_namespace_name

@@ -218,11 +218,11 @@ int main()
 
         // Solve the system
 
-        std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
-        // int status = simple_dae.solve(x, t);
+        // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
+        int status = simple_dae.solve(x, t);
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
-        int status = simple_dae.solve(x, t, std::move(t_out));
-        std::cout << "t_out size: " << t_out.size() << '\n';
+        // int status = simple_dae.solve(x, t, std::move(t_out));
+        // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
 
