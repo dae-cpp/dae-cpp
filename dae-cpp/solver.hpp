@@ -232,6 +232,7 @@ public:
 
                         // Get RHS
                         _rhs(f, xk, state.t[0]);
+                        ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
                         Eigen::Map<core::eivec> f_(f.data(), f.size()); // Does not copy data... check
 
                         // If above crashes due to alignment:
@@ -272,18 +273,30 @@ public:
                         // break if convereged
                     }
 
-                    for (int_type i = 0; i < size; ++i)
+                    // Updates state history
+                    for (std::size_t i = 0; i < size; ++i)
                     {
+                        // Manually unrolled loop
+                        state.x[3][i] = state.x[2][i];
                         state.x[2][i] = state.x[1][i];
                         state.x[1][i] = state.x[0][i];
                         state.x[0][i] = xk[i];
                     }
 
-                    state.order++;
+                    // Updates time step history
+                    for (int k = core::MAX_ORDER - 1; k > 0; --k)
+                    {
+                        state.dt[k] = state.dt[k - 1];
+                        std::cout << k;
+                    }
 
-                    state.dt[2] = state.dt[1];
-                    state.dt[1] = state.dt[0];
-                    state.dt[0] = 0.09;
+                    state.dt[0] = 0.09; // New time step
+
+                    // Updates time integration order
+                    if (state.order < core::MAX_ORDER)
+                    {
+                        state.order++;
+                    }
 
                     // break;
 
@@ -300,43 +313,73 @@ private:
     inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size) const
     {
         double alpha{0.0}; // Derivative w.r.t. xk
-        const double *dt = state.dt;
-        if (state.order == 1)
+
+        const double h0 = state.dt[0];
+        const double h1 = state.dt[1];
+        const double h2 = state.dt[2];
+        const double h3 = state.dt[3];
+
+        const double h01 = h0 + h1;
+        const double h12 = h1 + h2;
+        const double h23 = h2 + h3;
+        const double h012 = h0 + h1 + h2;
+        const double h123 = h1 + h2 + h3;
+        const double h0123 = h0 + h1 + h2 + h3;
+
+        switch (state.order)
         {
-            alpha = 1.0 / dt[0];
-            for (int_type i = 0; i < size; ++i)
+        case 1:
+            alpha = 1.0 / h0;
+            for (std::size_t i = 0; i < size; ++i)
             {
                 dxdt[i] = (xk[i] - state.x[0][i]) * alpha;
             }
-        }
-        else if (state.order == 2)
-        {
-            const double dt01 = dt[0] + dt[1];
-            alpha = (2.0 * dt[0] + dt[1]) / (dt[0] * dt01);
-            for (int_type i = 0; i < size; ++i)
+            break;
+
+        case 2:
+            alpha = (2.0 * h0 + h1) / (h0 * h01);
+            for (std::size_t i = 0; i < size; ++i)
             {
                 dxdt[i] = alpha * xk[i] -
-                          dt01 / (dt[0] * dt[1]) * state.x[0][i] +
-                          dt[0] / (dt[1] * dt01) * state.x[1][i];
+                          h01 / (h0 * h1) * state.x[0][i] +
+                          h0 / (h1 * h01) * state.x[1][i];
             }
-        }
-        else
-        {
-            const double dt01 = dt[0] + dt[1];
-            const double dt12 = dt[1] + dt[2];
-            const double dt02 = dt[0] + dt[2];
-            const double dt012 = dt[0] + dt[1] + dt[2];
-            alpha = (3.0 * dt[0] * dt[0] + dt[1] * dt12 + 2.0 * dt[0] * (dt[1] + dt12)) / (dt[0] * dt01 * dt012);
-            for (int_type i = 0; i < size; ++i)
+            break;
+
+        case 3:
+            alpha = (3.0 * h0 * h0 + h1 * h12 + 2.0 * h0 * (2.0 * h1 + h2)) / (h0 * h01 * h012);
+            for (std::size_t i = 0; i < size; ++i)
             {
                 dxdt[i] = alpha * xk[i] -
-                          dt01 * dt012 / (dt[0] * dt[1] * dt12) * state.x[0][i] +
-                          dt[0] * dt012 / (dt[1] * dt[2] * dt01) * state.x[1][i] -
-                          dt[0] * dt01 / (dt[2] * dt12 * dt012) * state.x[2][i];
+                          h01 * h012 / (h0 * h1 * h12) * state.x[0][i] +
+                          h0 * h012 / (h1 * h2 * h01) * state.x[1][i] -
+                          h0 * h01 / (h2 * h12 * h012) * state.x[2][i];
             }
+            break;
+
+        case 4:
+            alpha = (4.0 * h0 * h0 * h0 +
+                     h1 * h12 * h123 +
+                     3.0 * h0 * h0 * (3.0 * h1 + 2.0 * h2 + h3) +
+                     2.0 * h0 * (3.0 * h1 * h1 + h2 * h23 + 2.0 * h1 * (2.0 * h2 + h3))) /
+                    (h0 * h01 * h012 * h0123);
+            for (std::size_t i = 0; i < size; ++i)
+            {
+                dxdt[i] = alpha * xk[i] -
+                          h01 * h012 * h0123 / (h0 * h1 * h12 * h123) * state.x[0][i] +
+                          h0 * h012 * h0123 / (h1 * h01 * h2 * h23) * state.x[1][i] -
+                          h0 * h01 * h0123 / (h2 * h12 * h012 * h3) * state.x[2][i] +
+                          h0 * h01 * h012 / (h3 * h23 * h123 * h0123) * state.x[3][i];
+            }
+            break;
+
+        default:
+            ERROR("Unsupported time integration order.");
         }
+
         return alpha;
     }
+
     // /*
     //  * Virtual Observer. Called by the solver every time step.
     //  * Receives current solution vector and the current time.
