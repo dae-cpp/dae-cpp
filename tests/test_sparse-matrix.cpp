@@ -29,6 +29,10 @@ TEST(SparseMatrix, AddElement)
     EXPECT_EQ(M.j[0], 2);
     EXPECT_EQ(M.j[1], 4);
     EXPECT_EQ(M.j[2], 6);
+
+    EXPECT_EQ(M.A.size(), 3);
+    EXPECT_EQ(M.i.size(), 3);
+    EXPECT_EQ(M.j.size(), 3);
 }
 
 TEST(SparseMatrix, Reserve)
@@ -48,6 +52,32 @@ TEST(SparseMatrix, Reserve)
 
     EXPECT_EQ(M.j[0], 2);
     EXPECT_EQ(M.j[1], 4);
+
+    EXPECT_EQ(M.A.size(), 2);
+    EXPECT_EQ(M.i.size(), 2);
+    EXPECT_EQ(M.j.size(), 2);
+}
+
+TEST(SparseMatrix, Clear)
+{
+    sparse_matrix M;
+
+    M.reserve(2);
+
+    M.add_element(1.5, 1, 2);
+    M.add_element(2.5, 3, 4);
+
+    M.clear();
+
+    EXPECT_EQ(M.A.size(), 0);
+    EXPECT_EQ(M.i.size(), 0);
+    EXPECT_EQ(M.j.size(), 0);
+
+    M.add_element(12.5, 1, 1);
+
+    EXPECT_EQ(M.A.size(), 1);
+    EXPECT_EQ(M.i.size(), 1);
+    EXPECT_EQ(M.j.size(), 1);
 }
 
 TEST(SparseMatrix, Check)
@@ -77,6 +107,10 @@ TEST(SparseMatrix, CheckZero)
     sparse_matrix M;
 
     M.check();
+
+    EXPECT_EQ(M.A.size(), 0);
+    EXPECT_EQ(M.i.size(), 0);
+    EXPECT_EQ(M.j.size(), 0);
 }
 
 TEST(SparseMatrix, Dense)

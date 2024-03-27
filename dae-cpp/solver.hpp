@@ -34,6 +34,16 @@ struct SolverState
     std::array<state_type, MAX_ORDER> x; // Current and previous states
 
     int order{1}; // Current integration order (always starts from 1)
+
+    SolverState(const std::size_t size)
+    {
+        for (int i = 0; i < MAX_ORDER; ++i)
+        {
+            t[i] = 0.0;
+            dt[i] = 0.0;
+            x[i].resize(size);
+        }
+    }
 };
 
 } // namespace core
@@ -48,12 +58,7 @@ class System
     const MassMatrix &_mass;   // Mass matrix
     const SolverOptions &_opt; // Solver options
 
-    std::vector<double> _t_out; // Output times
-
-    std::size_t _steps{0}; // Counts number of time steps
-    std::size_t _calls{0}; // Counts total linear algebra solver calls
-
-    core::Time _time;
+    std::vector<double> _t_out; // Vector of output times
 
 public:
     System(const MassMatrix &mass, const RHS &rhs)
@@ -90,61 +95,18 @@ public:
     // or t.someFunction({ "1", "2", "3" });
     int solve(state_type &x, double &t_end, const std::vector<double> t_output = {})
     {
+        core::Time time;
         // Timer
         {
             // Measures total time
             // Timer timer(&core::Timers::get().total_time);
-            Timer timer(&_time.total);
+            Timer timer(&time.total);
 
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
 
             // Initialize output times
             _t_out = std::move(t_output);
-
-            // Solver state
-            core::SolverState state;
-
-            // System size
-            std::size_t size = x.size();
-            ASSERT(size > 0, "Initial condition vector is empty.");
-
-            // Reserve memory for the solution history
-            for (auto &x_ : state.x)
-            {
-                x_.reserve(size);
-            }
-
-            // Initial time
-            state.t[0] = 0.0;
-            state.t[1] = 0.0;
-            state.t[2] = 0.0;
-
-            // Initial time step
-            state.dt[0] = _opt.dt_init;
-            state.dt[1] = 0.0;
-            state.dt[2] = 0.0;
-
-            // Copy initial state
-            state.x[0] = x;
-            state.x[1].resize(size);
-            state.x[2].resize(size);
-
-            // TODO: Check user-defined solver options
-            // _opt.check();
-
-            // Full Jacobian matrix holder
-            // sparse_matrix_holder J;
-
-            // Full RHS vector
-            // state_type b(m_size);
-
-            // Solution vector used for Newton iterations
-            // state_type xk(m_size);
-
-            // Counts how many times the Newton iterator failed to converge within
-            // max_Newton_iter iterations in a row.
-            // int n_iter_failed = 0;
 
             // Sort vector of output times and erase duplicates
             _t_out.push_back(t_end);
@@ -157,17 +119,52 @@ public:
                 ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
             }
 
+            // Check user-defined solver options
+            _opt.check();
+
+            // System size
+            std::size_t size = x.size();
+            ASSERT(size > 0, "Initial condition vector is empty.");
+
+            // Solver state
+            core::SolverState state(size);
+
+            // Set initial time step
+            state.dt[0] = _opt.dt_init;
+
+            // Copy initial state
+            state.x[0] = x;
+
+            // Solution vector used for Newton iterations
+            state_type xk = x;
+
+            // The RHS vector
+            state_type f(size);
+
+            // Mass matrix holder
+            sparse_matrix M;
+
+            // Jacobian matrix holder
+            sparse_matrix J;
+
+            // Time derivative approximation
+            core::eivec dxdt(size);
+
+            // Counts number of time steps
+            u_int64_t steps{0};
+
+            // Counts total linear algebra solver calls
+            u_int64_t calls{0};
+
+            // Counts how many times the Newton iterator failed to converge within
+            // max_Newton_iter iterations in a row.
+            // int n_iter_failed = 0;
+
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
             PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
             PRINT(_opt.verbosity >= 1, "Calculating...");
-
-            state_type xk = x; // TODO:
-            state_type f(size);
-            core::eivec dxdt(size); // TODO: Can be single
-
-            // state_type b
 
             /*
              * Output time loop
@@ -194,7 +191,7 @@ public:
 
                     state.t[0] += state.dt[0]; // Time step lapse
 
-                    _steps++; // Number of time steps
+                    steps++; // Number of time steps
 
                     // if(m_opt.verbosity > 1)
                     // {
@@ -241,13 +238,13 @@ public:
                         // core::eivec f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size()); // Makes a copy
 
                         // Get Mass Matrix
-                        sparse_matrix M; // Create in advance then reset
+                        M.clear();
                         _mass(M, state.t[0]);
                         M.check();
                         auto M_ = M.convert(size);
 
                         // Get Jac
-                        sparse_matrix J; // Create in advance then reset
+                        J.clear();
                         _jac(J, xk, state.t[0]);
                         J.check();
                         auto Jb = J.convert(size);
@@ -261,22 +258,16 @@ public:
 
                         // Solve linear system Jb dx = b
                         Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
-                        auto xk_ = lu.solve(b);
+                        auto dx = lu.solve(b);
+                        calls++;
+                        std::putchar('#');
 
                         // x_k+1 = x_k - delta_x
                         for (int_type i = 0; i < size; ++i)
-                            xk[i] += xk_[i];
-
-                        // std::cout << "  -- "<< iter << "\t" << state.x[0][0] << "\t" << state.x[0][1] << '\n';
-
-                        // break;
-
-                        // calls++;
+                            xk[i] += dx[i];
 
                         // Check error and convergence -- loop for i
                         // Checks NaN, atol, rtol, and x[i] -= dx[i]
-
-                        // Print # - one char
 
                         // break if convereged
                     }
@@ -301,12 +292,12 @@ public:
         }
 
         // std::cout << "Total time: " << core::Timers::get().total_time << '\n';
-        std::cout << "Total time: " << _time.total << '\n';
+        std::cout << "Total time: " << time.total << '\n';
         return 0;
     }
 
 private:
-    inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size)
+    inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size) const
     {
         double alpha{0.0}; // Derivative w.r.t. xk
         const double *dt = state.dt;

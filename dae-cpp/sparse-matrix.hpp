@@ -37,9 +37,9 @@ struct sparse_matrix
      */
     inline void operator()(const float_type A_ij, const int_type ind_i, const int_type ind_j)
     {
-        A.push_back(A_ij);
-        i.push_back(ind_i);
-        j.push_back(ind_j);
+        A.emplace_back(A_ij);
+        i.emplace_back(ind_i);
+        j.emplace_back(ind_j);
     }
 
     /*
@@ -64,6 +64,16 @@ struct sparse_matrix
         A.reserve(N_elements);
         i.reserve(N_elements);
         j.reserve(N_elements);
+    }
+
+    /*
+     * Clears the matrix
+     */
+    inline void clear()
+    {
+        A.clear();
+        i.clear();
+        j.clear();
     }
 
     /*
@@ -112,7 +122,7 @@ struct sparse_matrix
         {
             ASSERT(i[k] < N, "Sparse matrix index i is out of boundaries: i = " << i[k] << ", matrix size is " << N << "x" << N);
             ASSERT(j[k] < N, "Sparse matrix index j is out of boundaries: j = " << j[k] << ", matrix size is " << N << "x" << N);
-            triplet.push_back(T(i[k], j[k], A[k]));
+            triplet.emplace_back(T(i[k], j[k], A[k]));
         }
 
         Eigen::SparseMatrix<float_type> M(N, N);

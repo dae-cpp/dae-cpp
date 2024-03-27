@@ -41,6 +41,10 @@ struct SolverOptions
     double dt_init{0.01};
 
     u_int32_t max_Newton_iter{5};
+
+    void check() const
+    {
+    }
 };
 
 namespace core
