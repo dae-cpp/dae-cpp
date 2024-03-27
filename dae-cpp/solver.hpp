@@ -118,14 +118,17 @@ public:
             // Initial time
             state.t[0] = 0.0;
             state.t[1] = 0.0;
+            state.t[2] = 0.0;
 
             // Initial time step
             state.dt[0] = _opt.dt_init;
             state.dt[1] = 0.0;
+            state.dt[2] = 0.0;
 
             // Copy initial state
             state.x[0] = x;
             state.x[1].resize(size);
+            state.x[2].resize(size);
 
             // TODO: Check user-defined solver options
             // _opt.check();
@@ -227,26 +230,8 @@ public:
                         // if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
 
                         // Time integrator - find full Jb and b (from x,t,dt - state)
-                        double alpha;
-                        double *dt = state.dt;
-                        if (state.order == 1)
-                        {
-                            for (int_type i = 0; i < size; ++i)
-                            {
-                                dxdt[i] = (xk[i] - state.x[0][i]) / state.dt[0];
-                            }
-                            alpha = 1.0 / state.dt[0];
-                        }
-                        else
-                        {
-                            for (int_type i = 0; i < size; ++i)
-                            {
-                                dxdt[i] = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1])) * xk[i] -
-                                          (dt[0] + dt[1]) / (dt[0] * dt[1]) * state.x[0][i] +
-                                          dt[0] / (dt[1] * (dt[0] + dt[1])) * state.x[1][i];
-                            }
-                            alpha = (2.0 * dt[0] + dt[1]) / (dt[0] * (dt[0] + dt[1]));
-                        }
+                        // Returns time derivative approximation and its corresponding derivative w.r.t. xk
+                        double alpha = time_derivative_approx(dxdt, xk, state, size);
 
                         // Get RHS
                         _rhs(f, xk, state.t[0]);
@@ -298,12 +283,14 @@ public:
 
                     for (int_type i = 0; i < size; ++i)
                     {
+                        state.x[2][i] = state.x[1][i];
                         state.x[1][i] = state.x[0][i];
                         state.x[0][i] = xk[i];
                     }
 
-                    state.order = 2;
+                    state.order++;
 
+                    state.dt[2] = state.dt[1];
                     state.dt[1] = state.dt[0];
                     state.dt[0] = 0.09;
 
@@ -318,6 +305,47 @@ public:
         return 0;
     }
 
+private:
+    inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size)
+    {
+        double alpha{0.0}; // Derivative w.r.t. xk
+        const double *dt = state.dt;
+        if (state.order == 1)
+        {
+            alpha = 1.0 / dt[0];
+            for (int_type i = 0; i < size; ++i)
+            {
+                dxdt[i] = (xk[i] - state.x[0][i]) * alpha;
+            }
+        }
+        else if (state.order == 2)
+        {
+            const double dt01 = dt[0] + dt[1];
+            alpha = (2.0 * dt[0] + dt[1]) / (dt[0] * dt01);
+            for (int_type i = 0; i < size; ++i)
+            {
+                dxdt[i] = alpha * xk[i] -
+                          dt01 / (dt[0] * dt[1]) * state.x[0][i] +
+                          dt[0] / (dt[1] * dt01) * state.x[1][i];
+            }
+        }
+        else
+        {
+            const double dt01 = dt[0] + dt[1];
+            const double dt12 = dt[1] + dt[2];
+            const double dt02 = dt[0] + dt[2];
+            const double dt012 = dt[0] + dt[1] + dt[2];
+            alpha = (3.0 * dt[0] * dt[0] + dt[1] * dt12 + 2.0 * dt[0] * (dt[1] + dt12)) / (dt[0] * dt01 * dt012);
+            for (int_type i = 0; i < size; ++i)
+            {
+                dxdt[i] = alpha * xk[i] -
+                          dt01 * dt012 / (dt[0] * dt[1] * dt12) * state.x[0][i] +
+                          dt[0] * dt012 / (dt[1] * dt[2] * dt01) * state.x[1][i] -
+                          dt[0] * dt01 / (dt[2] * dt12 * dt012) * state.x[2][i];
+            }
+        }
+        return alpha;
+    }
     // /*
     //  * Virtual Observer. Called by the solver every time step.
     //  * Receives current solution vector and the current time.

@@ -46,7 +46,7 @@ struct SolverOptions
 namespace core
 {
 
-constexpr int MAX_ORDER{2};
+constexpr int MAX_ORDER{3};
 
 } // namespace core
 } // namespace daecpp_namespace_name
