@@ -12,6 +12,8 @@
 #ifndef DAECPP_SOLVER_H
 #define DAECPP_SOLVER_H
 
+#include <iomanip>
+
 #include "jacobian.hpp"
 #include "mass-matrix.hpp"
 #include "rhs.hpp"
@@ -158,7 +160,7 @@ public:
 
             // Counts how many times the Newton iterator failed to converge within
             // max_Newton_iter iterations in a row.
-            // int n_iter_failed = 0;
+            // unsigned int n_iter_failed = 0;
 
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
@@ -185,29 +187,26 @@ public:
                 /*
                  * Time loop
                  */
-                while (state.t[0] < (t1 + state.dt[0] * 0.5))
+                while (state.t[0] < t1)
                 {
-                    std::cout << state.t[0] << "\t" << state.x[0][0] << "\t" << state.x[0][1] << "\t" << std::exp(-state.t[0]) << "\t" << -std::exp(-state.t[0]) << '\n';
-
                     state.t[0] += state.dt[0]; // Time step lapse
 
                     steps++; // Number of time steps
 
-                    // if(m_opt.verbosity > 1)
-                    // {
-                    //     std::cout << std::left;
-                    //     std::cout << "\nStep " << std::setw(7) << m_steps
-                    //               << " :: t = " << std::setw(12) << m_iterator_state.t
-                    //               << " :: ";
-                    //     // std::cout.flush();  // This degrades performance in some cases
-                    // }
+                    if (_opt.verbosity >= 1)
+                    {
+                        std::cout << std::left
+                                  << "Step " << std::setw(7) << steps
+                                  << " :: t = " << std::setw(12) << state.t[0]
+                                  << " :: ";
+                    }
 
-                    // if(m_opt.verbosity > 2)
-                    // {
-                    //     std::cout << "BDF-" << m_iterator_state.current_scheme << ": ";
-                    //     std::cout << "dt=" << m_iterator_state.dt[0]
-                    //               << ", dt_prev=" << m_iterator_state.dt[1] << ": ";
-                    // }
+                    if (_opt.verbosity >= 2)
+                    {
+                        std::cout << "BDF-" << state.order
+                                  << ": dt=" << state.dt[0]
+                                  << " :: ";
+                    }
 
                     // // Can be set to true by the solver if it fails to converge
                     // bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
@@ -221,8 +220,6 @@ public:
                      */
                     for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
                     {
-                        // std::cout << "  -- "<< iter << "\t" << state.x[0][0] << "\t" << state.x[0][1] << '\n';
-
                         // Reordering, Symbolic and Numerical Factorization (slow) + recalculate Jac
                         // if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
 
@@ -271,7 +268,8 @@ public:
                         // Checks NaN, atol, rtol, and x[i] -= dx[i]
 
                         // break if convereged
-                    }
+
+                    } // Newton iteration loop
 
                     // Updates state history
                     for (std::size_t i = 0; i < size; ++i)
@@ -287,7 +285,6 @@ public:
                     for (int k = core::MAX_ORDER - 1; k > 0; --k)
                     {
                         state.dt[k] = state.dt[k - 1];
-                        std::cout << k;
                     }
 
                     state.dt[0] = 0.09; // New time step
@@ -298,14 +295,34 @@ public:
                         state.order++;
                     }
 
-                    // break;
+                    // Newton iteration finished
+                    std::putchar('\n');
 
-                } //
-            }     // for (const auto &t1 : _t_out)
-        }
+                    // Adjust the last time step if needed
+                    if (t1 - state.t[0] < state.dt[0])
+                    {
+                        state.dt[0] = t1 - state.t[0];
+                    }
 
-        // std::cout << "Total time: " << core::Timers::get().total_time << '\n';
-        std::cout << "Total time: " << time.total << '\n';
+                    // We may already reached the target time
+                    if (state.dt[0] < core::TIMESTEP_ROUNDING_ERROR)
+                    {
+                        break;
+                    }
+
+                } // Time loop
+
+            } // for (const auto &t1 : _t_out)
+
+            // Return solution and the final time
+            x = state.x[0];
+            t_end = state.t[0];
+
+        } // Global timer
+
+        // Final output
+        PRINT(_opt.verbosity >= 1, "Total time: " << time.total << " ms");
+
         return 0;
     }
 

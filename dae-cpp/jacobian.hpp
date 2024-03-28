@@ -17,6 +17,11 @@
 #include "rhs.hpp"
 #include "sparse-matrix.hpp"
 
+// #include <autodiff/forward/real.hpp>
+// #include <autodiff/forward/real/eigen.hpp>
+
+// using namespace autodiff;
+
 namespace daecpp_namespace_name
 {
 
@@ -37,18 +42,23 @@ public:
 };
 
 /*
- * TODO: Numerical Jacobian. Parallel version.
+ * TODO: Numerical Jacobian.
  * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
  */
 class JacobianNumerical : public Jacobian
 {
     const RHS &_rhs; // The RHS for differentiation
 
+    // The vector function with parameters for which the Jacobian is needed
+    // VectorXreal f(const VectorXreal& f_, const state_type &x, const double t)
+    // {
+    // }
+
 public:
     explicit JacobianNumerical(const RHS &rhs) : Jacobian(), _rhs(rhs) {}
 
     /*
-     * TODO: Numerical Jacobian. Parallel version.
+     * TODO: Numerical Jacobian.
      * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
      */
     void operator()(sparse_matrix &J, const state_type &x, const double t) const

@@ -197,7 +197,7 @@ int main()
         //                         // algorithm.
         // opt.bdf_order = 6;      // Use BDF-6
 
-        opt.verbosity = verbosity::loud; // Suppress output to screen (we have our own output
+        opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)
 
         // We can override Jacobian class from dae-cpp library and provide
@@ -225,6 +225,7 @@ int main()
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
+        std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-1.0) << "\t" << -std::exp(-1.0) << '\n';
 
         // MatrixXd m(2, 2);
         // m(0, 0) = 3;
