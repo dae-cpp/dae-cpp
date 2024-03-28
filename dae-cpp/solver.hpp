@@ -37,6 +37,9 @@ struct SolverState
 
     int order{1}; // Current integration order (always starts from 1)
 
+    /*
+     * Resets solver state and allocates memory for solution history
+     */
     SolverState(const std::size_t size)
     {
         for (int i = 0; i < MAX_ORDER; ++i)
@@ -60,8 +63,6 @@ class System
     const MassMatrix &_mass;   // Mass matrix
     const SolverOptions &_opt; // Solver options
 
-    std::vector<double> _t_out; // Vector of output times
-
 public:
     System(const MassMatrix &mass, const RHS &rhs)
         : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(SolverOptions()) {}
@@ -76,47 +77,41 @@ public:
         : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt) {}
 
     /*
-     * Integrates the system of DAEs on the interval t = [t0; t1] and returns
-     * result in the array x. Parameter t0 can be overriden in the solver
-     * options (t0 = 0 by default).
-     * The data stored in x (initial conditions) will be overwritten.
-     * Returns 0 in case of success or error code if integration is failed.
+     * Integrates the system of DAEs in the interval `t = [0; t_end]`.
+     * Returns solution `x` at time `t_end` (the initial condition stored in `x` will be overwritten).
+     * If the solver stops earlier, `t_end` will be overwritten with the actual time.
+     *
+     * Parameters:
+     *     x - initial condition (daecpp::state_type)
+     *     t_end - integration interval `t = [0; t_end]` (double)
+     *     t_output - (optional) a vector of output times (std::vector<double>)
+     *
+     * Returns:
+     *     0 if integration is successful or error code if integration is failed (int)
      */
-    // t_output will be move-constructed if the user provides an
-    // r-value (either directly from a temporary, or by moving from an lvalue)
-
-    // Keep a copy:
-    // std::vector<string> items = { "1", "2", "3" };
-    // Test t;
-    // t.someFunction(items); // pass items directly - we keep a copy
-
-    // Don't keep a copy:
-    // std::vector<string> items = { "1", "2", "3" };
-    // Test t;
-    // t.someFunction(std::move(items)); // move items - we don't keep a copy
-    // or t.someFunction({ "1", "2", "3" });
     int solve(state_type &x, double &t_end, const std::vector<double> t_output = {})
     {
+        // Initialize timers
         core::Time time;
-        // Timer
+
+        // Global timer
         {
             // Measures total time
-            // Timer timer(&core::Timers::get().total_time);
             Timer timer(&time.total);
 
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
 
-            // Initialize output times
-            _t_out = std::move(t_output);
+            // Initialize vector of output times
+            std::vector<double> t_out = std::move(t_output);
 
             // Sort vector of output times and erase duplicates
-            _t_out.push_back(t_end);
-            std::sort(_t_out.begin(), _t_out.end());
-            _t_out.erase(std::unique(_t_out.begin(), _t_out.end()), _t_out.end());
+            t_out.push_back(t_end);
+            std::sort(t_out.begin(), t_out.end());
+            t_out.erase(std::unique(t_out.begin(), t_out.end()), t_out.end());
 
             // Throw an error if target time t < 0
-            if (_t_out.back() < 0.0)
+            if (t_out.back() < 0.0)
             {
                 ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
             }
@@ -160,7 +155,7 @@ public:
 
             // Counts how many times the Newton iterator failed to converge within
             // max_Newton_iter iterations in a row.
-            // unsigned int n_iter_failed = 0;
+            unsigned int n_iter_failed = 0;
 
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
@@ -171,7 +166,7 @@ public:
             /*
              * Output time loop
              */
-            for (const auto &t1 : _t_out)
+            for (const auto &t1 : t_out)
             {
                 PRINT(_opt.verbosity >= 2, "-- Integration time t = " << t1 << ":");
 
@@ -212,6 +207,8 @@ public:
                     // bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
                     //                            ? true
                     //                            : m_opt.fact_every_iter;
+
+                    bool is_diverged = false;
 
                     u_int32_t iter; // Newton iteration loop index - we will need this value later
 
@@ -258,18 +255,65 @@ public:
                         Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
                         auto dx = lu.solve(b);
                         calls++;
-                        std::putchar('#');
+                        print_char(_opt.verbosity >= 1, '#');
+
+                        bool is_converged = true; // Assume the iterations converged
 
                         // x_k+1 = x_k - delta_x
                         for (int_type i = 0; i < size; ++i)
+                        {
+                            double delta = std::abs(dx[i]);
+
+                            // Solution diverged.
+                            // TODO: Roll back to the previous state and redo with reduced time step
+                            if (delta > _opt.max_value || std::isnan(dx[i]))
+                            {
+                                PRINT(_opt.verbosity >= 1, " <- diverged");
+
+                                is_diverged = true;
+                                n_iter_failed++;
+                                state.t[0] -= state.dt[0];
+                                state.dt[0] /= _opt.dt_decrease_factor;
+                                if (state.dt[0] < _opt.dt_min)
+                                {
+                                    PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                                    goto result; // Abort all loops and go to straight to the results.
+                                                 // Using goto is much more clear than using a sequence of `break` statements.
+                                }
+                                steps--;
+
+                                break;
+                            }
+
+                            // TODO: Check errors
+                            if (state.x[0][i] != 0.0)
+                            {
+                                double err_rel = delta / std::abs(state.x[0][i]);
+                                if (err_rel > _opt.rtol)
+                                {
+                                    is_converged = false;
+                                }
+                            }
+                            if (delta > _opt.atol)
+                            {
+                                is_converged = false;
+                            }
+
                             xk[i] += dx[i];
+                        }
 
-                        // Check error and convergence -- loop for i
-                        // Checks NaN, atol, rtol, and x[i] -= dx[i]
-
-                        // break if convereged
+                        // break if convereged (or diverged)
+                        if (is_converged || is_diverged)
+                        {
+                            break;
+                        }
 
                     } // Newton iteration loop
+
+                    if (is_diverged)
+                    {
+                        continue;
+                    }
 
                     // Updates state history
                     for (std::size_t i = 0; i < size; ++i)
@@ -287,16 +331,34 @@ public:
                         state.dt[k] = state.dt[k - 1];
                     }
 
-                    state.dt[0] = 0.09; // New time step
+                    // Make decision about new time step
+                    if (iter >= _opt.dt_decrease_threshold)
+                    {
+                        state.dt[0] /= _opt.dt_decrease_factor;
+                        if (state.dt[0] < _opt.dt_min)
+                        {
+                            PRINT(_opt.verbosity >= 1, " <- reached dt_min");
+                            goto result; // Abort all loops and go to straight to the results.
+                                         // Using goto is much more clear than using a sequence of `break` statements.
+                        }
+                    }
+                    if (iter <= _opt.dt_increase_threshold)
+                    {
+                        state.dt[0] *= _opt.dt_increase_factor;
+                        if (state.dt[0] > _opt.dt_max)
+                        {
+                            state.dt[0] = _opt.dt_max;
+                        }
+                    }
 
                     // Updates time integration order
-                    if (state.order < core::MAX_ORDER)
+                    if (state.order < _opt.BDF_order)
                     {
                         state.order++;
                     }
 
                     // Newton iteration finished
-                    std::putchar('\n');
+                    print_char(_opt.verbosity >= 1, '\n');
 
                     // Adjust the last time step if needed
                     if (t1 - state.t[0] < state.dt[0])
@@ -312,7 +374,9 @@ public:
 
                 } // Time loop
 
-            } // for (const auto &t1 : _t_out)
+            } // for (const auto &t1 : t_out)
+
+        result:
 
             // Return solution and the final time
             x = state.x[0];
@@ -327,6 +391,14 @@ public:
     }
 
 private:
+    inline void print_char(bool condition, char ch)
+    {
+        if (condition)
+        {
+            std::putchar(ch);
+        }
+    }
+
     inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size) const
     {
         double alpha{0.0}; // Derivative w.r.t. xk

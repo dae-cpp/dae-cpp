@@ -189,6 +189,7 @@ int main()
         // parameters defined in solver_options.h
         SolverOptions opt;
 
+        opt.BDF_order = 3;
         // opt.dt_init = 1.0e-2;   // Change the initial time step.
         //                         // It should be relatively small, because the first
         //                         // step in time is first order accuracy.
@@ -217,6 +218,20 @@ int main()
         // std::cout << "time\tx\ty\terror1\terror2\n";
 
         // Solve the system
+
+        // t_output will be move-constructed if the user provides an
+        // r-value (either directly from a temporary, or by moving from an lvalue)
+
+        // Keep a copy:
+        // std::vector<string> items = { "1", "2", "3" };
+        // Test t;
+        // t.someFunction(items); // pass items directly - we keep a copy
+
+        // Don't keep a copy:
+        // std::vector<string> items = { "1", "2", "3" };
+        // Test t;
+        // t.someFunction(std::move(items)); // move items - we don't keep a copy
+        // or t.someFunction({ "1", "2", "3" });
 
         // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
         int status = simple_dae.solve(x, t);

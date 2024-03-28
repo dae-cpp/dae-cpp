@@ -69,21 +69,21 @@ struct SolverOptions
     // Perform Jacobian update, Reordering, Symbolic and Numerical Factorization
     // every Newton iteration. Changing to 'false' can increase speed but also
     // can lead to instability.
-    bool fact_every_iter = true;
+    // bool fact_every_iter = true;
 
     // If fact_every_iter = false, update Jacobian every fact_iter Newton
     // iterations
-    int fact_iter = 15;
+    // int fact_iter = 15;
 
     // Maximum number of Newton iterations. If the Newton method fails to
     // converge after max_Newton_iter iterations, the solver reduces time step
     // and tries to make the current step again.
-    unsigned int max_Newton_iter{5};
+    unsigned int max_Newton_iter{15};
 
     // If Newton method fails to converge within 'max_Newton_iter' iterations
     // 'newton_failed_attempts' times in a row, the solver will try to update
     // Jacobian every single iteration next time step.
-    int max_Newton_failed_attempts = 3;
+    // int max_Newton_failed_attempts = 3;
 
     // Simple Adaptive Time Stepping options
     int dt_increase_threshold = 2;   // Time step amplification threshold
