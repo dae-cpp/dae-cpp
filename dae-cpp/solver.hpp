@@ -30,8 +30,10 @@ namespace core
  */
 struct SolverState
 {
-    double t[DAECPP_MAX_ORDER];  // Current and previous integration times
     double dt[DAECPP_MAX_ORDER]; // Current and previous time steps
+
+    double t{0.0};      // Current integration time
+    double t_prev{0.0}; // Previous integration time
 
     std::array<state_type, DAECPP_MAX_ORDER> x; // Current and previous states
 
@@ -44,7 +46,6 @@ struct SolverState
     {
         for (int i = 0; i < DAECPP_MAX_ORDER; ++i)
         {
-            t[i] = 0.0;
             dt[i] = 0.0;
 
             try
@@ -135,11 +136,8 @@ public:
             // Alias for the current time step
             double &dt = state.dt[0];
 
-            // Alias for the current time
-            double &t = state.t[0];
-
             // Set initial time step
-            state.dt[0] = _opt.dt_init;
+            dt = _opt.dt_init;
 
             // Copy initial state
             state.x[0] = x;
@@ -179,7 +177,7 @@ public:
              */
             for (const auto &t1 : t_out)
             {
-                PRINT(_opt.verbosity >= 1, "-- Integration time t = " << t1 << ":");
+                PRINT(_opt.verbosity >= 2, "\n-- Integration time t = " << t1 << ":");
 
                 if (t1 < 0.0)
                 {
@@ -188,24 +186,22 @@ public:
                 }
 
                 // Adjust the initial time step if needed
-                if (state.dt[0] > t1 - state.t[0])
+                if (dt > t1 - state.t)
                 {
-                    state.dt[0] = t1 - state.t[0];
-                    ASSERT(state.dt[0] > 0.0, "Negative or zero time step: dt = "
-                                                  << state.dt[0] << ".\n"
-                                                  << "This assertion triggered after adjusting the time step to match the output time t_output = "
-                                                  << t1 << ".");
+                    dt = t1 - state.t;
+                    ASSERT(dt > 0.0, "Negative or zero time step: dt = "
+                                         << dt << ".\n"
+                                         << "This assertion triggered after adjusting the time step to match the output time t_output = "
+                                         << t1 << ".");
                 }
-
-                // This should never happen since t_out is sorted and all elements are non-negative
-                // TODO: For t=0 do at least one iteration
 
                 /*
                  * Time loop
                  */
-                while (state.t[0] < t1)
+                while (state.t < t1)
                 {
-                    state.t[0] += state.dt[0]; // Time step lapse
+                    state.t_prev = state.t; // Save the previous time
+                    state.t += dt;          // Time step lapse
 
                     n_steps++; // Number of time steps
 
@@ -213,64 +209,57 @@ public:
                     {
                         std::cout << std::left
                                   << "Step " << std::setw(7) << n_steps
-                                  << " :: t = " << std::setw(12) << state.t[0]
+                                  << " :: t = " << std::setw(12) << state.t
                                   << " :: ";
                     }
 
                     if (_opt.verbosity >= 2)
                     {
                         std::cout << "BDF-" << state.order
-                                  << ": dt=" << state.dt[0]
+                                  << ": dt=" << std::setw(8) << dt
                                   << " :: ";
                     }
 
-                    // // Can be set to true by the solver if it fails to converge
-                    // bool fact_every_iter = (n_iter_failed >= m_opt.newton_failed_attempts)
-                    //                            ? true
-                    //                            : m_opt.fact_every_iter;
+                    bool is_diverged{false}; // True if Newton iterations diverged
 
-                    bool is_diverged = false;
-
-                    u_int32_t iter; // Newton iteration loop index - we will need this value later
+                    u_int32_t iter{}; // Newton iteration loop index - we will need this value later
 
                     /*
                      * Newton iteration loop
                      */
                     for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
                     {
-                        // Reordering, Symbolic and Numerical Factorization (slow) + recalculate Jac
-                        // if(fact_every_iter || iter == 0 || !(iter % m_opt.fact_iter))
-
-                        // Time integrator - find full Jb and b (from x,t,dt - state)
                         // Returns time derivative approximation and its corresponding derivative w.r.t. xk
                         double alpha = time_derivative_approx(dxdt, xk, state, size);
 
                         // Get RHS
-                        _rhs(f, xk, state.t[0]);
+                        _rhs(f, xk, state.t);
                         ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
-                        Eigen::Map<core::eivec> f_(f.data(), f.size()); // Does not copy data... check
+
+                        // Map std vector to Eigen vector type
+                        Eigen::Map<core::eivec> f_(f.data(), f.size()); // Does not copy data (?)
 
                         // If above crashes due to alignment:
                         // core::eivec f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size()); // Makes a copy
 
-                        // Get Mass Matrix
+                        // Get Mass matrix
                         M.clear();
-                        _mass(M, state.t[0]);
+                        _mass(M, state.t);
                         M.check();
                         auto M_ = M.convert(size);
 
-                        // Get Jac
+                        // Get Jacobian matrix
                         J.clear();
-                        _jac(J, xk, state.t[0]);
+                        _jac(J, xk, state.t);
                         J.check();
                         auto Jb = J.convert(size);
 
-                        // b = M(t) * dxdt - f // Note it's with '-'
+                        // b = M(t) * [dx/dt] - f
                         core::eivec b = M_ * dxdt;
                         b -= f_;
 
-                        // Jb = J - d/dx (M * [dx/dt])
-                        Jb -= M_ * alpha; /// state.dt[0];
+                        // Jb = J - d/dxk (M(t) * [dx/dt])
+                        Jb -= M_ * alpha;
 
                         // Solve linear system Jb dx = b
                         Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
@@ -280,46 +269,50 @@ public:
 
                         bool is_converged = true; // Assume the iterations converged
 
-                        // x_k+1 = x_k - delta_x
-                        for (int_type i = 0; i < size; ++i)
+                        // Check convergence/divergence and update xk
+                        for (std::size_t i = 0; i < size; ++i)
                         {
-                            double delta = std::abs(dx[i]);
+                            // Absolute error
+                            double err_abs = std::abs(dx[i]);
 
-                            // Solution diverged.
-                            // TODO: Roll back to the previous state and redo with reduced time step
-                            if (delta > _opt.max_value || std::isnan(dx[i]))
+                            // Solution diverged. Roll back to the previous state and redo with reduced time step.
+                            if (err_abs > _opt.max_value || std::isnan(dx[i]))
                             {
                                 PRINT(_opt.verbosity >= 1, " <- diverged");
 
+                                // Trying to roll back and reduce the time step
                                 is_diverged = true;
                                 n_iter_failed++;
-                                state.t[0] -= state.dt[0];
-                                state.dt[0] /= _opt.dt_decrease_factor;
-                                if (state.dt[0] < _opt.dt_min)
+                                state.t = state.t_prev;
+                                n_steps--;
+                                dt /= _opt.dt_decrease_factor;
+                                if (dt < _opt.dt_min)
                                 {
                                     PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                                    goto result; // Abort all loops and go to straight to the results.
-                                                 // Using goto is much more clear than using a sequence of `break` statements.
+                                    goto result; // Abort all loops and go straight to the results.
+                                                 // Using goto here is much more clear than using a sequence of `break` statements.
                                 }
-                                n_steps--;
 
                                 break;
                             }
 
-                            // TODO: Check errors
+                            // Relative error check
                             if (state.x[0][i] != 0.0)
                             {
-                                double err_rel = delta / std::abs(state.x[0][i]);
+                                double err_rel = err_abs / std::abs(state.x[0][i]);
                                 if (err_rel > _opt.rtol)
                                 {
                                     is_converged = false;
                                 }
                             }
-                            if (delta > _opt.atol)
+
+                            // Absolute error check
+                            if (err_abs > _opt.atol)
                             {
                                 is_converged = false;
                             }
 
+                            // x_{k+1} = x_{k} - delta_x
                             xk[i] += dx[i];
                         }
 
@@ -355,21 +348,28 @@ public:
                     // Make decision about new time step
                     if (iter >= _opt.dt_decrease_threshold)
                     {
-                        state.dt[0] /= _opt.dt_decrease_factor;
-                        if (state.dt[0] < _opt.dt_min)
+                        dt /= _opt.dt_decrease_factor;
+                        if (dt < _opt.dt_min)
                         {
                             PRINT(_opt.verbosity >= 1, " <- reached dt_min");
-                            goto result; // Abort all loops and go to straight to the results.
-                                         // Using goto is much more clear than using a sequence of `break` statements.
+                            PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                            goto result; // Abort all loops and go straight to the results.
+                                         // Using goto here is much more clear than using a sequence of `break` statements.
                         }
                     }
                     if (iter <= _opt.dt_increase_threshold)
                     {
-                        state.dt[0] *= _opt.dt_increase_factor;
-                        if (state.dt[0] > _opt.dt_max)
+                        dt *= _opt.dt_increase_factor;
+                        if (dt > _opt.dt_max)
                         {
-                            state.dt[0] = _opt.dt_max;
+                            dt = _opt.dt_max;
                         }
+                    }
+
+                    // Adjust the last time step if needed
+                    if (dt > t1 - state.t)
+                    {
+                        dt = t1 - state.t;
                     }
 
                     // Updates time integration order
@@ -381,15 +381,10 @@ public:
                     // Newton iteration finished
                     print_char(_opt.verbosity >= 1, '\n');
 
-                    // Adjust the last time step if needed
-                    if (t1 - state.t[0] < state.dt[0])
-                    {
-                        state.dt[0] = t1 - state.t[0];
-                    }
-
                     // We may already reached the target time
-                    if (state.dt[0] < DAECPP_TIMESTEP_ROUNDING_ERROR)
+                    if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)
                     {
+                        dt = state.dt[1];
                         break;
                     }
 
@@ -401,7 +396,7 @@ public:
 
             // Return solution and the final time
             x = state.x[0];
-            t_end = state.t[0];
+            t_end = state.t;
 
         } // Global timer
 
@@ -412,7 +407,10 @@ public:
     }
 
 private:
-    inline void print_char(bool condition, char ch)
+    /*
+     * Prints a single character if condition is true
+     */
+    inline void print_char(bool condition, char ch) const noexcept
     {
         if (condition)
         {
@@ -420,6 +418,9 @@ private:
         }
     }
 
+    /*
+     * Returns time derivative approximation and its corresponding derivative w.r.t. xk
+     */
     inline double time_derivative_approx(core::eivec &dxdt, const state_type &xk, const core::SolverState &state, const std::size_t size) const
     {
         double alpha{0.0}; // Derivative w.r.t. xk
@@ -489,17 +490,6 @@ private:
 
         return alpha;
     }
-
-    // /*
-    //  * Virtual Observer. Called by the solver every time step.
-    //  * Receives current solution vector and the current time.
-    //  * Can be overriden by a user to get intermediate results (for example,
-    //  * for plotting).
-    //  */
-    // virtual void observer(state_type &x, const double t)
-    // {
-    //     return;  // It does nothing by default
-    // }
 };
 
 } // namespace daecpp_namespace_name

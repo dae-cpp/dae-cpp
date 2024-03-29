@@ -53,7 +53,7 @@ struct SolverOptions
 #ifdef DAECPP_SINGLE
     double atol = 1.0e-3;      // Absolute tolerance for the Newton algorithm
     double rtol = 1.0e-6;      // Relative tolerance for the Newton algorithm
-    double max_value = 1.0e20; // Solution shouldn't be higher than this
+    double max_value = 1.0e20; // Solution shouldn't be higher than this, otherwise, it is considered as diverged
 #else
     double atol = 1.0e-6;       // Absolute tolerance for the Newton algorithm
     double rtol = 1.0e-6;       // Relative tolerance for the Newton algorithm

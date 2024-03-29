@@ -167,7 +167,7 @@ int main()
         Timer timer(&time);
 
         // Solution time 0 <= t <= pi
-        double t{1.0};
+        double t{10.0};
 
         // Define the state vector
         state_type x(2);
@@ -234,13 +234,13 @@ int main()
         // or t.someFunction({ "1", "2", "3" });
 
         // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
-        int status = simple_dae.solve(x, t);
+        int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         // int status = simple_dae.solve(x, t, std::move(t_out));
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
-        std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-1.0) << "\t" << -std::exp(-1.0) << '\n';
+        std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 
         // MatrixXd m(2, 2);
         // m(0, 0) = 3;
