@@ -208,7 +208,7 @@ public:
                     if (_opt.verbosity >= 1)
                     {
                         std::cout << std::left
-                                  << "Step " << std::setw(7) << n_steps
+                                  << "Step " << std::setw(8) << n_steps
                                   << " :: t = " << std::setw(12) << state.t
                                   << " :: ";
                     }
@@ -216,7 +216,7 @@ public:
                     if (_opt.verbosity >= 2)
                     {
                         std::cout << "BDF-" << state.order
-                                  << ": dt=" << std::setw(8) << dt
+                                  << ": dt=" << std::setw(12) << dt
                                   << " :: ";
                     }
 

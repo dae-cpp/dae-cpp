@@ -1,24 +1,4 @@
-/*
- * Solves a very simple system of differential algebraic equation as a test:
- *
- * x' = y
- * y  = -x  // 0  = x*x + y*y - 1
- *
- * Initial conditions are: x = 0, y = 1 for t = 0.
- *
- * The solution of this system is
- *
- * x = sin(t), y = cos(t), 0 <= t <= pi/2;
- * x = 1, y = 0, t > pi/2.
- *
- * Each time step we will check that
- * (1) x*x + y*y = 1 for any t, and
- * (2) x(t) = sin(t) for t <= pi/2, x(t) = 1 for t > pi/2
- *
- * with the absolute tolerance at least 1e-6.
- */
-
-// g++ simple_dae.cpp -o simple_dae.exe -I/home/ivan/workspace/dae-cpp
+// g++ perovskite.cpp -o perovskite.exe -I/home/ivan/workspace/dae-cpp
 
 #include <iostream>
 // #include <cmath>
@@ -27,46 +7,24 @@
 // #include <dae-cpp/Eigen/Dense>
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
+const int N0 = 400;       // Number of points
+const double L = 1.0;      // Space interval length
+const double lambda = 1.0; // Lambda parameter
+const double t1 = 10.0;    // Integration time (0 < t < t1)
+
+// Derived parameters
+const double h = L / (double)(N0 - 1); // cell size
+const double invh = 1.0 / h;           // inverse cell size
+
 using namespace daecpp;
-
-/*
- * Singular mass matrix in simplified 3-array sparse format
- * =============================================================================
- * The matrix has the following form:
- * M = |1 0|
- *     |0 0|
- */
-// class MyMassMatrix : public MassMatrix
-// {
-// public:
-//     void operator()(sparse_matrix &M) const
-//     {
-//         // M.A.resize(1); // Number of non-zero elements
-//         // M.i.resize(1); // Number of non-zero elements
-//         // M.j.resize(1); // Number of non-zero elements
-
-//         // // Non-zero elements
-//         // M.A[0] = 1;
-//         // // M.A[1] = 0;
-
-//         // // Column index of each element given above
-//         // M.j[0] = 0;
-//         // // M.j[1] = 1;
-
-//         // // Row index of each element in M.A:
-//         // M.i[0] = 0;
-//         // // M.i[1] = 1;
-//         M.reserve(1);
-//         M.add_element(1.0, 0, 0);
-//     }
-// };
 
 struct MyMassMatrix : MassMatrix
 {
     void operator()(sparse_matrix &M, const double t) const
     {
-        M.reserve(1);
-        M(1.0, 0, 0);
+        M.reserve(2 * N0);
+        for (int i = 0; i < N0; ++i)
+            M(1.0, i, i);
     }
 };
 
@@ -83,60 +41,28 @@ public:
      */
     void operator()(state_type &f, const state_type &x, const double t) const
     {
-        f[0] = x[1];
-        f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
+        // Locals
+        const int N = N0;
+        const double invh2 = invh * invh;
+        const double invlam2 = 1.0 / (lambda * lambda);
+
+        // RHS for the ion concentration P = dFlux/dx
+        for (int i = 1; i < N - 1; i++)
+        {
+            f[i] = (x[i + 1] - 2.0 * x[i] + x[i - 1] + 0.5 * ((x[i + 1] + x[i]) * (x[N + i + 1] - x[N + i]) - (x[i] + x[i - 1]) * (x[N + i] - x[N + i - 1]))) * invh2;
+        }
+        f[0] = (x[1] - x[0] + 0.5 * (x[1] + x[0]) * (x[N + 1] - x[N])) * invh2;                                  // Left BC
+        f[N - 1] = -(x[N - 1] - x[N - 2] + 0.5 * (x[N - 1] + x[N - 2]) * (x[2 * N - 1] - x[2 * N - 2])) * invh2; // Right BC
+
+        // RHS for the potential Phi
+        for (int i = 1; i < N - 1; i++)
+        {
+            f[i + N] = (x[i + 1 + N] - 2.0 * x[i + N] + x[i - 1 + N]) * invh2 - (1.0 - x[i]) * invlam2;
+        }
+        f[N] = x[N] + t;                 // Left BC
+        f[2 * N - 1] = x[2 * N - 1] - t; // Right BC
     }
 };
-
-// /*
-//  * (Optional) Observer
-//  * =============================================================================
-//  * Every time step checks that
-//  * (1) x*x + y*y = 1, and
-//  * (2) x(t) - sin(t) = 0 for t <= pi/2, x(t) = 1 for t > pi/2
-//  * and prints solution and errors to console.
-//  */
-// class MySolver : public Solver
-// {
-// public:
-//     MySolver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
-//         : Solver(rhs, jac, mass, opt)
-//     {
-//     }
-
-// #ifdef PLOTTING
-//     state_type x_axis, x0, x1;  // For plotting
-// #endif
-//     state_type err1, err2;  // To check errors
-
-//     /*
-//      * Overloaded observer.
-//      * Receives current solution vector and the current time every time step.
-//      */
-//     void observer(state_type &x, const double t)
-//     {
-//         double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0);
-//         double e2 = 0;
-
-//         if(t <= 1.5707963)
-//             e2 = std::abs(std::sin(t) - x[0]);
-//         else
-//             e2 = std::abs(x[0] - 1.0);
-
-//         std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << e1 << '\t'
-//                   << e2 << '\n';
-
-//         err1.push_back(e1);
-//         err2.push_back(e2);
-
-// #ifdef PLOTTING
-//         // Save data for plotting
-//         x_axis.push_back(t);
-//         x0.push_back(x[0]);
-//         x1.push_back(x[1]);
-// #endif
-//     }
-// };
 
 /*
  * (Optional) Analytical Jacobian in simplified 3-array sparse format
@@ -147,10 +73,56 @@ struct MyJacobian : Jacobian
 {
     void operator()(sparse_matrix &J, const state_type &x, const double t) const
     {
-        J.reserve(3);
-        J(1.0, 0, 1);
-        J(1.0, 1, 0);
-        J(1.0, 1, 1);
+        J.reserve(2 * N0);
+        // J(1.0, 0, 1);
+
+        // Locals
+        const int N = N0;
+        const int size = (int)(x.size());
+        const double invh2 = invh * invh;
+        const double invlam2 = 1.0 / (lambda * lambda);
+
+        for (int i = 0; i < size; i++)
+        {
+            if (i == 0)
+            {
+                J((-1.0 + 0.5 * (x[N + 1] - x[N])) * invh2, i, 0);
+                J((1.0 + 0.5 * (x[N + 1] - x[N])) * invh2, i, 1);
+                J(-0.5 * (x[0] + x[1]) * invh2, i, N);
+                J(0.5 * (x[0] + x[1]) * invh2, i, N + 1);
+            }
+            else if (i < N - 1)
+            {
+                J((1.0 - 0.5 * (x[N + i] - x[N + i - 1])) * invh2, i, i - 1);
+                J((-2.0 + 0.5 * (x[N + i + 1] - 2.0 * x[N + i] + x[N + i - 1])) * invh2, i, i);
+                J((1.0 + 0.5 * (x[N + i + 1] - x[N + i])) * invh2, i, i + 1);
+                J(0.5 * (x[i] + x[i - 1]) * invh2, i, N + i - 1);
+                J(-0.5 * (x[i + 1] + 2.0 * x[i] + x[i - 1]) * invh2, i, N + i);
+                J(0.5 * (x[i + 1] + x[i]) * invh2, i, N + i + 1);
+            }
+            else if (i == N - 1)
+            {
+                J((1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2, i, i - 1);
+                J((-1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2, i, i);
+                J(0.5 * (x[N - 1] + x[N - 2]) * invh2, i, N + i - 1);
+                J(-0.5 * (x[N - 1] + x[N - 2]) * invh2, i, N + i);
+            }
+            else if (i == N)
+            {
+                J(1.0, i, N);
+            }
+            else if (i < 2 * N - 1)
+            {
+                J(invlam2, i, i - N);
+                J(invh2, i, i - 1);
+                J(-2.0 * invh2, i, i);
+                J(invh2, i, i + 1);
+            }
+            else // i == 2*N-1
+            {
+                J(1.0, i, 2 * N - 1);
+            }
+        }
     }
 };
 
@@ -167,14 +139,17 @@ int main()
         Timer timer(&time);
 
         // Solution time 0 <= t <= pi
-        double t{1000.0};
+        double t{10.0};
 
         // Define the state vector
-        state_type x(2);
+        state_type x(2*N0);
 
         // Initial conditions
-        x[0] = 1;
-        x[1] = -1;
+    for(int i = 0; i < N0; i++)
+    {
+        x[i]      = 1.0;  // for P - ion concentration
+        x[i + N0] = 0.0;  // for Phi - potential
+    }
 
         // Set up the RHS of the problem.
         // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -189,9 +164,9 @@ int main()
         // parameters defined in solver_options.h
         SolverOptions opt;
 
-        opt.BDF_order = 3;
-        opt.atol = 1e-9;
-        opt.rtol = 1e-9;
+        opt.BDF_order = 4;
+        opt.atol = 1e-6;
+        opt.rtol = 1e-6;
         // opt.dt_max = 0.01;
 
         opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
@@ -236,7 +211,8 @@ int main()
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
-        std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
+        std::cout << " x = " << x[0] << " " << x[N0] << " " << x[N0+(N0-1)/5*3] * 0.6 + x[N0+(N0-1)/5*3+1] * 0.4 << " " << x[2*N0 - 1] << " ";
+        // std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 
         // MatrixXd m(2, 2);
         // m(0, 0) = 3;
