@@ -23,6 +23,12 @@
 namespace daecpp_namespace_name
 {
 
+// dae-cpp library major version
+constexpr u_int16_t version_major{2};
+
+// dae-cpp library minor version
+constexpr u_int16_t version_major{0};
+
 // Integer type
 #ifdef DAECPP_LONG
 typedef u_int64_t int_type;
