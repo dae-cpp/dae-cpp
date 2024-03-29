@@ -14,18 +14,20 @@
 
 #include "typedefs.hpp"
 
+#define DAECPP_MAX_ORDER 4
+#define DAECPP_TIMESTEP_ROUNDING_ERROR 1e-14
+
 namespace daecpp_namespace_name
 {
+
 namespace verbosity
 {
-
 enum VerbosityLevel
 {
     off,
     info,
     extra
 };
-
 } // namespace verbosity
 
 /*
@@ -101,14 +103,6 @@ struct SolverOptions
     }
 };
 
-namespace core
-{
-
-constexpr int MAX_ORDER{4};
-
-constexpr double TIMESTEP_ROUNDING_ERROR{1e-14};
-
-} // namespace core
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_SOLVER_OPTIONS_H

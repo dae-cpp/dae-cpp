@@ -30,10 +30,10 @@ namespace core
  */
 struct SolverState
 {
-    double t[MAX_ORDER];  // Current and previous integration times
-    double dt[MAX_ORDER]; // Current and previous time steps
+    double t[DAECPP_MAX_ORDER];  // Current and previous integration times
+    double dt[DAECPP_MAX_ORDER]; // Current and previous time steps
 
-    std::array<state_type, MAX_ORDER> x; // Current and previous states
+    std::array<state_type, DAECPP_MAX_ORDER> x; // Current and previous states
 
     int order{1}; // Current integration order (always starts from 1)
 
@@ -42,11 +42,20 @@ struct SolverState
      */
     SolverState(const std::size_t size)
     {
-        for (int i = 0; i < MAX_ORDER; ++i)
+        for (int i = 0; i < DAECPP_MAX_ORDER; ++i)
         {
             t[i] = 0.0;
             dt[i] = 0.0;
-            x[i].resize(size);
+
+            try
+            {
+                x[i].resize(size);
+            }
+            catch (const std::exception &e)
+            {
+                ERROR("Failed to allocate memory for the solver state.\n"
+                      << e.what());
+            }
         }
     }
 };
@@ -91,7 +100,7 @@ public:
      */
     int solve(state_type &x, double &t_end, const std::vector<double> t_output = {})
     {
-        // Initialize timers
+        // Specific timers
         core::Time time;
 
         // Global timer
@@ -102,7 +111,7 @@ public:
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
 
-            // Initialize vector of output times
+            // Vector of output times
             std::vector<double> t_out = std::move(t_output);
 
             // Sort vector of output times and erase duplicates
@@ -111,20 +120,23 @@ public:
             t_out.erase(std::unique(t_out.begin(), t_out.end()), t_out.end());
 
             // Throw an error if target time t < 0
-            if (t_out.back() < 0.0)
-            {
-                ERROR("Target time t cannot be negative. The solver integrates from 0 to t.");
-            }
+            ASSERT(t_out.back() >= 0.0, "Target time t_end cannot be negative. The solver integrates from 0 to t_end.");
 
             // Check user-defined solver options
             _opt.check();
 
             // System size
-            std::size_t size = x.size();
-            ASSERT(size > 0, "Initial condition vector is empty.");
+            auto size = x.size();
+            ASSERT(size > 0, "Initial condition vector x is empty.");
 
             // Solver state
             core::SolverState state(size);
+
+            // Alias for the current time step
+            double &dt = state.dt[0];
+
+            // Alias for the current time
+            double &t = state.t[0];
 
             // Set initial time step
             state.dt[0] = _opt.dt_init;
@@ -148,27 +160,26 @@ public:
             core::eivec dxdt(size);
 
             // Counts number of time steps
-            u_int64_t steps{0};
+            u_int64_t n_steps{0};
 
             // Counts total linear algebra solver calls
-            u_int64_t calls{0};
+            u_int64_t n_calls{0};
 
-            // Counts how many times the Newton iterator failed to converge within
-            // max_Newton_iter iterations in a row.
-            unsigned int n_iter_failed = 0;
+            // Counts how many times the Newton iterator failed to converge in a row
+            u_int32_t n_iter_failed{0};
 
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
             PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
-            PRINT(_opt.verbosity >= 1, "Calculating...");
+            PRINT(_opt.verbosity >= 2, "Calculating...");
 
             /*
              * Output time loop
              */
             for (const auto &t1 : t_out)
             {
-                PRINT(_opt.verbosity >= 2, "-- Integration time t = " << t1 << ":");
+                PRINT(_opt.verbosity >= 1, "-- Integration time t = " << t1 << ":");
 
                 if (t1 < 0.0)
                 {
@@ -176,7 +187,17 @@ public:
                     continue;
                 }
 
-                // TODO: Check initial time step is less than t
+                // Adjust the initial time step if needed
+                if (state.dt[0] > t1 - state.t[0])
+                {
+                    state.dt[0] = t1 - state.t[0];
+                    ASSERT(state.dt[0] > 0.0, "Negative or zero time step: dt = "
+                                                  << state.dt[0] << ".\n"
+                                                  << "This assertion triggered after adjusting the time step to match the output time t_output = "
+                                                  << t1 << ".");
+                }
+
+                // This should never happen since t_out is sorted and all elements are non-negative
                 // TODO: For t=0 do at least one iteration
 
                 /*
@@ -186,12 +207,12 @@ public:
                 {
                     state.t[0] += state.dt[0]; // Time step lapse
 
-                    steps++; // Number of time steps
+                    n_steps++; // Number of time steps
 
                     if (_opt.verbosity >= 1)
                     {
                         std::cout << std::left
-                                  << "Step " << std::setw(7) << steps
+                                  << "Step " << std::setw(7) << n_steps
                                   << " :: t = " << std::setw(12) << state.t[0]
                                   << " :: ";
                     }
@@ -254,7 +275,7 @@ public:
                         // Solve linear system Jb dx = b
                         Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
                         auto dx = lu.solve(b);
-                        calls++;
+                        n_calls++;
                         print_char(_opt.verbosity >= 1, '#');
 
                         bool is_converged = true; // Assume the iterations converged
@@ -280,7 +301,7 @@ public:
                                     goto result; // Abort all loops and go to straight to the results.
                                                  // Using goto is much more clear than using a sequence of `break` statements.
                                 }
-                                steps--;
+                                n_steps--;
 
                                 break;
                             }
@@ -326,7 +347,7 @@ public:
                     }
 
                     // Updates time step history
-                    for (int k = core::MAX_ORDER - 1; k > 0; --k)
+                    for (int k = DAECPP_MAX_ORDER - 1; k > 0; --k)
                     {
                         state.dt[k] = state.dt[k - 1];
                     }
@@ -367,14 +388,14 @@ public:
                     }
 
                     // We may already reached the target time
-                    if (state.dt[0] < core::TIMESTEP_ROUNDING_ERROR)
+                    if (state.dt[0] < DAECPP_TIMESTEP_ROUNDING_ERROR)
                     {
                         break;
                     }
 
                 } // Time loop
 
-            } // for (const auto &t1 : t_out)
+            } // for (const auto &t1 : t_out) - Loop over all output times
 
         result:
 
