@@ -1,6 +1,19 @@
 /*
  * Defines sparse matrix holder in 3-array format.
  *
+ * There are two reasons behind this class:
+ *  - We can easily switch the linear solver, if needed, by overriding the matrix converter
+ *    without changing the main RHS/Mass/Jacobian classes. So even if the linear solver under
+ *    the hood changes, the user-defined matrices will still be compatible with the DAE solver.
+ *  - The class provides a set of helper tools for the user to define sparse matrices
+ *    in a very straightforward way, e.g.:
+ *
+ *        sparse_matrix M;            // Creates empty sparse matrix M
+ *        M.add_element(1, 2, 42.0);  // Fills row 1, column 2 with value 42.0
+ *
+ * Cons:
+ *  - Overhead: the class has to convert matrices to (currently) Eigen format.
+ *
  * This file is part of dae-cpp.
  *
  * dae-cpp is licensed under the MIT license.
@@ -106,30 +119,34 @@ struct sparse_matrix
      *     N - matrix size (square matrix N x N) (int_type)
      *
      * Returns:
-     *     Eigen::SparseMatrix<float_type> sparse matrix
+     *     Eigen::SparseMatrix<float_type> (core::eimat) sparse matrix
      */
-    Eigen::SparseMatrix<float_type> convert(const int_type N) const
+    inline core::eimat convert(const int_type N) const
     {
-        typedef Eigen::Triplet<float_type> T;
-
-        std::vector<T> triplet;
+        ASSERT(N > 0, "daecpp::sparse_matrix.convert(const int_type N): N must be positive.");
 
         const std::size_t N_el = N_elements(); // Number of non-zero elements
 
-        triplet.reserve(N_el);
+        Eigen::VectorXi nonzeros_per_col = Eigen::VectorXi::Constant(N, 0); // Number of non-zero elements per column
 
+        // Counts non-zero elements per column and checks the indexes
         for (std::size_t k = 0; k < N_el; ++k)
         {
             ASSERT(i[k] < N, "Sparse matrix index i is out of boundaries: i = " << i[k] << ", matrix size is " << N << "x" << N);
             ASSERT(j[k] < N, "Sparse matrix index j is out of boundaries: j = " << j[k] << ", matrix size is " << N << "x" << N);
-            triplet.emplace_back(T(i[k], j[k], A[k]));
+            nonzeros_per_col[j[k]]++;
         }
 
-        Eigen::SparseMatrix<float_type> M(N, N);
+        core::eimat M(N, N); // Eigen::SparseMatrix<float_type> sparse matrix
 
-        M.setFromTriplets(triplet.begin(), triplet.end());
+        M.reserve(nonzeros_per_col);
 
-        return M; // TODO: Check if Eigen::SparseMatrix has move-semantics
+        for (std::size_t k = 0; k < N_el; ++k)
+        {
+            M.coeffRef(i[k], j[k]) += A[k];
+        }
+
+        return M;
     }
 
     /*

@@ -59,6 +59,9 @@ typedef Eigen::VectorXf eivec;
 typedef Eigen::VectorXd eivec;
 #endif
 
+// Eigen sparse matrix type
+typedef Eigen::SparseMatrix<float_type> eimat;
+
 } // namespace core
 } // namespace daecpp_namespace_name
 

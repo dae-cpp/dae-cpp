@@ -14,6 +14,8 @@
 
 #include <iomanip>
 
+#include <Eigen/SparseLU>
+
 #include "jacobian.hpp"
 #include "mass-matrix.hpp"
 #include "rhs.hpp"
@@ -104,10 +106,13 @@ public:
         // Specific timers
         core::Time time;
 
+        // Counts total linear algebra solver calls
+        u_int64_t n_calls{0};
+
         // Global timer
         {
             // Measures total time
-            Timer timer(&time.total);
+            Timer timer_global(&time.total);
 
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
@@ -157,11 +162,20 @@ public:
             // Time derivative approximation
             core::eivec dxdt(size);
 
+            // Linear solver
+            Eigen::SparseLU<core::eimat> linsolver;
+
+            // Eigen::SparseMatrix<float_type> matrices
+            core::eimat M_; // Mass matrix (converted)
+            core::eimat Jb; // Linear system matrix
+
+            // Eigen::VectorX vectors
+            core::eivec f_; // The RHS vector (converted)
+            core::eivec b;  // The RHS of the linear system
+            core::eivec dx; // Linear system solution
+
             // Counts number of time steps
             u_int64_t n_steps{0};
-
-            // Counts total linear algebra solver calls
-            u_int64_t n_calls{0};
 
             // Counts how many times the Newton iterator failed to converge in a row
             u_int32_t n_iter_failed{0};
@@ -209,14 +223,14 @@ public:
                     {
                         std::cout << std::left
                                   << "Step " << std::setw(8) << n_steps
-                                  << " :: t = " << std::setw(12) << state.t
+                                  << " :: t = " << std::setw(11) << state.t
                                   << " :: ";
                     }
 
                     if (_opt.verbosity >= 2)
                     {
                         std::cout << "BDF-" << state.order
-                                  << ": dt=" << std::setw(12) << dt
+                                  << ": dt=" << std::setw(11) << dt
                                   << " :: ";
                     }
 
@@ -229,91 +243,129 @@ public:
                      */
                     for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
                     {
-                        // Returns time derivative approximation and its corresponding derivative w.r.t. xk
-                        double alpha = time_derivative_approx(dxdt, xk, state, size);
+                        // Returns time derivative approximation dxdt and its corresponding derivative w.r.t. xk
+                        double alpha{}; // Derivative w.r.t. xk
+                        {
+                            Timer timer(&time.time_derivative);
+                            alpha = time_derivative_approx(dxdt, xk, state, size);
+                        }
 
-                        // Get RHS
-                        _rhs(f, xk, state.t);
-                        ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
+                        // Get and convert the RHS
+                        {
+                            Timer timer(&time.rhs);
+                            _rhs(f, xk, state.t);
+                            ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
+                            f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size());
+                        }
 
-                        // Map std vector to Eigen vector type
-                        Eigen::Map<core::eivec> f_(f.data(), f.size()); // Does not copy data (?)
+                        // Get and convert the Mass matrix
+                        {
+                            Timer timer(&time.mass);
+                            M.clear();
+                            _mass(M, state.t);
+                            M.check();
+                            M_ = M.convert(size);
+                        }
 
-                        // If above crashes due to alignment:
-                        // core::eivec f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size()); // Makes a copy
+                        // Get and convert the Jacobian matrix
+                        if (iter % 2 == 0) // TODO: Add solver option
+                        {
+                            Timer timer(&time.jacobian);
+                            J.clear();
+                            _jac(J, xk, state.t);
+                            J.check();
+                            Jb = J.convert(size);
+                        }
 
-                        // Get Mass matrix
-                        M.clear();
-                        _mass(M, state.t);
-                        M.check();
-                        auto M_ = M.convert(size);
+                        // Matrix-vector operations
+                        {
+                            Timer timer(&time.linear_algebra);
 
-                        // Get Jacobian matrix
-                        J.clear();
-                        _jac(J, xk, state.t);
-                        J.check();
-                        auto Jb = J.convert(size);
+                            // b = M(t) * [dx/dt] - f
+                            b = M_ * dxdt;
+                            b -= f_;
 
-                        // b = M(t) * [dx/dt] - f
-                        core::eivec b = M_ * dxdt;
-                        b -= f_;
+                            // Jb = J - d/dxk (M(t) * [dx/dt])
+                            if (iter % 2 == 0) // TODO: Add solver option
+                            {
+                                Jb -= M_ * alpha;
+                            }
+                        }
 
-                        // Jb = J - d/dxk (M(t) * [dx/dt])
-                        Jb -= M_ * alpha;
+                        // Factorization
+                        if (iter % 2 == 0) // TODO: Add solver option
+                        {
+                            Timer timer(&time.factorization);
+                            linsolver.compute(Jb);
+                            if (linsolver.info() != Eigen::Success)
+                            {
+                                ERROR("Decomposition failed."); // TODO: Try to save
+                            }
+                        }
 
                         // Solve linear system Jb dx = b
-                        Eigen::SparseLU<Eigen::SparseMatrix<float_type>> lu(Jb); // LU method
-                        auto dx = lu.solve(b);
-                        n_calls++;
-                        print_char(_opt.verbosity >= 1, '#');
+                        {
+                            Timer timer(&time.linear_solver);
+                            dx = linsolver.solve(b);
+                            if (linsolver.info() != Eigen::Success)
+                            {
+                                ERROR("Solving failed."); // TODO: Try to save
+                            }
+                            n_calls++;
+                            print_char(_opt.verbosity >= 1, '#');
+                        }
 
                         bool is_converged = true; // Assume the iterations converged
 
                         // Check convergence/divergence and update xk
-                        for (std::size_t i = 0; i < size; ++i)
                         {
-                            // Absolute error
-                            double err_abs = std::abs(dx[i]);
+                            Timer timer(&time.error_check);
 
-                            // Solution diverged. Roll back to the previous state and redo with reduced time step.
-                            if (err_abs > _opt.max_value || std::isnan(dx[i]))
+                            for (std::size_t i = 0; i < size; ++i)
                             {
-                                PRINT(_opt.verbosity >= 1, " <- diverged");
+                                // Absolute error
+                                double err_abs = std::abs(dx[i]);
 
-                                // Trying to roll back and reduce the time step
-                                is_diverged = true;
-                                n_iter_failed++;
-                                state.t = state.t_prev;
-                                n_steps--;
-                                dt /= _opt.dt_decrease_factor;
-                                if (dt < _opt.dt_min)
+                                // Solution diverged. Roll back to the previous state and redo with reduced time step.
+                                if (err_abs > _opt.max_value || std::isnan(dx[i]))
                                 {
-                                    PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                                    goto result; // Abort all loops and go straight to the results.
-                                                 // Using goto here is much more clear than using a sequence of `break` statements.
+                                    PRINT(_opt.verbosity >= 1, " <- diverged");
+
+                                    // Trying to roll back and reduce the time step
+                                    is_diverged = true;
+                                    n_iter_failed++;
+                                    state.t = state.t_prev;
+                                    n_steps--;
+                                    dt /= _opt.dt_decrease_factor;
+                                    if (dt < _opt.dt_min)
+                                    {
+                                        PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                                        goto result; // Abort all loops and go straight to the results.
+                                                     // Using goto here is much more clear than using a sequence of `break` statements.
+                                    }
+
+                                    break;
                                 }
 
-                                break;
-                            }
+                                // Relative error check
+                                if (state.x[0][i] != 0.0)
+                                {
+                                    double err_rel = err_abs / std::abs(state.x[0][i]);
+                                    if (err_rel > _opt.rtol)
+                                    {
+                                        is_converged = false;
+                                    }
+                                }
 
-                            // Relative error check
-                            if (state.x[0][i] != 0.0)
-                            {
-                                double err_rel = err_abs / std::abs(state.x[0][i]);
-                                if (err_rel > _opt.rtol)
+                                // Absolute error check
+                                if (err_abs > _opt.atol)
                                 {
                                     is_converged = false;
                                 }
-                            }
 
-                            // Absolute error check
-                            if (err_abs > _opt.atol)
-                            {
-                                is_converged = false;
+                                // x_{k+1} = x_{k} - delta_x
+                                xk[i] += dx[i];
                             }
-
-                            // x_{k+1} = x_{k} - delta_x
-                            xk[i] += dx[i];
                         }
 
                         // break if convereged (or diverged)
@@ -329,26 +381,31 @@ public:
                         continue;
                     }
 
-                    // Updates state history
-                    for (std::size_t i = 0; i < size; ++i)
                     {
-                        // Manually unrolled loop
-                        state.x[3][i] = state.x[2][i];
-                        state.x[2][i] = state.x[1][i];
-                        state.x[1][i] = state.x[0][i];
-                        state.x[0][i] = xk[i];
-                    }
+                        Timer timer(&time.history);
 
-                    // Updates time step history
-                    for (int k = DAECPP_MAX_ORDER - 1; k > 0; --k)
-                    {
-                        state.dt[k] = state.dt[k - 1];
+                        // Updates state history
+                        for (std::size_t i = 0; i < size; ++i)
+                        {
+                            // Manually unrolled loop
+                            state.x[3][i] = state.x[2][i];
+                            state.x[2][i] = state.x[1][i];
+                            state.x[1][i] = state.x[0][i];
+                            state.x[0][i] = xk[i];
+                        }
+
+                        // Updates time step history
+                        for (int k = DAECPP_MAX_ORDER - 1; k > 0; --k)
+                        {
+                            state.dt[k] = state.dt[k - 1];
+                        }
                     }
 
                     // Make decision about new time step
                     if (iter >= _opt.dt_decrease_threshold)
                     {
                         dt /= _opt.dt_decrease_factor;
+                        print_char(_opt.verbosity >= 1, '<');
                         if (dt < _opt.dt_min)
                         {
                             PRINT(_opt.verbosity >= 1, " <- reached dt_min");
@@ -357,7 +414,7 @@ public:
                                          // Using goto here is much more clear than using a sequence of `break` statements.
                         }
                     }
-                    if (iter <= _opt.dt_increase_threshold)
+                    if (iter <= _opt.dt_increase_threshold - 1)
                     {
                         dt *= _opt.dt_increase_factor;
                         if (dt > _opt.dt_max)
@@ -400,8 +457,20 @@ public:
 
         } // Global timer
 
-        // Final output
-        PRINT(_opt.verbosity >= 1, "Total time: " << time.total << " ms");
+        // Final output TODO: Move to a function
+        // TODO: if time.total quite big, print time in seconds
+        PRINT(_opt.verbosity >= 1, "\nTime spent by:");
+        PRINT(_opt.verbosity >= 1, "  Time derivative approximation: " << time.time_derivative << " ms");
+        PRINT(_opt.verbosity >= 1, "  RHS computation:               " << time.rhs << " ms");
+        PRINT(_opt.verbosity >= 1, "  Mass matrix computation:       " << time.mass << " ms");
+        PRINT(_opt.verbosity >= 1, "  Jacobian matrix computation:   " << time.jacobian << " ms");
+        PRINT(_opt.verbosity >= 1, "  Linear algebra operations:     " << time.linear_algebra << " ms");
+        PRINT(_opt.verbosity >= 1, "  Matrix factorization:          " << time.factorization << " ms");
+        PRINT(_opt.verbosity >= 1, "  Linear solver:                 " << time.linear_solver << " ms  <--  " << n_calls << " linear solver calls");
+        PRINT(_opt.verbosity >= 1, "  Error control:                 " << time.error_check << " ms");
+        PRINT(_opt.verbosity >= 1, "  Solution history update:       " << time.history << " ms");
+        PRINT(_opt.verbosity >= 1, "  Initialization and other:      " << time.other() << " ms");
+        PRINT(_opt.verbosity >= 1, "Total time:                      " << time.total << " ms");
 
         return 0;
     }

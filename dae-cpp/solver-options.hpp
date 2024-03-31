@@ -88,10 +88,10 @@ struct SolverOptions
     // int max_Newton_failed_attempts = 3;
 
     // Simple Adaptive Time Stepping options
-    int dt_increase_threshold = 2;   // Time step amplification threshold
-    int dt_decrease_threshold = 7;   // Time step reduction threshold
-    double dt_increase_factor = 2.0; // Time step amplification factor
-    double dt_decrease_factor = 2.0; // Time step reduction factor
+    unsigned int dt_increase_threshold = 4; // Time step amplification threshold
+    unsigned int dt_decrease_threshold = 8; // Time step reduction threshold
+    double dt_increase_factor = 2.0;        // Time step amplification factor
+    double dt_decrease_factor = 2.0;        // Time step reduction factor
 
     int num_threads = 1;
 

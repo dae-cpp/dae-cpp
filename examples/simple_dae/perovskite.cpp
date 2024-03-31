@@ -7,7 +7,7 @@
 // #include <dae-cpp/Eigen/Dense>
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
-const int N0 = 400;       // Number of points
+const int N0 = 4000;       // Number of points
 const double L = 1.0;      // Space interval length
 const double lambda = 1.0; // Lambda parameter
 const double t1 = 10.0;    // Integration time (0 < t < t1)
@@ -167,7 +167,7 @@ int main()
         opt.BDF_order = 4;
         opt.atol = 1e-6;
         opt.rtol = 1e-6;
-        // opt.dt_max = 0.01;
+        // opt.dt_max = 0.05;
 
         opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)

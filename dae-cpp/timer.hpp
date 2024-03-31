@@ -59,7 +59,27 @@ namespace core
  */
 struct Time
 {
-    double total{0.0}; // Total time
+    double total{0.0}; // Total time spent by the DAE solver
+
+    // TODO: Might be worth combining them into something like std::map?
+    double time_derivative{0.0}; // Time to compute the time derivative approximation
+    double rhs{0.0};             // Time to compute and convert the RHS
+    double mass{0.0};            // Time to compute and convert the Mass matrix
+    double jacobian{0.0};        // Time to compute and convert the Jacobian matrix
+    double linear_algebra{0.0};  // Time to perform linear algebra operations
+    double factorization{0.0};   // Time to perform sparse matrix factorization
+    double linear_solver{0.0};   // Time spent by the linear solver
+    double error_check{0.0};     // Time to perform error checks
+    double history{0.0};         // Time to update the solution vector history
+
+    /*
+     * Returns time spent for initialization and other calculations not covered by the specific timers
+     */
+    double other()
+    {
+        double sum = time_derivative + rhs + mass + jacobian + linear_algebra + factorization + linear_solver + error_check + history;
+        return total - sum;
+    }
 };
 
 } // namespace core
