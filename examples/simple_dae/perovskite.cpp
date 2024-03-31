@@ -142,14 +142,14 @@ int main()
         double t{10.0};
 
         // Define the state vector
-        state_type x(2*N0);
+        state_type x(2 * N0);
 
         // Initial conditions
-    for(int i = 0; i < N0; i++)
-    {
-        x[i]      = 1.0;  // for P - ion concentration
-        x[i + N0] = 0.0;  // for Phi - potential
-    }
+        for (int i = 0; i < N0; i++)
+        {
+            x[i] = 1.0;      // for P - ion concentration
+            x[i + N0] = 0.0; // for Phi - potential
+        }
 
         // Set up the RHS of the problem.
         // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -168,6 +168,7 @@ int main()
         opt.atol = 1e-6;
         opt.rtol = 1e-6;
         // opt.dt_max = 0.05;
+        opt.is_mass_matrix_static = true;
 
         opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)
@@ -211,7 +212,7 @@ int main()
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
-        std::cout << " x = " << x[0] << " " << x[N0] << " " << x[N0+(N0-1)/5*3] * 0.6 + x[N0+(N0-1)/5*3+1] * 0.4 << " " << x[2*N0 - 1] << " ";
+        std::cout << " x = " << x[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
         // std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 
         // MatrixXd m(2, 2);

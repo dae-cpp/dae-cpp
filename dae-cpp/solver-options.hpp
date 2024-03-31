@@ -66,7 +66,7 @@ struct SolverOptions
     int BDF_order = 4;
 
     //
-    int linear_solver = 0;
+    bool is_mass_matrix_static{false};
 
     // Perform Jacobian update, Reordering, Symbolic and Numerical Factorization
     // every Newton iteration. Changing to 'false' can increase speed but also

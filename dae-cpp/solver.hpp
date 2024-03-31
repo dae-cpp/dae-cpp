@@ -259,6 +259,7 @@ public:
                         }
 
                         // Get and convert the Mass matrix
+                        if (!_opt.is_mass_matrix_static || (_opt.is_mass_matrix_static && !iter && !n_calls))
                         {
                             Timer timer(&time.mass);
                             M.clear();
