@@ -75,6 +75,12 @@ class System
     const MassMatrix &_mass;   // Mass matrix
     const SolverOptions &_opt; // Solver options
 
+    // Counts total linear algebra solver calls
+    u_int64_t _n_lin_calls{0};
+
+    // Counts total factorization calls
+    u_int64_t _n_fact_calls{0};
+
 public:
     System(const MassMatrix &mass, const RHS &rhs)
         : _mass(mass), _rhs(rhs), _jac(JacobianNumerical(rhs)), _opt(SolverOptions()) {}
@@ -105,9 +111,6 @@ public:
     {
         // Specific timers
         core::Time time;
-
-        // Counts total linear algebra solver calls
-        u_int64_t n_calls{0};
 
         // Global timer
         {
@@ -259,7 +262,7 @@ public:
                         }
 
                         // Get and convert the Mass matrix
-                        if (!_opt.is_mass_matrix_static || (_opt.is_mass_matrix_static && !iter && !n_calls))
+                        if (!_opt.is_mass_matrix_static || (_opt.is_mass_matrix_static && !iter && !_n_lin_calls))
                         {
                             Timer timer(&time.mass);
                             M.clear();
@@ -302,6 +305,7 @@ public:
                             {
                                 ERROR("Decomposition failed."); // TODO: Try to save
                             }
+                            _n_fact_calls++;
                         }
 
                         // Solve linear system Jb dx = b
@@ -312,7 +316,7 @@ public:
                             {
                                 ERROR("Solving failed."); // TODO: Try to save
                             }
-                            n_calls++;
+                            _n_lin_calls++;
                             print_char(_opt.verbosity >= 1, '#');
                         }
 
@@ -458,25 +462,17 @@ public:
 
         } // Global timer
 
-        // Final output TODO: Move to a function
-        // TODO: if time.total quite big, print time in seconds
-        PRINT(_opt.verbosity >= 1, "\nTime spent by:");
-        PRINT(_opt.verbosity >= 1, "  Time derivative approximation: " << time.time_derivative << " ms");
-        PRINT(_opt.verbosity >= 1, "  RHS computation:               " << time.rhs << " ms");
-        PRINT(_opt.verbosity >= 1, "  Mass matrix computation:       " << time.mass << " ms");
-        PRINT(_opt.verbosity >= 1, "  Jacobian matrix computation:   " << time.jacobian << " ms");
-        PRINT(_opt.verbosity >= 1, "  Linear algebra operations:     " << time.linear_algebra << " ms");
-        PRINT(_opt.verbosity >= 1, "  Matrix factorization:          " << time.factorization << " ms");
-        PRINT(_opt.verbosity >= 1, "  Linear solver:                 " << time.linear_solver << " ms  <--  " << n_calls << " linear solver calls");
-        PRINT(_opt.verbosity >= 1, "  Error control:                 " << time.error_check << " ms");
-        PRINT(_opt.verbosity >= 1, "  Solution history update:       " << time.history << " ms");
-        PRINT(_opt.verbosity >= 1, "  Initialization and other:      " << time.other() << " ms");
-        PRINT(_opt.verbosity >= 1, "Total time:                      " << time.total << " ms");
+        // Final output
+        finalize(time);
 
+        // Success
         return 0;
     }
 
 private:
+    double _t_coef{1.0};       // Default conversion coefficient for output
+    std::string _t_unit{"ms"}; // Default time units for output
+
     /*
      * Prints a single character if condition is true
      */
@@ -486,6 +482,49 @@ private:
         {
             std::putchar(ch);
         }
+    }
+
+    /*
+     * Final output
+     */
+    inline void finalize(core::Time &t)
+    {
+        if (t.total > 1e4)
+        {
+            _t_unit = "s";  // seconds
+            _t_coef = 1e-3; // ms -> s
+        }
+
+        PRINT(_opt.verbosity >= 1, "\nComputation time:" << std::right);
+        PRINT(_opt.verbosity >= 1, "------------------------------------------------------------");
+        PRINT(_opt.verbosity >= 1, "  Time derivative:          " << print_time(t.time_derivative, t.total));
+        PRINT(_opt.verbosity >= 1, "  RHS:                      " << print_time(t.rhs, t.total));
+        PRINT(_opt.verbosity >= 1, "  Mass matrix:              " << print_time(t.mass, t.total));
+        PRINT(_opt.verbosity >= 1, "  Jacobian matrix:          " << print_time(t.jacobian, t.total));
+        PRINT(_opt.verbosity >= 1, "  Linear algebra:           " << print_time(t.linear_algebra, t.total));
+        PRINT(_opt.verbosity >= 1, "  Matrix factorization:     " << print_time(t.factorization, t.total) << "  <--  " << _n_fact_calls << " calls");
+        PRINT(_opt.verbosity >= 1, "  Linear solver:            " << print_time(t.linear_solver, t.total) << "  <--  " << _n_lin_calls << " calls");
+        PRINT(_opt.verbosity >= 1, "  Error control:            " << print_time(t.error_check, t.total));
+        PRINT(_opt.verbosity >= 1, "  Solution history update:  " << print_time(t.history, t.total));
+        PRINT(_opt.verbosity >= 1, "  Initialization and other: " << print_time(t.other(), t.total));
+        PRINT(_opt.verbosity >= 1, "------------------------------------------------------------");
+        PRINT(_opt.verbosity >= 1, "Total time:                 " << print_time(t.total, t.total) << std::left);
+        PRINT(_opt.verbosity >= 1, "------------------------------------------------------------\n");
+    }
+
+    /*
+     * Converts and formats simulation time, estimates percentage
+     */
+    inline std::string print_time(double val, double t_total) const
+    {
+        std::streamsize ss = std::cout.precision();
+        std::ostringstream oss;
+        oss << std::setw(11) << val * _t_coef << ' ' << _t_unit;
+        oss << std::setprecision(3);
+        oss << "  (" << val / t_total * 100.0 << "%)";
+        oss << std::setprecision(ss);
+        std::string var = oss.str();
+        return var;
     }
 
     /*

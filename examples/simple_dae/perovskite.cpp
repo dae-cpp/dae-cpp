@@ -73,7 +73,6 @@ struct MyJacobian : Jacobian
 {
     void operator()(sparse_matrix &J, const state_type &x, const double t) const
     {
-        J.reserve(2 * N0);
         // J(1.0, 0, 1);
 
         // Locals
@@ -81,6 +80,8 @@ struct MyJacobian : Jacobian
         const int size = (int)(x.size());
         const double invh2 = invh * invh;
         const double invlam2 = 1.0 / (lambda * lambda);
+
+        J.reserve(6 * size); // Overestimating but it's better than underestimate
 
         for (int i = 0; i < size; i++)
         {
@@ -212,7 +213,7 @@ int main()
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
-        std::cout << " x = " << x[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
+        std::cout << "x = " << x[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
         // std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 
         // MatrixXd m(2, 2);

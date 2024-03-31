@@ -167,7 +167,7 @@ int main()
         Timer timer(&time);
 
         // Solution time 0 <= t <= pi
-        double t{1000.0};
+        double t{10.0};
 
         // Define the state vector
         state_type x(2);
@@ -189,7 +189,7 @@ int main()
         // parameters defined in solver_options.h
         SolverOptions opt;
 
-        opt.BDF_order = 3;
+        opt.BDF_order = 4;
         opt.atol = 1e-9;
         opt.rtol = 1e-9;
         // opt.dt_max = 0.01;
