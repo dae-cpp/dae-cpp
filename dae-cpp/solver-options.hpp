@@ -41,48 +41,45 @@ struct SolverOptions
     verbosity::VerbosityLevel verbosity{verbosity::off};
 
     // Initial time step.
-    // Should be relatively small, since the first time step is always first order.
+    // Should be relatively small because the first time step is always first order.
     double dt_init{0.01};
 
-    // Minimum time step
-    double dt_min = 1e-10;
+    // Minimum time step.
+    // If the solver has to reduce the time step below `dt_min` but still fails to converge, the simulation will stop.
+    double dt_min{1e-10};
 
-    // Maximum time step
-    double dt_max = 1e10;
+    // Maximum time step.
+    // The solver will not increase the time step above `dt_max`.
+    double dt_max{1e10};
 
-#ifdef DAECPP_SINGLE
-    double atol = 1.0e-3;      // Absolute tolerance for the Newton algorithm
-    double rtol = 1.0e-6;      // Relative tolerance for the Newton algorithm
-    double max_value = 1.0e20; // Solution shouldn't be higher than this, otherwise, it is considered as diverged
-#else
-    double atol = 1.0e-6;       // Absolute tolerance for the Newton algorithm
-    double rtol = 1.0e-6;       // Relative tolerance for the Newton algorithm
-    double max_value = 1.0e100; // Solution shouldn't be higher than this
-#endif
+    // Absolute tolerance for the Newton algorithm.
+    double atol{1.0e-6};
+
+    // Relative tolerance for the Newton algorithm.
+    double rtol{1.0e-6};
+
+    // If the absolute error estimation exceeds `max_err_abs`, the Newton iterations will be considered as diverged.
+    double max_err_abs{1e100};
 
     // Order of BDF implicit numerical integration method:
-    // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
-    // Default is BDF-2 since it fully supports variable time stepping
-    unsigned int BDF_order = 4;
+    // 1 - first order BDF, 2 - BDF-2, 3 - BDF-3, 4 - BDF-4 (default).
+    unsigned int BDF_order{4};
 
-    // 0 - Newton method, 1,2,3 - Quazi Newton method. Warn if 4 and more.
+    // Non-linear solver algorithm:
+    // 0 - Classic Newton method (usually the most stable but the slowest),
+    // 1 - Quasi-Newton method I (balanced with focus on stability, updates Jacobian and performs factorization every 2nd iteration),
+    // 2 - Quasi-Newton method II (balanced with focus on speed, updates Jacobian and performs factorization every 3rd iteration),
+    // 3 - Quasi-Newton method III (can be the fastest but less stable, may require tweaking the time step increase/decrease thresholds,
+    //     updates Jacobian and performs factorization every 4th iteration).
     unsigned int Newton_scheme{1};
 
-    //
+    // If `true`, the mass matrix will be updated only once, at the beginning of computation.
+    // Setting this option as `true` slightly speeds up the computation if the mass matrix is static (i.e., does not depend on time).
     bool is_mass_matrix_static{false};
 
-    // Perform Jacobian update, Reordering, Symbolic and Numerical Factorization
-    // every Newton iteration. Changing to 'false' can increase speed but also
-    // can lead to instability.
-    // bool fact_every_iter = true;
-
-    // If fact_every_iter = false, update Jacobian every fact_iter Newton
-    // iterations
-    // int fact_iter = 15;
-
-    // Maximum number of Newton iterations. If the Newton method fails to
-    // converge after max_Newton_iter iterations, the solver reduces time step
-    // and tries to make the current step again.
+    // Maximum number of Newton iterations.
+    // If the algorithm fails to converge after `max_Newton_iter` iterations, the Newton iterations will be considered as diverged.
+    // The solver will try to roll back and decrease the time step. TODO: Conflicts with dynamic thresholds.
     unsigned int max_Newton_iter{15};
 
     // If Newton method fails to converge within 'max_Newton_iter' iterations
@@ -90,16 +87,23 @@ struct SolverOptions
     // Jacobian every single iteration next time step.
     // int max_Newton_failed_attempts = 3;
 
-    // Simple Adaptive Time Stepping options
-    unsigned int dt_increase_threshold_delta{0}; // Time step amplification threshold. Can be negative or positive
-    unsigned int dt_decrease_threshold_delta{0}; // Time step reduction threshold
-    double dt_increase_factor = 2.0;             // Time step amplification factor
-    double dt_decrease_factor = 2.0;             // Time step reduction factor
+    // Time step amplification threshold. Can be negative or positive
+    unsigned int dt_increase_threshold_delta{0};
 
-    int num_threads = 1;
+    // Time step reduction threshold
+    unsigned int dt_decrease_threshold_delta{0};
+
+    // Time step amplification factor
+    double dt_increase_factor{2.0};
+
+    // Time step reduction factor
+    double dt_decrease_factor{2.0};
+
+    // Number of threads
+    int num_threads{1};
 
     /*
-     * Checks the user-defined parameters
+     * TODO: Checks the user-defined parameters
      */
     void check() const
     {

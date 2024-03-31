@@ -363,7 +363,7 @@ public:
                                 double err_abs = std::abs(dx[i]);
 
                                 // Solution diverged. Roll back to the previous state and redo with reduced time step.
-                                if (err_abs > _opt.max_value || std::isnan(dx[i]))
+                                if (err_abs > _opt.max_err_abs || std::isnan(dx[i]))
                                 {
                                     PRINT(_opt.verbosity >= 2, " <- diverged");
 
