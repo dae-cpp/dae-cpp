@@ -117,6 +117,9 @@ public:
             // Measures total time
             Timer timer_global(&time.total);
 
+            // Measures initialization time
+            Timer *timer_init = new Timer(&time.init);
+
             // Initial output
             PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
 
@@ -187,7 +190,10 @@ public:
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
             PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
-            PRINT(_opt.verbosity >= 2, "Calculating...");
+            PRINT(_opt.verbosity >= 1, "Calculating...");
+
+            // End of initialization
+            delete timer_init;
 
             /*
              * Output time loop
@@ -222,7 +228,7 @@ public:
 
                     n_steps++; // Number of time steps
 
-                    if (_opt.verbosity >= 1)
+                    if (_opt.verbosity >= 2)
                     {
                         std::cout << std::left
                                   << "Step " << std::setw(8) << n_steps
@@ -317,7 +323,7 @@ public:
                                 ERROR("Solving failed."); // TODO: Try to save
                             }
                             _n_lin_calls++;
-                            print_char(_opt.verbosity >= 1, '#');
+                            print_char(_opt.verbosity >= 2, '#');
                         }
 
                         bool is_converged = true; // Assume the iterations converged
@@ -334,7 +340,7 @@ public:
                                 // Solution diverged. Roll back to the previous state and redo with reduced time step.
                                 if (err_abs > _opt.max_value || std::isnan(dx[i]))
                                 {
-                                    PRINT(_opt.verbosity >= 1, " <- diverged");
+                                    PRINT(_opt.verbosity >= 2, " <- diverged");
 
                                     // Trying to roll back and reduce the time step
                                     is_diverged = true;
@@ -410,10 +416,10 @@ public:
                     if (iter >= _opt.dt_decrease_threshold)
                     {
                         dt /= _opt.dt_decrease_factor;
-                        print_char(_opt.verbosity >= 1, '<');
+                        print_char(_opt.verbosity >= 2, '<');
                         if (dt < _opt.dt_min)
                         {
-                            PRINT(_opt.verbosity >= 1, " <- reached dt_min");
+                            PRINT(_opt.verbosity >= 2, " <- reached dt_min");
                             PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
                             goto result; // Abort all loops and go straight to the results.
                                          // Using goto here is much more clear than using a sequence of `break` statements.
@@ -441,7 +447,7 @@ public:
                     }
 
                     // Newton iteration finished
-                    print_char(_opt.verbosity >= 1, '\n');
+                    print_char(_opt.verbosity >= 2, '\n');
 
                     // We may already reached the target time
                     if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)
@@ -497,6 +503,7 @@ private:
 
         PRINT(_opt.verbosity >= 1, "\nComputation time:" << std::right);
         PRINT(_opt.verbosity >= 1, "------------------------------------------------------------");
+        PRINT(_opt.verbosity >= 1, "  Initialization:           " << print_time(t.init, t.total));
         PRINT(_opt.verbosity >= 1, "  Time derivative:          " << print_time(t.time_derivative, t.total));
         PRINT(_opt.verbosity >= 1, "  RHS:                      " << print_time(t.rhs, t.total));
         PRINT(_opt.verbosity >= 1, "  Mass matrix:              " << print_time(t.mass, t.total));
@@ -506,7 +513,7 @@ private:
         PRINT(_opt.verbosity >= 1, "  Linear solver:            " << print_time(t.linear_solver, t.total) << "  <--  " << _n_lin_calls << " calls");
         PRINT(_opt.verbosity >= 1, "  Error control:            " << print_time(t.error_check, t.total));
         PRINT(_opt.verbosity >= 1, "  Solution history update:  " << print_time(t.history, t.total));
-        PRINT(_opt.verbosity >= 1, "  Initialization and other: " << print_time(t.other(), t.total));
+        PRINT(_opt.verbosity >= 1, "  Other calculations:       " << print_time(t.other(), t.total));
         PRINT(_opt.verbosity >= 1, "------------------------------------------------------------");
         PRINT(_opt.verbosity >= 1, "Total time:                 " << print_time(t.total, t.total) << std::left);
         PRINT(_opt.verbosity >= 1, "------------------------------------------------------------\n");

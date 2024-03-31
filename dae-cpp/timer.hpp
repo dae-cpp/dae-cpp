@@ -62,6 +62,7 @@ struct Time
     double total{0.0}; // Total time spent by the DAE solver
 
     // TODO: Might be worth combining them into something like std::map?
+    double init{0.0};            // Initialization time
     double time_derivative{0.0}; // Time to compute the time derivative approximation
     double rhs{0.0};             // Time to compute and convert the RHS
     double mass{0.0};            // Time to compute and convert the Mass matrix
@@ -77,7 +78,7 @@ struct Time
      */
     double other()
     {
-        double sum = time_derivative + rhs + mass + jacobian + linear_algebra + factorization + linear_solver + error_check + history;
+        double sum = init + time_derivative + rhs + mass + jacobian + linear_algebra + factorization + linear_solver + error_check + history;
         return total - sum;
     }
 };
