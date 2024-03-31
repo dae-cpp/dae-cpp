@@ -63,7 +63,10 @@ struct SolverOptions
     // Order of BDF implicit numerical integration method:
     // 1 - first order BDF, 2 - BDF-2, ..., 6 - BDF-6
     // Default is BDF-2 since it fully supports variable time stepping
-    int BDF_order = 4;
+    unsigned int BDF_order = 4;
+
+    // 0 - Newton method, 1,2,3 - Quazi Newton method. Warn if 4 and more.
+    unsigned int Newton_scheme{1};
 
     //
     bool is_mass_matrix_static{false};
@@ -88,10 +91,10 @@ struct SolverOptions
     // int max_Newton_failed_attempts = 3;
 
     // Simple Adaptive Time Stepping options
-    unsigned int dt_increase_threshold = 4; // Time step amplification threshold
-    unsigned int dt_decrease_threshold = 8; // Time step reduction threshold
-    double dt_increase_factor = 2.0;        // Time step amplification factor
-    double dt_decrease_factor = 2.0;        // Time step reduction factor
+    unsigned int dt_increase_threshold_delta{0}; // Time step amplification threshold. Can be negative or positive
+    unsigned int dt_decrease_threshold_delta{0}; // Time step reduction threshold
+    double dt_increase_factor = 2.0;             // Time step amplification factor
+    double dt_decrease_factor = 2.0;             // Time step reduction factor
 
     int num_threads = 1;
 

@@ -137,6 +137,12 @@ public:
             // Check user-defined solver options
             _opt.check();
 
+            // Time step amplification threshold
+            unsigned int dt_increase_threshold = 2 * (_opt.Newton_scheme + 1) + _opt.dt_increase_threshold_delta;
+
+            // Time step reduction threshold
+            unsigned int dt_decrease_threshold = 4 * (_opt.Newton_scheme + 1) + _opt.dt_decrease_threshold_delta;
+
             // System size
             auto size = x.size();
             ASSERT(size > 0, "Initial condition vector x is empty.");
@@ -189,10 +195,13 @@ public:
             // Output after initialization
             PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
             PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
+            PRINT(_opt.verbosity >= 2, "BDF max order:   " << _opt.BDF_order);
+            PRINT(_opt.verbosity >= 2, "Newton scheme:   " << _opt.Newton_scheme);
+            PRINT(_opt.verbosity >= 2, "Max time step:   " << _opt.dt_max);
             PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
             PRINT(_opt.verbosity >= 1, "Calculating...");
 
-            // End of initialization
+            // End of initialization. Stop the timer.
             delete timer_init;
 
             /*
@@ -277,8 +286,10 @@ public:
                             M_ = M.convert(size);
                         }
 
+                        bool is_fact_enabled = !(iter % (_opt.Newton_scheme + 1));
+
                         // Get and convert the Jacobian matrix
-                        if (iter % 2 == 0) // TODO: Add solver option
+                        if (is_fact_enabled)
                         {
                             Timer timer(&time.jacobian);
                             J.clear();
@@ -296,34 +307,48 @@ public:
                             b -= f_;
 
                             // Jb = J - d/dxk (M(t) * [dx/dt])
-                            if (iter % 2 == 0) // TODO: Add solver option
+                            if (is_fact_enabled)
                             {
                                 Jb -= M_ * alpha;
                             }
                         }
 
                         // Factorization
-                        if (iter % 2 == 0) // TODO: Add solver option
+                        if (is_fact_enabled)
                         {
                             Timer timer(&time.factorization);
+
                             linsolver.compute(Jb);
+
                             if (linsolver.info() != Eigen::Success)
                             {
-                                ERROR("Decomposition failed."); // TODO: Try to save
+                                ERROR("Decomposition failed."); // TODO: Try to recover
                             }
+
                             _n_fact_calls++;
                         }
 
                         // Solve linear system Jb dx = b
                         {
                             Timer timer(&time.linear_solver);
+
                             dx = linsolver.solve(b);
+
                             if (linsolver.info() != Eigen::Success)
                             {
-                                ERROR("Solving failed."); // TODO: Try to save
+                                ERROR("Solving failed."); // TODO: Try to recover
                             }
+
                             _n_lin_calls++;
-                            print_char(_opt.verbosity >= 2, '#');
+
+                            if (is_fact_enabled)
+                            {
+                                print_char(_opt.verbosity >= 2, '#');
+                            }
+                            else
+                            {
+                                print_char(_opt.verbosity >= 2, '*');
+                            }
                         }
 
                         bool is_converged = true; // Assume the iterations converged
@@ -413,7 +438,7 @@ public:
                     }
 
                     // Make decision about new time step
-                    if (iter >= _opt.dt_decrease_threshold)
+                    if (iter >= dt_decrease_threshold)
                     {
                         dt /= _opt.dt_decrease_factor;
                         print_char(_opt.verbosity >= 2, '<');
@@ -425,7 +450,7 @@ public:
                                          // Using goto here is much more clear than using a sequence of `break` statements.
                         }
                     }
-                    if (iter <= _opt.dt_increase_threshold - 1)
+                    if (iter <= dt_increase_threshold - 1)
                     {
                         dt *= _opt.dt_increase_factor;
                         if (dt > _opt.dt_max)
