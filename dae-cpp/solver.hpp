@@ -518,7 +518,7 @@ private:
     /*
      * Final output
      */
-    inline void finalize(core::Time &t)
+    inline void finalize(const core::Time &t)
     {
         if (t.total > 1e4)
         {

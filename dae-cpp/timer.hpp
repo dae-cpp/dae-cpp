@@ -76,7 +76,7 @@ struct Time
     /*
      * Returns time spent for initialization and other calculations not covered by the specific timers
      */
-    double other()
+    double other() const
     {
         double sum = init + time_derivative + rhs + mass + jacobian + linear_algebra + factorization + linear_solver + error_check + history;
         return total - sum;

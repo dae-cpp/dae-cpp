@@ -95,7 +95,7 @@ struct sparse_matrix
      */
     inline void check() const noexcept
     {
-        const char *msg = "Three-array sparse matrix check failed. Inconsistent array size.";
+        constexpr char msg[] = "Three-array sparse matrix check failed. Inconsistent array size.";
         ASSERT(A.size() == i.size(), msg);
         ASSERT(A.size() == j.size(), msg);
     }
