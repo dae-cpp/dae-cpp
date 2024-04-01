@@ -68,8 +68,8 @@ struct SolverOptions
     unsigned int BDF_order{4};
 
     // Non-linear solver algorithm:
-    // 0 (default) - Classic Newton method (usually the most stable but the slowest),
-    // 1 - Quasi-Newton method I (balanced with focus on stability, updates Jacobian and performs factorization every 2nd iteration),
+    // 0 - Classic Newton method (usually the most stable but the slowest),
+    // 1 (default) - Quasi-Newton method I (balanced with focus on stability, updates Jacobian and performs factorization every 2nd iteration),
     // 2 - Quasi-Newton method II (balanced with focus on speed, updates Jacobian and performs factorization every 3rd iteration),
     // 3 - Quasi-Newton method III (can be the fastest but less stable, may require tweaking the time step increase/decrease thresholds,
     //     updates Jacobian and performs factorization every 4th iteration).

@@ -462,6 +462,11 @@ public:
                         if (dt > _opt.dt_max)
                         {
                             dt = _opt.dt_max;
+                            print_char(_opt.verbosity >= 2, '|');
+                        }
+                        else
+                        {
+                            print_char(_opt.verbosity >= 2, '>');
                         }
                     }
 
