@@ -139,9 +139,15 @@ public:
 
             // Time step amplification threshold
             unsigned int dt_increase_threshold = 2 * (_opt.Newton_scheme + 1) + _opt.dt_increase_threshold_delta;
+            ASSERT(dt_increase_threshold > 0, "Too small delta `dt_increase_threshold_delta`: " << _opt.dt_increase_threshold_delta);
 
             // Time step reduction threshold
             unsigned int dt_decrease_threshold = 4 * (_opt.Newton_scheme + 1) + _opt.dt_decrease_threshold_delta;
+            ASSERT(dt_decrease_threshold > 0, "Too small delta `dt_decrease_threshold_delta`: " << _opt.dt_decrease_threshold_delta);
+            ASSERT(dt_decrease_threshold > dt_increase_threshold, "Adaptive time stepping thresholds are not consistent with each other.");
+
+            // Maximum number of iteration per time step
+            unsigned int max_Newton_iter = _opt.max_Jacobian_updates * (_opt.Newton_scheme + 1);
 
             // System size
             auto size = x.size();
@@ -254,12 +260,12 @@ public:
 
                     bool is_diverged{false}; // True if Newton iterations diverged
 
-                    u_int32_t iter{}; // Newton iteration loop index - we will need this value later
+                    unsigned int iter{}; // Newton iteration loop index - we will need this value later
 
                     /*
                      * Newton iteration loop
                      */
-                    for (iter = 0; iter < _opt.max_Newton_iter; ++iter)
+                    for (iter = 0; iter < max_Newton_iter; ++iter)
                     {
                         // Returns time derivative approximation dxdt and its corresponding derivative w.r.t. xk
                         double alpha{}; // Derivative w.r.t. xk
