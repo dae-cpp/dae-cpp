@@ -141,7 +141,7 @@ struct SolverOptions
 
             if (is_mass_matrix_static)
             {
-                NOTE("Using static mass matrix.");
+                NOTE("Using static mass matrix...");
             }
         }
     }

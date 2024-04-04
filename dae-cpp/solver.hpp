@@ -26,6 +26,8 @@ namespace daecpp_namespace_name
 {
 namespace core
 {
+namespace internal
+{
 
 /*
  * Stores current and previous states of the solver
@@ -83,9 +85,6 @@ inline void print_char(bool condition, char ch) noexcept
     }
 }
 
-namespace internal
-{
-
 /*
  * Converts and formats simulation time, estimates percentage
  */
@@ -113,7 +112,7 @@ inline std::string print_time(double val, double t_total)
 /*
  * Final output
  */
-inline void finalize(const core::Time &t, int v, Counters c)
+inline void finalize(const Time &t, int v, Counters c)
 {
     PRINT(v >= 1, "\nComputation time:" << std::right);
     PRINT(v >= 1, "------------------------------------------------------------");
@@ -206,9 +205,6 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
     return alpha;
 }
 
-} // namespace internal
-} // namespace core
-
 /*
  * Integrates the system of DAEs in the interval `t = [0; t_end]`. TODO: Update description.
  * Mass, RHS, Jacobian will be moved from temporary or if called with std::move()
@@ -224,13 +220,13 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     0 if integration is successful or error code if integration is failed (int)
  */
 template <class Mass, class RHS, class Jacobian>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
+int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output, const SolverOptions &opt, bool is_jac_auto)
 {
     // Specific counters
-    core::Counters c;
+    Counters c;
 
     // Specific timers
-    core::Time time;
+    Time time;
 
     // Global timer
     {
@@ -242,6 +238,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
 
         // Initial output
         PRINT(opt.verbosity >= 1, "Starting dae-cpp solver...");
+        PRINT((opt.verbosity >= 1) && is_jac_auto, "NOTE: Using automatic Jacobian...");
 
         // Vector of output times
         std::vector<double> t_out = std::move(t_output);
@@ -274,7 +271,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
         ASSERT(size > 0, "Initial condition vector x is empty.");
 
         // Solver state
-        core::SolverState state(size);
+        SolverState state(size);
 
         // Alias for the current time step
         double &dt = state.dt[0];
@@ -298,19 +295,19 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
         sparse_matrix J;
 
         // Time derivative approximation
-        core::eivec dxdt(size);
+        eivec dxdt(size);
 
         // Linear solver
-        Eigen::SparseLU<core::eimat> linsolver;
+        Eigen::SparseLU<eimat> linsolver;
 
         // Eigen::SparseMatrix<float_type> matrices
-        core::eimat M_; // Mass matrix (converted)
-        core::eimat Jb; // Linear system matrix
+        eimat M_; // Mass matrix (converted)
+        eimat Jb; // Linear system matrix
 
         // Eigen::VectorX vectors
-        core::eivec f_(size); // The RHS vector (converted)
-        core::eivec b;        // The RHS of the linear system
-        core::eivec dx;       // Linear system solution
+        eivec f_(size); // The RHS vector (converted)
+        eivec b;        // The RHS of the linear system
+        eivec dx;       // Linear system solution
 
         // Counts number of time steps
         u_int64_t n_steps{0};
@@ -392,7 +389,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                     // Returns time derivative approximation dxdt and its corresponding derivative w.r.t. xk
                     {
                         Timer timer(&time.time_derivative);
-                        alpha = core::internal::time_derivative_approx(dxdt, xk, state, size);
+                        alpha = time_derivative_approx(dxdt, xk, state, size);
                     }
 
                     // Get and convert the RHS
@@ -406,7 +403,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                         }
                         rhs(f__, xk__, state.t);
                         ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
-                        // f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size());
+                        // f_ = Eigen::Map<eivec, Eigen::Unaligned>(f.data(), f.size());
                         for (std::size_t k = 0; k < size; ++k)
                         {
                             f_[k] = f__[k].val();
@@ -480,11 +477,11 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
 
                         if (is_fact_enabled)
                         {
-                            core::print_char(opt.verbosity >= 2, '#');
+                            print_char(opt.verbosity >= 2, '#');
                         }
                         else
                         {
-                            core::print_char(opt.verbosity >= 2, '*');
+                            print_char(opt.verbosity >= 2, '*');
                         }
                     }
 
@@ -578,7 +575,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                 if (iter >= dt_decrease_threshold)
                 {
                     dt /= opt.dt_decrease_factor;
-                    core::print_char(opt.verbosity >= 2, '<');
+                    print_char(opt.verbosity >= 2, '<');
                     if (dt < opt.dt_min)
                     {
                         PRINT(opt.verbosity >= 2, " <- reached dt_min");
@@ -593,11 +590,11 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                     if (dt > opt.dt_max)
                     {
                         dt = opt.dt_max;
-                        core::print_char(opt.verbosity >= 2, '|');
+                        print_char(opt.verbosity >= 2, '|');
                     }
                     else
                     {
-                        core::print_char(opt.verbosity >= 2, '>');
+                        print_char(opt.verbosity >= 2, '>');
                     }
                 }
 
@@ -614,7 +611,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                 }
 
                 // Newton iteration finished
-                core::print_char(opt.verbosity >= 2, '\n');
+                print_char(opt.verbosity >= 2, '\n');
 
                 // We may already reached the target time
                 if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)
@@ -649,28 +646,37 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
     } // Global timer
 
     // Final output
-    core::internal::finalize(time, opt.verbosity, c);
+    finalize(time, opt.verbosity, c);
 
     // Success
     return 0;
 }
 
+} // namespace internal
+} // namespace core
+
+template <class Mass, class RHS, class Jacobian>
+int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
+{
+    return core::internal::solve(mass, rhs, jac, x, t_end, t_output, opt, false);
+}
+
 template <class Mass, class RHS>
 int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
-    return solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, t_output, opt);
+    return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, t_output, opt, true);
 }
 
 template <class Mass, class RHS>
 int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
-    return solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, {}, opt);
+    return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, {}, opt, true);
 }
 
 template <class Mass, class RHS, class Jacobian>
 int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
-    return solve(mass, rhs, jac, x, t_end, {}, opt);
+    return core::internal::solve(mass, rhs, jac, x, t_end, {}, opt, false);
 }
 
 } // namespace daecpp_namespace_name
