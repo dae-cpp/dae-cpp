@@ -1,9 +1,9 @@
-#include <dae-cpp/jacobian.hpp>
+#include <dae-cpp/jacobian-matrix.hpp>
 
 #include "gtest/gtest.h"
 
 // Testing:
-// class Jacobian
+// class JacobianMatrix
 
 namespace
 {
@@ -12,9 +12,9 @@ using namespace daecpp;
 
 TEST(JacobianMatrix, Definition)
 {
-    struct TestJacobian : Jacobian
+    struct TestJacobian : JacobianMatrix
     {
-        void operator()(sparse_matrix &J, const state_type &x, const double t) const
+        void operator()(sparse_matrix &J, const state_vector &x, const double t) const
         {
             EXPECT_EQ(J.N_elements(), 0);
 
@@ -28,7 +28,7 @@ TEST(JacobianMatrix, Definition)
     TestJacobian jac;
     sparse_matrix J;
 
-    state_type x{4.0, 6.0, 8.0};
+    state_vector x{4.0, 6.0, 8.0};
 
     constexpr double t{10.0};
 
