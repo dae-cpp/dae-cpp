@@ -34,6 +34,8 @@ public:
      * This function is pure virtual and must be overriden to provide analytical Jacobian.
      */
     virtual void operator()(sparse_matrix &J, const state_vector &x, const double t) const = 0;
+
+    virtual ~JacobianMatrix() {}
 };
 
 /*

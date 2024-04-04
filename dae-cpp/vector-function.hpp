@@ -33,6 +33,8 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(state_type &f, const state_type &x, const double t) const = 0;
+
+    virtual ~VectorFunction() {}
 };
 
 } // namespace daecpp_namespace_name

@@ -33,6 +33,8 @@ public:
      * This function is pure virtual and must be overriden.
      */
     virtual void operator()(sparse_matrix &M, const double t) const = 0;
+
+    virtual ~MassMatrix() {}
 };
 
 /*
