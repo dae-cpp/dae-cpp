@@ -21,8 +21,14 @@
 
 #define daecpp_namespace_name daecpp
 
+// dae-cpp version
 #define DAECPP_VERSION_MAJOR 2
 #define DAECPP_VERSION_MINOR 0
+
+// Internal constants
+#define DAECPP_MAX_ORDER 4
+#define DAECPP_TIMESTEP_ROUNDING_ERROR 1e-14
+#define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-14 // Used in automatic (algorithmic Jacobian)
 
 #include "assert-custom.hpp"
 

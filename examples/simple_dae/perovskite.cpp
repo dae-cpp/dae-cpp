@@ -20,7 +20,8 @@ using namespace daecpp;
 
 struct MyMassMatrix //: MassMatrix
 {
-    void operator()(sparse_matrix &M, const double t) const
+    // MyMassMatrix(){std::cout << "Mass ctor\n";}
+    void operator()(sparse_matrix &M, const double t)
     {
         M.reserve(2 * N0);
         for (int i = 0; i < N0; ++i)
@@ -158,7 +159,7 @@ int main()
 
         // Set up the Mass Matrix of the problem.
         // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
-        MyMassMatrix mass;
+        // MyMassMatrix mass;
         // MassMatrixIdentity mass(2);
 
         // Create an instance of the solver options and update some of the solver
@@ -189,6 +190,7 @@ int main()
         // System simple_dae(mass, rhs, jac, opt);
         // System simple_dae(mass, rhs, opt);
         solve(MyMassMatrix(), rhs, x, t, opt);
+        // solve(std::move(mass), rhs, x, t, opt); // Mass ctor will be created only once
 
         // Now we are ready to solve the set of DAEs
         // std::cout << "Starting DAE solver...\n";

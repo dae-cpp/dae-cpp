@@ -63,7 +63,7 @@ using namespace daecpp;
 
 struct MyMassMatrix
 {
-    void operator()(sparse_matrix &M, const double t) const
+    void operator()(sparse_matrix &M, const double t) const // const is optional
     {
         M.reserve(1);
         M(1.0, 0, 0);
@@ -81,7 +81,7 @@ public:
      * Receives current solution vector x and the current time t.
      * Defines the RHS f.
      */
-    void operator()(state_type &f, const state_type &x, const double t) const
+    void operator()(state_type &f, const state_type &x, const double t)
     {
         f[0] = x[1];
         f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
@@ -143,9 +143,9 @@ public:
  * =============================================================================
  */
 
-struct MyJacobian : JacobianMatrix
+struct MyJacobian //: JacobianMatrix
 {
-    void operator()(sparse_matrix &J, const state_vector &x, const double t) const
+    void operator()(sparse_matrix &J, const state_vector &x, const double t) // const
     {
         J.reserve(3);
         J(1.0, 0, 1);
@@ -210,7 +210,9 @@ int main()
         // System simple_dae(mass, rhs, jac, opt);
         // System simple_dae(mass, rhs, opt);
 
-        daecpp::solve(mass, rhs, jac, x, t, opt);
+        // daecpp::solve(mass, rhs, jac, x, t, opt);
+        // daecpp::solve(mass, rhs, {1.0, -1.0}, 1.0, {0.5}, opt);
+        daecpp::solve(MyMassMatrix(), MyRHS(), x, 10.0, {1.0, 2.0, 5.0}, opt);
 
         // Now we are ready to solve the set of DAEs
         // std::cout << "Starting DAE solver...\n";

@@ -210,12 +210,13 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
 } // namespace core
 
 /*
- * Integrates the system of DAEs in the interval `t = [0; t_end]`.
+ * Integrates the system of DAEs in the interval `t = [0; t_end]`. TODO: Update description.
+ * Mass, RHS, Jacobian will be moved from temporary or if called with std::move()
  * Returns solution `x` at time `t_end` (the initial condition stored in `x` will be overwritten).
  * If the solver stops earlier, `t_end` will be overwritten with the actual time.
  *
  * Parameters:
- *     x - initial condition (daecpp::fvec)
+ *     x - initial condition (state_vector)
  *     t_end - integration interval `t = [0; t_end]` (double)
  *     t_output - (optional) a vector of output times (std::vector<double>)
  *
@@ -223,7 +224,7 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     0 if integration is successful or error code if integration is failed (int)
  */
 template <class Mass, class RHS, class Jacobian>
-int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector &x, double &t_end, const std::vector<double> t_output = {}, const SolverOptions &_opt = SolverOptions())
+int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
     // Specific counters
     core::Counters c;
@@ -240,7 +241,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
         Timer *timer_init = new Timer(&time.init);
 
         // Initial output
-        PRINT(_opt.verbosity >= 1, "Starting dae-cpp solver...");
+        PRINT(opt.verbosity >= 1, "Starting dae-cpp solver...");
 
         // Vector of output times
         std::vector<double> t_out = std::move(t_output);
@@ -254,19 +255,19 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
         ASSERT(t_out.back() >= 0.0, "Target time t_end cannot be negative. The solver integrates from 0 to t_end.");
 
         // Check user-defined solver options
-        _opt.check();
+        opt.check();
 
         // Time step amplification threshold
-        unsigned int dt_increase_threshold = 2 * (_opt.Newton_scheme + 1) + _opt.dt_increase_threshold_delta;
-        ASSERT(dt_increase_threshold > 0, "Too small delta `dt_increase_threshold_delta`: " << _opt.dt_increase_threshold_delta);
+        unsigned int dt_increase_threshold = 2 * (opt.Newton_scheme + 1) + opt.dt_increase_threshold_delta;
+        ASSERT(dt_increase_threshold > 0, "Too small delta `dt_increase_threshold_delta`: " << opt.dt_increase_threshold_delta);
 
         // Time step reduction threshold
-        unsigned int dt_decrease_threshold = 4 * (_opt.Newton_scheme + 1) + _opt.dt_decrease_threshold_delta;
-        ASSERT(dt_decrease_threshold > 0, "Too small delta `dt_decrease_threshold_delta`: " << _opt.dt_decrease_threshold_delta);
+        unsigned int dt_decrease_threshold = 4 * (opt.Newton_scheme + 1) + opt.dt_decrease_threshold_delta;
+        ASSERT(dt_decrease_threshold > 0, "Too small delta `dt_decrease_threshold_delta`: " << opt.dt_decrease_threshold_delta);
         ASSERT(dt_decrease_threshold > dt_increase_threshold, "Adaptive time stepping thresholds are not consistent with each other.");
 
         // Maximum number of iteration per time step
-        unsigned int max_Newton_iter = _opt.max_Jacobian_updates * (_opt.Newton_scheme + 1);
+        unsigned int max_Newton_iter = opt.max_Jacobian_updates * (opt.Newton_scheme + 1);
 
         // System size
         auto size = x.size();
@@ -279,7 +280,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
         double &dt = state.dt[0];
 
         // Set initial time step
-        dt = _opt.dt_init;
+        dt = opt.dt_init;
 
         // Copy initial state
         state.x[0] = x;
@@ -318,13 +319,13 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
         u_int32_t n_iter_failed{0};
 
         // Output after initialization
-        PRINT(_opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
-        PRINT(_opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
-        PRINT(_opt.verbosity >= 2, "BDF max order:   " << _opt.BDF_order);
-        PRINT(_opt.verbosity >= 2, "Newton scheme:   " << _opt.Newton_scheme);
-        PRINT(_opt.verbosity >= 2, "Max time step:   " << _opt.dt_max);
-        PRINT(_opt.verbosity >= 1, "DAE system size: " << size << " equations");
-        PRINT(_opt.verbosity >= 1, "Calculating...");
+        PRINT(opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
+        PRINT(opt.verbosity >= 2, "Integer size:    " << 8 * sizeof(int_type) << " bit");
+        PRINT(opt.verbosity >= 2, "BDF max order:   " << opt.BDF_order);
+        PRINT(opt.verbosity >= 2, "Newton scheme:   " << opt.Newton_scheme);
+        PRINT(opt.verbosity >= 2, "Max time step:   " << opt.dt_max);
+        PRINT(opt.verbosity >= 1, "DAE system size: " << size << " equations");
+        PRINT(opt.verbosity >= 1, "Calculating...");
 
         // End of initialization. Stop the timer.
         delete timer_init;
@@ -334,7 +335,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
          */
         for (const auto &t1 : t_out)
         {
-            PRINT(_opt.verbosity >= 2, "\n-- Integration time t = " << t1 << ":");
+            PRINT(opt.verbosity >= 2, "\n-- Integration time t = " << t1 << ":");
 
             if (t1 < 0.0)
             {
@@ -362,7 +363,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
 
                 n_steps++; // Number of time steps
 
-                if (_opt.verbosity >= 2)
+                if (opt.verbosity >= 2)
                 {
                     std::cout << std::left
                               << "Step " << std::setw(8) << n_steps
@@ -370,7 +371,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                               << " :: ";
                 }
 
-                if (_opt.verbosity >= 2)
+                if (opt.verbosity >= 2)
                 {
                     std::cout << "BDF-" << state.order
                               << ": dt=" << std::setw(11) << dt
@@ -403,7 +404,7 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                         {
                             xk__[k] = xk[k];
                         }
-                        _rhs(f__, xk__, state.t);
+                        rhs(f__, xk__, state.t);
                         ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
                         // f_ = Eigen::Map<core::eivec, Eigen::Unaligned>(f.data(), f.size());
                         for (std::size_t k = 0; k < size; ++k)
@@ -413,24 +414,23 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                     }
 
                     // Get and convert the Mass matrix
-                    if (!_opt.is_mass_matrix_static || (_opt.is_mass_matrix_static && !iter && !c.n_lin_calls))
+                    if (!opt.is_mass_matrix_static || (opt.is_mass_matrix_static && !iter && !c.n_lin_calls))
                     {
                         Timer timer(&time.mass);
                         M.clear();
-                        _mass(M, state.t);
+                        mass(M, state.t);
                         M.check();
                         M_ = M.convert(size);
                     }
 
-                    bool is_fact_enabled = !(iter % (_opt.Newton_scheme + 1));
+                    bool is_fact_enabled = !(iter % (opt.Newton_scheme + 1));
 
                     // Get and convert the Jacobian matrix
                     if (is_fact_enabled)
                     {
                         Timer timer(&time.jacobian);
                         J.clear();
-                        // _jac->operator()(J, xk, state.t);
-                        _jac(J, xk, state.t);
+                        jac(J, xk, state.t);
                         J.check();
                         Jb = J.convert(size);
                     }
@@ -480,11 +480,11 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
 
                         if (is_fact_enabled)
                         {
-                            core::print_char(_opt.verbosity >= 2, '#');
+                            core::print_char(opt.verbosity >= 2, '#');
                         }
                         else
                         {
-                            core::print_char(_opt.verbosity >= 2, '*');
+                            core::print_char(opt.verbosity >= 2, '*');
                         }
                     }
 
@@ -500,19 +500,19 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                             double err_abs = std::abs(dx[i]);
 
                             // Solution diverged. Roll back to the previous state and redo with reduced time step.
-                            if (err_abs > _opt.max_err_abs || std::isnan(dx[i]))
+                            if (err_abs > opt.max_err_abs || std::isnan(dx[i]))
                             {
-                                PRINT(_opt.verbosity >= 2, " <- diverged");
+                                PRINT(opt.verbosity >= 2, " <- diverged");
 
                                 // Trying to roll back and reduce the time step
                                 is_diverged = true;
                                 n_iter_failed++;
                                 state.t = state.t_prev;
                                 n_steps--;
-                                dt /= _opt.dt_decrease_factor;
-                                if (dt < _opt.dt_min)
+                                dt /= opt.dt_decrease_factor;
+                                if (dt < opt.dt_min)
                                 {
-                                    PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                                    PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
                                     goto result; // Abort all loops and go straight to the results.
                                                  // Using goto here is much more clear than using a sequence of `break` statements.
                                 }
@@ -524,14 +524,14 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                             if (state.x[0][i] != 0.0)
                             {
                                 double err_rel = err_abs / std::abs(state.x[0][i]);
-                                if (err_rel > _opt.rtol)
+                                if (err_rel > opt.rtol)
                                 {
                                     is_converged = false;
                                 }
                             }
 
                             // Absolute error check
-                            if (err_abs > _opt.atol)
+                            if (err_abs > opt.atol)
                             {
                                 is_converged = false;
                             }
@@ -577,27 +577,27 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                 // Make decision about new time step
                 if (iter >= dt_decrease_threshold)
                 {
-                    dt /= _opt.dt_decrease_factor;
-                    core::print_char(_opt.verbosity >= 2, '<');
-                    if (dt < _opt.dt_min)
+                    dt /= opt.dt_decrease_factor;
+                    core::print_char(opt.verbosity >= 2, '<');
+                    if (dt < opt.dt_min)
                     {
-                        PRINT(_opt.verbosity >= 2, " <- reached dt_min");
-                        PRINT(_opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                        PRINT(opt.verbosity >= 2, " <- reached dt_min");
+                        PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
                         goto result; // Abort all loops and go straight to the results.
                                      // Using goto here is much more clear than using a sequence of `break` statements.
                     }
                 }
                 if (iter <= dt_increase_threshold - 1)
                 {
-                    dt *= _opt.dt_increase_factor;
-                    if (dt > _opt.dt_max)
+                    dt *= opt.dt_increase_factor;
+                    if (dt > opt.dt_max)
                     {
-                        dt = _opt.dt_max;
-                        core::print_char(_opt.verbosity >= 2, '|');
+                        dt = opt.dt_max;
+                        core::print_char(opt.verbosity >= 2, '|');
                     }
                     else
                     {
-                        core::print_char(_opt.verbosity >= 2, '>');
+                        core::print_char(opt.verbosity >= 2, '>');
                     }
                 }
 
@@ -608,18 +608,30 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
                 }
 
                 // Updates time integration order
-                if (state.order < _opt.BDF_order)
+                if (state.order < opt.BDF_order)
                 {
                     state.order++;
                 }
 
                 // Newton iteration finished
-                core::print_char(_opt.verbosity >= 2, '\n');
+                core::print_char(opt.verbosity >= 2, '\n');
 
                 // We may already reached the target time
                 if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)
                 {
-                    dt = state.dt[1];
+                    if (state.dt[2] > DAECPP_TIMESTEP_ROUNDING_ERROR)
+                    {
+                        dt = state.dt[2];
+                    }
+                    else if (state.dt[1] > DAECPP_TIMESTEP_ROUNDING_ERROR)
+                    {
+                        dt = state.dt[1];
+                    }
+                    else
+                    {
+                        dt = opt.dt_init;
+                    }
+
                     break;
                 }
 
@@ -628,36 +640,35 @@ int solve(const Mass &_mass, const RHS &_rhs, const Jacobian _jac, state_vector 
         } // for (const auto &t1 : t_out) - Loop over all output times
 
     result:
-
         // Return solution and the final time
-        x = state.x[0];
-        t_end = state.t;
+        // x = state.x[0];
+        // t_end = state.t;
+
+        PRINT(opt.verbosity >= 1, "...done");
 
     } // Global timer
 
     // Final output
-    core::internal::finalize(time, _opt.verbosity, c);
+    core::internal::finalize(time, opt.verbosity, c);
 
     // Success
     return 0;
 }
 
 template <class Mass, class RHS>
-int solve(const Mass &mass, const RHS &rhs, state_vector &x, double &t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
+int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
-    const JacobianNumerical jac(rhs); // Numerically computed Jacobian matrix
-    return solve(mass, rhs, jac, x, t_end, t_output, opt);
+    return solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, t_output, opt);
 }
 
 template <class Mass, class RHS>
-int solve(const Mass &mass, const RHS &rhs, state_vector &x, double &t_end, const SolverOptions &opt = SolverOptions())
+int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
-    const JacobianNumerical jac(rhs); // Numerically computed Jacobian matrix
-    return solve(mass, rhs, jac, x, t_end, {}, opt);
+    return solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, {}, opt);
 }
 
 template <class Mass, class RHS, class Jacobian>
-int solve(const Mass &mass, const RHS &rhs, const Jacobian &jac, state_vector &x, double &t_end, const SolverOptions &opt)
+int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
     return solve(mass, rhs, jac, x, t_end, {}, opt);
 }

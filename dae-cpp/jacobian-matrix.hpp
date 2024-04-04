@@ -17,8 +17,6 @@
 #include "sparse-matrix.hpp"
 #include "vector-function.hpp"
 
-#include "timer.hpp" // TODO: temporary here
-
 namespace daecpp_namespace_name
 {
 
@@ -39,72 +37,57 @@ public:
 };
 
 /*
- * Numerical Jacobian.
- * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
+ * Automatic (algorithmic) Jacobian class.
+ * Performs algorithmic differentiation of the RHS using `autodiff` package.
  */
-class JacobianNumerical : public JacobianMatrix
+template <class RHS>
+class JacobianAutomatic : public JacobianMatrix
 {
-    const VectorFunction &_rhs; // The RHS for differentiation
+    RHS &_rhs; // The RHS for differentiation (it is not moved because we need it in the solver)
 
 public:
-    explicit JacobianNumerical(const VectorFunction &rhs) : JacobianMatrix(), _rhs(rhs) {}
+    explicit JacobianAutomatic(RHS &rhs) : JacobianMatrix(), _rhs(rhs) {}
 
     /*
-     * Numerical Jacobian.
-     * Performs automatic (algorithmic) differentiation of the RHS using `autodiff` package.
+     * Automatic (algorithmic) Jacobian.
+     * Performs algorithmic differentiation of the RHS using `autodiff` package.
      */
     void operator()(sparse_matrix &J, const state_vector &x, const double t) const
     {
-        std::size_t size = x.size();
+        std::size_t size = x.size(); // System size
 
-        state_type x__(size);
+        state_type x_(size);
 
+        // Conversion to dual numbers for automatic differentiation
         for (std::size_t k = 0; k < size; ++k)
         {
-            x__[k] = x[k];
+            x_[k] = x[k];
         }
 
-        // state_type f__(size);
-
         // The vector lambda-function with parameters for which the Jacobian is needed
-        // auto f = [this](const state_type &x, const double &t, state_type &f)
-        auto f = [&_rhs = _rhs](const state_type &x, const double t, const std::size_t size)
+        auto f = [&_rhs = _rhs, size](const state_type &x, const double t)
         {
             state_type f(size);
-            // this->_rhs(f, x, t);
             _rhs(f, x, t);
             return f;
         };
 
-        Eigen::MatrixXd jac;
+        // Dense Jacobian matrix
+        Eigen::MatrixXd jac = autodiff::jacobian(f, wrt(x_), at(x_, t));
 
-        static double jac_numerical{0.0};
+        // Convert dense matrix to sparse format
+        for (std::size_t j = 0; j < size; ++j)
         {
-            Timer timer(&jac_numerical);
-            // jac = autodiff::jacobian(f, wrt(x__), at(x__, t, f__));
-            jac = autodiff::jacobian(f, wrt(x__), at(x__, t, size));
-        }
-        std::cout << '|' << jac_numerical / 1000. << ' ';
-
-        // Convert matrix to sparse format
-        static double jac_numerical_2{0.0};
-        {
-            Timer timer(&jac_numerical_2);
-            for (std::size_t j = 0; j < size; ++j)
+            for (std::size_t i = 0; i < size; ++i)
             {
-                for (std::size_t i = 0; i < size; ++i)
-                {
-                    // double val = jac.coeffRef(i, j);
-                    const double val = jac(i, j);
+                const double val = jac(i, j);
 
-                    if (std::abs(val) > 1e-14)
-                    {
-                        J(val, i, j);
-                    }
+                if (std::abs(val) > DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE)
+                {
+                    J(val, i, j);
                 }
             }
         }
-        std::cout << jac_numerical_2 / 1000. << '|';
     }
 };
 

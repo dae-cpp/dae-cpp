@@ -14,10 +14,6 @@
 
 #include "typedefs.hpp"
 
-// Internal constants
-#define DAECPP_MAX_ORDER 4
-#define DAECPP_TIMESTEP_ROUNDING_ERROR 1e-14
-
 namespace daecpp_namespace_name
 {
 
@@ -131,7 +127,7 @@ struct SolverOptions
         ASSERT(atol > 0.0, "Absolute tolerance `atol` for the Newton algorithm must be positive.");
         ASSERT(rtol > 0.0, "Relative tolerance `rtol` for the Newton algorithm must be positive.");
         ASSERT(max_err_abs > 0.0, "Maximum absolute error `max_err_abs` must be positive. In most cases it should be a very big number.");
-        ASSERT((BDF_order >= 1) && (BDF_order <= 4), "Unknown order of the BDF implicit numerical integration method: " << BDF_order << ".\n`BDF_order` must be 1, 2, 3, or 4.");
+        ASSERT((BDF_order >= 1) && (BDF_order <= DAECPP_MAX_ORDER), "Unknown order of the BDF implicit numerical integration method: " << BDF_order << ".\n`BDF_order` must be 1, 2, 3, or 4.");
         ASSERT(Newton_scheme <= 10, "Non-linear solver algorithm (defined by `Newton_scheme` option) can be 0 (classic Newton method), 1, 2, or 3 (Quasi-Newton methods).");
         ASSERT(max_Jacobian_updates >= 4, "Maximum number of the Jacobian matrix updates and factorizations per time step should be at least 4.");
         ASSERT(dt_increase_factor >= 1.0, "Time step amplification factor `dt_increase_factor` should be greater than 1.");
