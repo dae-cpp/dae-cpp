@@ -86,7 +86,7 @@ public:
 
                 if (std::abs(val) > DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE)
                 {
-                    J(val, i, j);
+                    J(i, j, val);
                 }
             }
         }

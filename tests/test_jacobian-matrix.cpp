@@ -19,9 +19,9 @@ TEST(JacobianMatrix, Definition)
             EXPECT_EQ(J.N_elements(), 0);
 
             J.reserve(3);
-            J(1.0, 0, 1);
-            J(2.0 * t, 1, 0);
-            J(3.0 * x[1], 1, 1);
+            J(0, 1, 1.0);
+            J(1, 0, 2.0 * t);
+            J(1, 1, 3.0 * x[1]);
         }
     };
 

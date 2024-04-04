@@ -19,8 +19,8 @@ TEST(MassMatrix, Definition)
             EXPECT_EQ(M.N_elements(), 0);
 
             M.reserve(2);
-            M(1.0, 0, 0);
-            M(2.0 * t, 1, 1);
+            M(0, 0, 1.0);
+            M(1, 1, 2.0 * t);
         }
     };
 

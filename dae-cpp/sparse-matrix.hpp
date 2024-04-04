@@ -48,7 +48,7 @@ struct sparse_matrix
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
      */
-    inline void operator()(const float_type A_ij, const int_type ind_i, const int_type ind_j)
+    inline void operator()(const int_type ind_i, const int_type ind_j, const float_type A_ij)
     {
         A.emplace_back(A_ij);
         i.emplace_back(ind_i);
@@ -64,9 +64,9 @@ struct sparse_matrix
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
      */
-    inline void add_element(const float_type A_ij, const int_type ind_i, const int_type ind_j)
+    inline void add_element(const int_type ind_i, const int_type ind_j, const float_type A_ij)
     {
-        operator()(A_ij, ind_i, ind_j);
+        operator()(ind_i, ind_j, A_ij);
     }
 
     /*

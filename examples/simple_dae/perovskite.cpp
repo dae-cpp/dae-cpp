@@ -25,7 +25,7 @@ struct MyMassMatrix //: MassMatrix
     {
         M.reserve(2 * N0);
         for (int i = 0; i < N0; ++i)
-            M(1.0, i, i);
+            M(i, i, 1.0);
     }
 };
 
@@ -88,41 +88,41 @@ struct MyJacobian : JacobianMatrix
         {
             if (i == 0)
             {
-                J((-1.0 + 0.5 * (x[N + 1] - x[N])) * invh2, i, 0);
-                J((1.0 + 0.5 * (x[N + 1] - x[N])) * invh2, i, 1);
-                J(-0.5 * (x[0] + x[1]) * invh2, i, N);
-                J(0.5 * (x[0] + x[1]) * invh2, i, N + 1);
+                J(i, 0, (-1.0 + 0.5 * (x[N + 1] - x[N])) * invh2);
+                J(i, 1, (1.0 + 0.5 * (x[N + 1] - x[N])) * invh2);
+                J(i, N, -0.5 * (x[0] + x[1]) * invh2);
+                J(i, N + 1, 0.5 * (x[0] + x[1]) * invh2);
             }
             else if (i < N - 1)
             {
-                J((1.0 - 0.5 * (x[N + i] - x[N + i - 1])) * invh2, i, i - 1);
-                J((-2.0 + 0.5 * (x[N + i + 1] - 2.0 * x[N + i] + x[N + i - 1])) * invh2, i, i);
-                J((1.0 + 0.5 * (x[N + i + 1] - x[N + i])) * invh2, i, i + 1);
-                J(0.5 * (x[i] + x[i - 1]) * invh2, i, N + i - 1);
-                J(-0.5 * (x[i + 1] + 2.0 * x[i] + x[i - 1]) * invh2, i, N + i);
-                J(0.5 * (x[i + 1] + x[i]) * invh2, i, N + i + 1);
+                J(i, i - 1, (1.0 - 0.5 * (x[N + i] - x[N + i - 1])) * invh2);
+                J(i, i, (-2.0 + 0.5 * (x[N + i + 1] - 2.0 * x[N + i] + x[N + i - 1])) * invh2);
+                J(i, i + 1, (1.0 + 0.5 * (x[N + i + 1] - x[N + i])) * invh2);
+                J(i, N + i - 1, 0.5 * (x[i] + x[i - 1]) * invh2);
+                J(i, N + i, -0.5 * (x[i + 1] + 2.0 * x[i] + x[i - 1]) * invh2);
+                J(i, N + i + 1, 0.5 * (x[i + 1] + x[i]) * invh2);
             }
             else if (i == N - 1)
             {
-                J((1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2, i, i - 1);
-                J((-1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2, i, i);
-                J(0.5 * (x[N - 1] + x[N - 2]) * invh2, i, N + i - 1);
-                J(-0.5 * (x[N - 1] + x[N - 2]) * invh2, i, N + i);
+                J(i, i - 1, (1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2);
+                J(i, i, (-1.0 - 0.5 * (x[2 * N - 1] - x[2 * N - 2])) * invh2);
+                J(i, N + i - 1, 0.5 * (x[N - 1] + x[N - 2]) * invh2);
+                J(i, N + i, -0.5 * (x[N - 1] + x[N - 2]) * invh2);
             }
             else if (i == N)
             {
-                J(1.0, i, N);
+                J(i, N, 1.0);
             }
             else if (i < 2 * N - 1)
             {
-                J(invlam2, i, i - N);
-                J(invh2, i, i - 1);
-                J(-2.0 * invh2, i, i);
-                J(invh2, i, i + 1);
+                J(i, i - N, invlam2);
+                J(i, i - 1, invh2);
+                J(i, i, -2.0 * invh2);
+                J(i, i + 1, invh2);
             }
             else // i == 2*N-1
             {
-                J(1.0, i, 2 * N - 1);
+                J(i, 2 * N - 1, 1.0);
             }
         }
     }
@@ -189,7 +189,7 @@ int main()
         // MySolver solve(rhs, jac, mass);
         // System simple_dae(mass, rhs, jac, opt);
         // System simple_dae(mass, rhs, opt);
-        solve(MyMassMatrix(), rhs, x, t, opt);
+        solve(MyMassMatrix(), rhs, jac, x, t, opt);
         // solve(std::move(mass), rhs, x, t, opt); // Mass ctor will be created only once
 
         // Now we are ready to solve the set of DAEs
@@ -215,7 +215,7 @@ int main()
         // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
 
         // int status = simple_dae.solve(x, t);
-        
+
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         // int status = simple_dae.solve(x, t, std::move(t_out));
         // std::cout << "t_out size: " << t_out.size() << '\n';

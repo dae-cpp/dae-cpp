@@ -65,8 +65,8 @@ struct MyMassMatrix
 {
     void operator()(sparse_matrix &M, const double t) const // const is optional
     {
-        M.reserve(1);
-        M(1.0, 0, 0);
+        // M.reserve(1);
+        M(0, 0, 1.0);
     }
 };
 
@@ -148,9 +148,9 @@ struct MyJacobian //: JacobianMatrix
     void operator()(sparse_matrix &J, const state_vector &x, const double t) // const
     {
         J.reserve(3);
-        J(1.0, 0, 1);
-        J(1.0, 1, 0);
-        J(1.0, 1, 1);
+        J(0, 1, 1.0);
+        J(1, 0, 1.0);
+        J(1, 1, 1.0);
     }
 };
 
