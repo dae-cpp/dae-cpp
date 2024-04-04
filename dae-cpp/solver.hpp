@@ -88,7 +88,7 @@ inline void print_char(bool condition, char ch) noexcept
 /*
  * Converts and formats simulation time, estimates percentage
  */
-inline std::string print_time(double val, double t_total)
+std::string print_time(double val, double t_total)
 {
     double _t_coef{1.0};       // Default conversion coefficient for output
     std::string _t_unit{"ms"}; // Default time units for output
@@ -99,12 +99,10 @@ inline std::string print_time(double val, double t_total)
         _t_coef = 1e-3; // ms -> s
     }
 
-    std::streamsize ss = std::cout.precision();
     std::ostringstream oss;
     oss << std::setw(11) << val * _t_coef << ' ' << _t_unit;
     oss << std::setprecision(3);
-    oss << "  (" << val / t_total * 100.0 << "%)";
-    oss << std::setprecision(ss);
+    oss << "  (" << (int)(val / t_total * 1e5) / 1000.0 << "%)";
     std::string var = oss.str();
     return var;
 }
@@ -112,7 +110,7 @@ inline std::string print_time(double val, double t_total)
 /*
  * Final output
  */
-inline void finalize(const Time &t, int v, Counters c)
+inline void finalize(const Time &t, const int v, const Counters c)
 {
     PRINT(v >= 1, "\nComputation time:" << std::right);
     PRINT(v >= 1, "------------------------------------------------------------");
@@ -403,6 +401,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                         }
                         rhs(f__, xk__, state.t);
                         ASSERT(f.size() == size, "The RHS vector size (" << f.size() << ") does not match the initial condition vector size (" << size << ").");
+
                         // f_ = Eigen::Map<eivec, Eigen::Unaligned>(f.data(), f.size());
                         for (std::size_t k = 0; k < size; ++k)
                         {
