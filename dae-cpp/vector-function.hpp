@@ -1,5 +1,5 @@
 /*
- * The RHS class.
+ * Vector function class.
  * Defines the RHS `f` of the DAE system `M dx/dt = f`.
  * This class is abstract and must be inherited.
  *
@@ -11,8 +11,8 @@
  * Copyright (c) 2024 Ivan Korotkin
  */
 
-#ifndef DAECPP_RHS_H
-#define DAECPP_RHS_H
+#ifndef DAECPP_VECTOR_FUNCTION_H
+#define DAECPP_VECTOR_FUNCTION_H
 
 #include "typedefs.hpp"
 
@@ -20,14 +20,14 @@ namespace daecpp_namespace_name
 {
 
 /*
- * The RHS class.
+ * Vector function class.
  * This class is abstract and must be inherited.
  */
-class RHS
+class VectorFunction
 {
 public:
     /*
-     * Defines the RHS `f` of the DAE system `M dx/dt = f`.
+     * Defines the RHS (vector function) `f` of the DAE system `M dx/dt = f`.
      * Takes vector x and time t and returns the RHS vector f.
      * Vector f is already pre-allocated with f.size() == x.size().
      * This function is pure virtual and must be overriden.
@@ -37,4 +37,4 @@ public:
 
 } // namespace daecpp_namespace_name
 
-#endif // DAECPP_RHS_H
+#endif // DAECPP_VECTOR_FUNCTION_H

@@ -61,7 +61,7 @@ using namespace daecpp;
 //     }
 // };
 
-struct MyMassMatrix : MassMatrix
+struct MyMassMatrix
 {
     void operator()(sparse_matrix &M, const double t) const
     {
@@ -74,7 +74,7 @@ struct MyMassMatrix : MassMatrix
  * RHS of the problem
  * =============================================================================
  */
-class MyRHS : public RHS
+class MyRHS// : public RHS
 {
 public:
     /*
@@ -143,9 +143,9 @@ public:
  * =============================================================================
  */
 
-struct MyJacobian : Jacobian
+struct MyJacobian : JacobianMatrix
 {
-    void operator()(sparse_matrix &J, const state_type &x, const double t) const
+    void operator()(sparse_matrix &J, const state_vector &x, const double t) const
     {
         J.reserve(3);
         J(1.0, 0, 1);
@@ -170,7 +170,7 @@ int main()
         double t{10.0};
 
         // Define the state vector
-        state_type x(2);
+        state_vector x(2);
 
         // Initial conditions
         x[0] = 1;
@@ -207,7 +207,10 @@ int main()
         // Create an instance of the solver with particular RHS, Mass matrix,
         // Jacobian and solver options
         // MySolver solve(rhs, jac, mass);
-        System simple_dae(mass, rhs, jac, opt);
+        // System simple_dae(mass, rhs, jac, opt);
+        // System simple_dae(mass, rhs, opt);
+
+        daecpp::solve(mass, rhs, jac, x, t, opt);
 
         // Now we are ready to solve the set of DAEs
         // std::cout << "Starting DAE solver...\n";
@@ -230,7 +233,7 @@ int main()
         // or t.someFunction({ "1", "2", "3" });
 
         // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
-        int status = simple_dae.solve(x, t);
+        // int status = simple_dae.solve(x, t);
         // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
         // int status = simple_dae.solve(x, t, std::move(t_out));
         // std::cout << "t_out size: " << t_out.size() << '\n';

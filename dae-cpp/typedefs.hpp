@@ -16,6 +16,9 @@
 
 #include <Eigen/Sparse>
 
+#include <autodiff/forward/real.hpp>
+#include <autodiff/forward/real/eigen.hpp>
+
 #define daecpp_namespace_name daecpp
 
 #define DAECPP_VERSION_MAJOR 2
@@ -26,7 +29,7 @@
 namespace daecpp_namespace_name
 {
 
-// Integer type
+// Unsigned integer type
 #ifdef DAECPP_LONG
 typedef u_int64_t int_type;
 #else
@@ -40,17 +43,14 @@ typedef float float_type;
 typedef double float_type;
 #endif
 
-// Integer vector
+namespace core
+{
+
+// Unsigned integer vector
 typedef std::vector<int_type> ivec;
 
 // Floating point (double or single precision) vector
-typedef std::vector<float_type> fvec;
-
-// State vector
-typedef fvec state_type;
-
-namespace core
-{
+typedef std::vector<float_type> rvec;
 
 // Eigen vector type
 #ifdef DAECPP_SINGLE
@@ -63,6 +63,13 @@ typedef Eigen::VectorXd eivec;
 typedef Eigen::SparseMatrix<float_type> eimat;
 
 } // namespace core
+
+// State vector
+typedef core::rvec state_vector;
+
+// State vector for automatic (algorithmic) differentiation
+typedef autodiff::VectorXreal state_type;
+
 } // namespace daecpp_namespace_name
 
 #endif // DAECPP_TYPEDEFS_H

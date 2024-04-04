@@ -35,9 +35,9 @@ namespace daecpp_namespace_name
  */
 struct sparse_matrix
 {
-    fvec A; // Non-zero element A_{ij}
-    ivec i; // Row index (i) of the element A_{ij}
-    ivec j; // Column index (j) of the element A_{ij}
+    core::rvec A; // Non-zero element A_{ij}
+    core::ivec i; // Row index (i) of the element A_{ij}
+    core::ivec j; // Column index (j) of the element A_{ij}
 
     /*
      * Adds non-zero element.
