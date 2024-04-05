@@ -28,12 +28,22 @@
 // Internal constants
 #define DAECPP_MAX_ORDER 4
 #define DAECPP_TIMESTEP_ROUNDING_ERROR 1e-14
-#define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-14 // Used in automatic (algorithmic Jacobian)
+#define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-14 // Used in automatic (algorithmic) Jacobian
 
 #include "assert-custom.hpp"
 
 namespace daecpp_namespace_name
 {
+
+// Solver error codes
+enum error_code
+{
+    success = 0,
+    diverged = 1,
+    linsolver_failed_decomposition = 2,
+    linsolver_failed_solving = 3,
+    unknown = 10
+};
 
 // Unsigned integer type
 #ifdef DAECPP_LONG

@@ -218,13 +218,16 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     0 if integration is successful or error code if integration is failed (int)
  */
 template <class Mass, class RHS, class Jacobian>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output, const SolverOptions &opt, bool is_jac_auto)
+error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output, const SolverOptions &opt, bool is_jac_auto)
 {
     // Specific counters
     Counters c;
 
     // Specific timers
     Time time;
+
+    // Solution outcome (success or error code)
+    error_code error_msg{unknown};
 
     // Global timer
     {
@@ -385,12 +388,19 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                     double alpha{}; // Derivative w.r.t. xk
 
                     // Returns time derivative approximation dxdt and its corresponding derivative w.r.t. xk
+                    try
                     {
                         Timer timer(&time.time_derivative);
                         alpha = time_derivative_approx(dxdt, xk, state, size);
                     }
+                    catch (const std::exception &e)
+                    {
+                        ERROR("Failed to compute the time derivative approximation.\n"
+                              << e.what());
+                    }
 
                     // Get and convert the RHS
+                    try
                     {
                         Timer timer(&time.rhs);
 
@@ -408,15 +418,28 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                             f_[k] = f__[k].val();
                         }
                     }
+                    catch (const std::exception &e)
+                    {
+                        ERROR("Failed to compute and convert the vector function (RHS).\n"
+                              << e.what());
+                    }
 
                     // Get and convert the Mass matrix
                     if (!opt.is_mass_matrix_static || (opt.is_mass_matrix_static && !iter && !c.n_lin_calls))
                     {
-                        Timer timer(&time.mass);
-                        M.clear();
-                        mass(M, state.t);
-                        M.check();
-                        M_ = M.convert(size);
+                        try
+                        {
+                            Timer timer(&time.mass);
+                            M.clear();
+                            mass(M, state.t);
+                            M.check();
+                            M_ = M.convert(size);
+                        }
+                        catch (const std::exception &e)
+                        {
+                            ERROR("Failed to compute and convert the Mass matrix.\n"
+                                  << e.what());
+                        }
                     }
 
                     bool is_fact_enabled = !(iter % (opt.Newton_scheme + 1));
@@ -424,14 +447,23 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                     // Get and convert the Jacobian matrix
                     if (is_fact_enabled)
                     {
-                        Timer timer(&time.jacobian);
-                        J.clear();
-                        jac(J, xk, state.t);
-                        J.check();
-                        Jb = J.convert(size);
+                        try
+                        {
+                            Timer timer(&time.jacobian);
+                            J.clear();
+                            jac(J, xk, state.t);
+                            J.check();
+                            Jb = J.convert(size);
+                        }
+                        catch (const std::exception &e)
+                        {
+                            ERROR("Failed to compute and convert the Jacobian matrix.\n"
+                                  << e.what());
+                        }
                     }
 
                     // Matrix-vector operations
+                    try
                     {
                         Timer timer(&time.linear_algebra);
 
@@ -445,6 +477,11 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                             Jb -= M_ * alpha;
                         }
                     }
+                    catch (const std::exception &e)
+                    {
+                        ERROR("Failed to perform matrix-vector operations with Eigen.\n"
+                              << e.what());
+                    }
 
                     // Factorization
                     if (is_fact_enabled)
@@ -455,7 +492,9 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
 
                         if (linsolver.info() != Eigen::Success)
                         {
-                            ERROR("Decomposition failed."); // TODO: Try to recover
+                            PRINT(opt.verbosity >= 2, " <- decomposition failed");
+                            error_msg = error_code::linsolver_failed_decomposition;
+                            goto result; // Abort all loops and go straight to the results
                         }
 
                         c.n_fact_calls++;
@@ -469,7 +508,9 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
 
                         if (linsolver.info() != Eigen::Success)
                         {
-                            ERROR("Solving failed."); // TODO: Try to recover
+                            PRINT(opt.verbosity >= 2, " <- linear solver failed");
+                            error_msg = error_code::linsolver_failed_solving;
+                            goto result; // Abort all loops and go straight to the results
                         }
 
                         c.n_lin_calls++;
@@ -509,8 +550,8 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                                 if (dt < opt.dt_min)
                                 {
                                     PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                                    goto result; // Abort all loops and go straight to the results.
-                                                 // Using goto here is much more clear than using a sequence of `break` statements.
+                                    error_msg = error_code::diverged;
+                                    goto result; // Abort all loops and go straight to the results
                                 }
 
                                 break;
@@ -579,8 +620,8 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
                     {
                         PRINT(opt.verbosity >= 2, " <- reached dt_min");
                         PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                        goto result; // Abort all loops and go straight to the results.
-                                     // Using goto here is much more clear than using a sequence of `break` statements.
+                        error_msg = error_code::diverged;
+                        goto result; // Abort all loops and go straight to the results
                     }
                 }
                 if (iter <= dt_increase_threshold - 1)
@@ -635,10 +676,9 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
 
         } // for (const auto &t1 : t_out) - Loop over all output times
 
-    result:
-        // Return solution and the final time
-        // x = state.x[0];
-        // t_end = state.t;
+        error_msg = error_code::success;
+
+    result: // Using goto here is much more clear than using a sequence of `break` statements
 
         PRINT(opt.verbosity >= 1, "...done");
 
@@ -648,32 +688,32 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double 
     finalize(time, opt.verbosity, c);
 
     // Success
-    return 0;
+    return error_msg;
 }
 
 } // namespace internal
 } // namespace core
 
 template <class Mass, class RHS, class Jacobian>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
+error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, x, t_end, t_output, opt, false);
 }
 
 template <class Mass, class RHS>
-int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
+error_code solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, t_output, opt, true);
 }
 
 template <class Mass, class RHS>
-int solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
+error_code solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, {}, opt, true);
 }
 
 template <class Mass, class RHS, class Jacobian>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
+error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, x, t_end, {}, opt, false);
 }
