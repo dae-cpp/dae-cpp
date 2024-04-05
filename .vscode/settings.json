@@ -1,5 +1,0 @@
-{
-    "C_Cpp.formatting": "clangFormat",
-    "C_Cpp.clang_format_style": "{ BasedOnStyle: LLVM, UseTab: Never, IndentWidth: 4, TabWidth: 4, BreakBeforeBraces: Allman, AllowShortIfStatementsOnASingleLine: false, IndentCaseLabels: false, ColumnLimit: 0, AccessModifierOffset: -4, NamespaceIndentation: None, FixNamespaceComments: true }",
-    "C_Cpp.autoAddFileAssociations": false,
-}

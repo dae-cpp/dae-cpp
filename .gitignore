@@ -1,3 +1,6 @@
 # Executables and builds
 build/
 *.exe
+
+# VS Code files
+.vscode/
