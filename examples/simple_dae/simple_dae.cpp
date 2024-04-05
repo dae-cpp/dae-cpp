@@ -83,7 +83,7 @@ public:
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        f[0] = x[1];
+        f[0] = x[1] - 1; // TODO: Added -1
         f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
     }
 };
@@ -212,7 +212,9 @@ int main()
 
         // daecpp::solve(mass, rhs, jac, x, t, opt);
         // daecpp::solve(mass, rhs, {1.0, -1.0}, 1.0, {0.5}, opt);
-        daecpp::solve(MyMassMatrix(), MyRHS(), x, 10.0, {1.0, 2.0, 5.0}, opt);
+        // daecpp::solve(MyMassMatrix(), MyRHS(), x, 10.0, {1.0, 2.0, 5.0}, opt);
+
+        daecpp::solve(MassMatrixZero(), MyRHS(), {0, 0}, opt.dt_init, opt);
 
         // Now we are ready to solve the set of DAEs
         // std::cout << "Starting DAE solver...\n";

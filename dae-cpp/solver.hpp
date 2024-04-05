@@ -335,9 +335,9 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
         {
             PRINT(opt.verbosity >= 2, "\n-- Integration time t = " << t1 << ":");
 
-            if (t1 < 0.0)
+            if (t1 <= 0.0)
             {
-                WARNING("Negative integration time t = " << t1 << ". Skipped.");
+                WARNING("Negative or zero integration time t = " << t1 << ". Skipped.");
                 continue;
             }
 
