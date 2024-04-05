@@ -85,7 +85,7 @@ struct SolverOptions
     // If the Newton method fails to converge 'max_Newton_failed_attempts' times in a row,
     // the solver will try to update Jacobian matrix every single iteration next time step (for Quasi-Newton methods).
     // Default value is 3.
-    unsigned int max_Newton_failed_attempts{3}; // TODO: Not used yet
+    unsigned int max_Newton_failed_attempts{3};
 
     // Time step amplification threshold delta (0 by default). Can be negative or positive integer number.
     // The solver increases the time step if the number of successful Newton iterations per time step is less than the threshold.
@@ -130,6 +130,7 @@ struct SolverOptions
         ASSERT((BDF_order >= 1) && (BDF_order <= DAECPP_MAX_ORDER), "Unknown order of the BDF implicit numerical integration method: " << BDF_order << ".\n`BDF_order` must be 1, 2, 3, or 4.");
         ASSERT(Newton_scheme <= 10, "Non-linear solver algorithm (defined by `Newton_scheme` option) can be 0 (classic Newton method), 1, 2, or 3 (Quasi-Newton methods).");
         ASSERT(max_Jacobian_updates >= 4, "Maximum number of the Jacobian matrix updates and factorizations per time step should be at least 4.");
+        ASSERT(max_Newton_failed_attempts > 0, "`max_Newton_failed_attempts` should be positive.");
         ASSERT(dt_increase_factor >= 1.0, "Time step amplification factor `dt_increase_factor` should be greater than 1.");
         ASSERT(dt_decrease_factor >= 1.0, "Time step reduction factor `dt_decrease_factor` should be greater than 1.");
         ASSERT(num_threads > 0, "Number of threads `num_threads` should be 1 or more.");

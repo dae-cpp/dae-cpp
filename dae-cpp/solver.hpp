@@ -442,7 +442,8 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                         }
                     }
 
-                    bool is_fact_enabled = !(iter % (opt.Newton_scheme + 1));
+                    // Enable/disable factorization depending on the number of failed attempts and the current Newton scheme
+                    bool is_fact_enabled = (n_iter_failed < opt.max_Newton_failed_attempts) ? !(iter % (opt.Newton_scheme + 1)) : true;
 
                     // Get and convert the Jacobian matrix
                     if (is_fact_enabled)
@@ -590,6 +591,8 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                 {
                     continue;
                 }
+
+                n_iter_failed = 0;
 
                 {
                     Timer timer(&time.history);
