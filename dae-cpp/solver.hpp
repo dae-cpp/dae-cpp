@@ -204,18 +204,8 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
 }
 
 /*
- * Integrates the system of DAEs in the interval `t = [0; t_end]`. TODO: Update description.
- * Mass, RHS, Jacobian will be moved from temporary or if called with std::move()
- * Returns solution `x` at time `t_end` (the initial condition stored in `x` will be overwritten).
- * If the solver stops earlier, `t_end` will be overwritten with the actual time.
- *
- * Parameters:
- *     x - initial condition (state_vector)
- *     t_end - integration interval `t = [0; t_end]` (double)
- *     t_output - (optional) a vector of output times (std::vector<double>)
- *
- * Returns:
- *     0 if integration is successful or error code if integration is failed (int)
+ * The main solver.
+ * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
  */
 template <class Mass, class RHS, class Jacobian>
 error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output, const SolverOptions &opt, bool is_jac_auto)
@@ -706,24 +696,84 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
 } // namespace internal
 } // namespace core
 
+/*
+ * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
+ *
+ * Parameters:
+ *     `mass` - Mass matrix (Mass matrix object)
+ *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
+ *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
+ *     `x` - initial condition (`state_vector`)
+ *     `t_end` - integration interval `t = [0; t_end]` (`double`)
+ *     `t_output` - (optional) a vector of output times (`std::vector<double>`)
+ *     `opt` - (optional) solver options (`SolverOptions` object)
+ *
+ * Returns:
+ *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
+ */
 template <class Mass, class RHS, class Jacobian>
 error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, x, t_end, t_output, opt, false);
 }
 
+/*
+ * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
+ *
+ * Parameters:
+ *     `mass` - Mass matrix (Mass matrix object)
+ *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
+ *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
+ *     `x` - initial condition (`state_vector`)
+ *     `t_end` - integration interval `t = [0; t_end]` (`double`)
+ *     `t_output` - (optional) a vector of output times (`std::vector<double>`)
+ *     `opt` - (optional) solver options (`SolverOptions` object)
+ *
+ * Returns:
+ *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
+ */
 template <class Mass, class RHS>
 error_code solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const std::vector<double> t_output = {}, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, t_output, opt, true);
 }
 
+/*
+ * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
+ *
+ * Parameters:
+ *     `mass` - Mass matrix (Mass matrix object)
+ *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
+ *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
+ *     `x` - initial condition (`state_vector`)
+ *     `t_end` - integration interval `t = [0; t_end]` (`double`)
+ *     `t_output` - (optional) a vector of output times (`std::vector<double>`)
+ *     `opt` - (optional) solver options (`SolverOptions` object)
+ *
+ * Returns:
+ *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
+ */
 template <class Mass, class RHS>
 error_code solve(Mass mass, RHS rhs, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), x, t_end, {}, opt, true);
 }
 
+/*
+ * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
+ *
+ * Parameters:
+ *     `mass` - Mass matrix (Mass matrix object)
+ *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
+ *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
+ *     `x` - initial condition (`state_vector`)
+ *     `t_end` - integration interval `t = [0; t_end]` (`double`)
+ *     `t_output` - (optional) a vector of output times (`std::vector<double>`)
+ *     `opt` - (optional) solver options (`SolverOptions` object)
+ *
+ * Returns:
+ *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
+ */
 template <class Mass, class RHS, class Jacobian>
 error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const double t_end, const SolverOptions &opt = SolverOptions())
 {
