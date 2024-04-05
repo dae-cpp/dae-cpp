@@ -173,6 +173,7 @@ int main()
         opt.is_mass_matrix_static = true;
         opt.Newton_scheme = 1;
         opt.dt_increase_threshold_delta = 0;
+        // opt.dt_init = 0.001;
 
         opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)

@@ -351,6 +351,8 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                                      << t1 << ".");
             }
 
+            bool delay_timestep_inc{false}; // If true, delays increasing the time step for one time step
+
             /*
              * Time loop
              */
@@ -541,20 +543,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                             if (err_abs > opt.max_err_abs || std::isnan(dx[i]))
                             {
                                 PRINT(opt.verbosity >= 2, " <- diverged");
-
-                                // Trying to roll back and reduce the time step
                                 is_diverged = true;
-                                n_iter_failed++;
-                                state.t = state.t_prev;
-                                n_steps--;
-                                dt /= opt.dt_decrease_factor;
-                                if (dt < opt.dt_min)
-                                {
-                                    PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                                    error_msg = error_code::diverged;
-                                    goto result; // Abort all loops and go straight to the results
-                                }
-
                                 break;
                             }
 
@@ -587,8 +576,26 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
 
                 } // Newton iteration loop
 
+                if (iter == max_Newton_iter)
+                {
+                    PRINT(opt.verbosity >= 2, " <- couldn't converge");
+                    is_diverged = true;
+                }
+
                 if (is_diverged)
                 {
+                    // Trying to roll back and reduce the time step
+                    n_iter_failed++;
+                    delay_timestep_inc = true;
+                    state.t = state.t_prev;
+                    n_steps--;
+                    dt /= opt.dt_decrease_factor;
+                    if (dt < opt.dt_min)
+                    {
+                        PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                        error_msg = error_code::diverged;
+                        goto result; // Abort all loops and go straight to the results
+                    }
                     continue;
                 }
 
@@ -627,7 +634,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
-                if (iter <= dt_increase_threshold - 1)
+                if ((iter <= dt_increase_threshold - 1) && !delay_timestep_inc)
                 {
                     dt *= opt.dt_increase_factor;
                     if (dt > opt.dt_max)
@@ -640,6 +647,8 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x, const 
                         print_char(opt.verbosity >= 2, '>');
                     }
                 }
+
+                delay_timestep_inc = false;
 
                 // Adjust the last time step if needed
                 if (dt > t1 - state.t)
