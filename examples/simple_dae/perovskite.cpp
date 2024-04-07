@@ -217,11 +217,11 @@ int main()
 
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, Solution(sol), opt);
 
-        solve(MyMassMatrix(1.0), rhs, x, 1.0, Solution(sol1), opt);
+        solve(MyMassMatrix(1.0), rhs, jac, x, 1.0, Solution(sol1), opt);
 
-        System my_system(MyMassMatrix(1.0), rhs, JacobianAutomatic(rhs));
+        System my_system(MyMassMatrix(1.0), rhs);
 
-        my_system.solve(x, 1.0, Solution(sol), opt);
+        my_system.solve(jac, x, 1.0, Solution(sol), opt);
 
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, sol);
         // // solve(MyMassMatrix(1.0), rhs, jac, x, t, opt);
