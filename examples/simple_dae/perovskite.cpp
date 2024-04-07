@@ -7,7 +7,7 @@
 // #include <dae-cpp/Eigen/Dense>
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
-const int N0 = 4000;       // Number of points
+const int N0 = 40000;       // Number of points
 const double L = 1.0;      // Space interval length
 const double lambda = 1.0; // Lambda parameter
 const double t1 = 10.0;    // Integration time (0 < t < t1)
@@ -20,12 +20,16 @@ using namespace daecpp;
 
 struct MyMassMatrix //: MassMatrix
 {
-    // MyMassMatrix(){std::cout << "Mass ctor\n";}
+    const double param;
+    MyMassMatrix(const double p) : param(p)
+    {
+        // std::cout << "Mass ctor\n";
+    }
     void operator()(sparse_matrix &M, const double t)
     {
         M.reserve(2 * N0);
         for (int i = 0; i < N0; ++i)
-            M(i, i, 1.0);
+            M(i, i, 1.0 * param);
     }
 };
 
@@ -40,6 +44,8 @@ public:
      * Receives current solution vector x and the current time t.
      * Defines the RHS f.
      */
+    // template<typename T>
+    // void operator()(T &f, const T &x, const double t) const
     void operator()(state_type &f, const state_type &x, const double t) const
     {
         // Locals
@@ -190,7 +196,45 @@ int main()
         // MySolver solve(rhs, jac, mass);
         // System simple_dae(mass, rhs, jac, opt);
         // System simple_dae(mass, rhs, opt);
-        solve(MyMassMatrix(), rhs, jac, x, t, opt);
+
+        Event evt;
+
+        Solution sol;
+
+        // Can lead to dangling refs
+        // std::vector<state_vector> x_sol;
+        // std::vector<double> t_sol;
+
+        solve(MyMassMatrix(1.0), rhs, jac, x, t, sol, evt, opt);
+
+        // sol.x.back();
+
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver(), evt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver(), opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver());
+
+        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), evt, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), evt);
+        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), opt);
+        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver());
+
+
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), evt, opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), evt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver());
+
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), evt, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), evt);
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), opt);
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver());
+
+
+
+        // double param = 1.0;
+        // System my_system(MyMassMatrix(param), rhs, MyJacobian(), opt);
+        // my_system.solve(x, t);
+
         // solve(std::move(mass), rhs, x, t, opt); // Mass ctor will be created only once
 
         // Now we are ready to solve the set of DAEs
@@ -222,7 +266,8 @@ int main()
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
-        std::cout << "x = " << x[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
+        std::cout << sol.x.size() << "  " << sol.t.size() << '\n';
+        std::cout << "x = " << sol.x.back()[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
         // std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 
         // MatrixXd m(2, 2);
