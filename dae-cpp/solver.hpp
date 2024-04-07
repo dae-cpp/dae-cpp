@@ -208,6 +208,20 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
 /*
  * The main solver.
  * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x`.
+ *
+ * Parameters:
+ *     `mass` - Mass matrix (Mass matrix object)
+ *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
+ *     `jac` - Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
+ *     `obs` - Observer object
+ *     `x` - initial condition (`state_vector`)
+ *     `t_end` - integration interval `t = [0; t_end]` (`double`)
+ *     `t_output` - a vector of output times (`std::vector<double>`)
+ *     `opt` - solver options (`SolverOptions` object)
+ *     `is_jac_auto` - `true` if Jacobian is computed automatically, `false` otherwise (`bool`)
+ *
+ * Returns:
+ *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Observer>
 error_code solve(Mass mass, RHS rhs, Jacobian jac, Observer &obs, const state_vector &x, const double t_end, const std::vector<double> t_output, const SolverOptions &opt, bool is_jac_auto)
@@ -237,9 +251,15 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Observer &obs, const state_ve
         std::vector<double> t_out = std::move(t_output);
 
         // Sort vector of output times and erase duplicates
-        t_out.push_back(t_end);
-        std::sort(t_out.begin(), t_out.end());
-        t_out.erase(std::unique(t_out.begin(), t_out.end()), t_out.end());
+        if (t_out.size())
+        {
+            std::sort(t_out.begin(), t_out.end());
+            t_out.erase(std::unique(t_out.begin(), t_out.end()), t_out.end());
+        }
+        else
+        {
+            t_out.push_back(t_end);
+        }
 
         // Throw an error if target time t < 0
         ASSERT(t_out.back() >= 0.0, "Target time t_end cannot be negative. The solver integrates from 0 to t_end.");
