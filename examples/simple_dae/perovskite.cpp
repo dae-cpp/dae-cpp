@@ -208,14 +208,21 @@ int main()
 
         // Event evt;
 
-        SolutionHolder sol;
+        SolutionHolder sol, sol1;
         Observer obs;
 
         // Can lead to dangling refs
         // std::vector<state_vector> x_sol;
         // std::vector<double> t_sol;
 
-        solve(MyMassMatrix(1.0), rhs, jac, x, t, Solution(sol), opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t, Solution(sol), opt);
+
+        solve(MyMassMatrix(1.0), rhs, x, 1.0, Solution(sol1), opt);
+
+        System my_system(MyMassMatrix(1.0), rhs, JacobianAutomatic(rhs));
+
+        my_system.solve(x, 1.0, Solution(sol), opt);
+
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, sol);
         // // solve(MyMassMatrix(1.0), rhs, jac, x, t, opt);
         // solve(MyMassMatrix(1.0), rhs, jac, x, t);
@@ -273,6 +280,7 @@ int main()
 
         // using Eigen::MatrixXd;
         std::cout << sol.x.size() << "  " << sol.t.size() << '\n';
+        std::cout << sol1.x.size() << "  " << sol1.t.size() << '\n';
         std::cout << "x = " << sol.x.back()[0] << " " << x[N0] << " " << x[N0 + (N0 - 1) / 5 * 3] * 0.6 + x[N0 + (N0 - 1) / 5 * 3 + 1] * 0.4 << " " << x[2 * N0 - 1] << " ";
         // std::cout << "Time: " << t << "\t" << x[0] << "\t" << x[1] << "\t" << std::exp(-10.0) << "\t" << -std::exp(-10.0) << '\n';
 

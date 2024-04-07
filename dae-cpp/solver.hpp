@@ -224,7 +224,7 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager>
-error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vector &x, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
+error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vector &x0, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
 {
     // Specific counters
     Counters c;
@@ -280,7 +280,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vect
         unsigned int max_Newton_iter = opt.max_Jacobian_updates * (opt.Newton_scheme + 1);
 
         // System size
-        auto size = x.size();
+        auto size = x0.size();
         ASSERT(size > 0, "Initial condition vector x is empty.");
 
         // Solver state
@@ -293,10 +293,10 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vect
         dt = opt.dt_init;
 
         // Copy initial state
-        state.x[0] = x;
+        state.x[0] = x0;
 
         // Solution vector used for Newton iterations
-        state_vector xk = x;
+        state_vector xk = x0;
 
         // The RHS vector
         state_vector f(size);
@@ -338,7 +338,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vect
         PRINT(opt.verbosity >= 1, "Calculating...");
 
         // Call Solution Manager functor with the initial condition
-        if (man(x, 0.0))
+        if (man(x0, 0.0))
         {
             PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
             goto result;
@@ -748,7 +748,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager man, const state_vect
  *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, man, x0, t_end, {}, opt, false);
 }
@@ -769,7 +769,7 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double
  *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-int solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline error_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), man, x0, t_end, {}, opt, true);
 }
@@ -790,7 +790,7 @@ int solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manage
  *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, man, x0, 0.0, t_output, opt, false);
 }
@@ -811,32 +811,37 @@ int solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::v
  *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-int solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline error_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), man, x0, 0.0, t_output, opt, true);
 }
 
 // TODO:
-// template <class Mass, class RHS, class Jacobian>
-// class System
-// {
-//     Mass _mass;
-//     RHS _rhs;
-//     Jacobian _jac;
+template <class Mass, class RHS, class Jacobian>
+class System
+{
+    Mass _mass;
+    RHS _rhs;
+    Jacobian _jac;
 
-//     const SolverOptions &_opt;
+    const bool _is_jac_auto;
 
-//     const bool _is_jac_auto;
+public:
+    System(Mass mass, RHS rhs, Jacobian jac) : _mass(mass), _rhs(rhs), _jac(jac), _is_jac_auto(false) {}
+    // System(Mass mass, RHS rhs) : _mass(mass), _rhs(rhs), _jac(JacobianAutomatic(rhs)), _is_jac_auto(true) {}
 
-// public:
-//     System(Mass mass, RHS rhs, Jacobian jac, const SolverOptions &opt = SolverOptions()) : _mass(mass), _rhs(rhs), _jac(jac), _opt(opt), _is_jac_auto(false) {}
-//     // System(Mass mass, RHS rhs, const SolverOptions &opt = SolverOptions()) : _mass(mass), _rhs(rhs), _jac(JacobianAutomatic(rhs)), _opt(opt), _is_jac_auto(true) {}
+    template <class Manager = SolutionManager>
+    error_code solve(const state_vector &x0, const double t_end, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+    {
+        return core::internal::solve(_mass, _rhs, _jac, man, x0, t_end, {}, opt, _is_jac_auto);
+    }
 
-//     error_code solve(const state_vector &x, const double t_end, const std::vector<double> t_output = {})
-//     {
-//         return core::internal::solve(_mass, _rhs, _jac, x, t_end, t_output, _opt, _is_jac_auto);
-//     }
-// };
+    template <class Manager = SolutionManager>
+    error_code solve(const state_vector &x0, const std::vector<double> &t_output, Manager man = SolutionManager(), const SolverOptions &opt = SolverOptions())
+    {
+        return core::internal::solve(_mass, _rhs, _jac, man, x0, 0.0, t_output, opt, _is_jac_auto);
+    }
+};
 
 } // namespace daecpp_namespace_name
 

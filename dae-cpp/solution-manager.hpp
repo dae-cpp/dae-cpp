@@ -67,11 +67,11 @@ struct SolutionHolder
  */
 class Solution : public SolutionManager
 {
-    // Output times
-    std::vector<double> _t_out; // Need a copy for sorting
-
     // A reference to the solution holder object
     SolutionHolder &_sol;
+
+    // Output times
+    std::vector<double> _t_out; // Need a copy for sorting
 
 public:
     /*
