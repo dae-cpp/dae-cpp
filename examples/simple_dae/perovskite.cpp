@@ -7,7 +7,7 @@
 // #include <dae-cpp/Eigen/Dense>
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
-const int N0 = 40000;       // Number of points
+const int N0 = 400;        // Number of points
 const double L = 1.0;      // Space interval length
 const double lambda = 1.0; // Lambda parameter
 const double t1 = 10.0;    // Integration time (0 < t < t1)
@@ -134,6 +134,15 @@ struct MyJacobian : JacobianMatrix
     }
 };
 
+struct Observer
+{
+    int operator()(const state_vector &x, const double t)
+    {
+        std::cout << t << " | " << x[0] << "\n";
+        return 0;
+    }
+};
+
 /*
  * MAIN FUNCTION
  * =============================================================================
@@ -197,39 +206,36 @@ int main()
         // System simple_dae(mass, rhs, jac, opt);
         // System simple_dae(mass, rhs, opt);
 
-        Event evt;
+        // Event evt;
 
-        Solution sol;
+        SolutionHolder sol;
+        Observer obs;
 
         // Can lead to dangling refs
         // std::vector<state_vector> x_sol;
         // std::vector<double> t_sol;
 
-        solve(MyMassMatrix(1.0), rhs, jac, x, t, sol, evt, opt);
+        solve(MyMassMatrix(1.0), rhs, jac, x, t, Solution(sol), opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t, sol);
+        // // solve(MyMassMatrix(1.0), rhs, jac, x, t, opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, t);
 
-        // sol.x.back();
+        // solve(MyMassMatrix(1.0), rhs, x, t, sol, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, t, sol);
+        // // solve(MyMassMatrix(1.0), rhs, x, t, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, t);
 
-        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver(), evt);
-        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver(), opt);
-        // solve(MyMassMatrix(1.0), rhs, jac, x, t, DefaultObserver());
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, sol, opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, sol);
+        // // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, opt);
+        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0});
 
-        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), evt, opt);
-        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), evt);
-        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver(), opt);
-        // solve(MyMassMatrix(1.0), rhs, x, t, DefaultObserver());
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, sol, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, sol);
+        // // solve(MyMassMatrix(1.0), rhs, x, {1.0}, opt);
+        // solve(MyMassMatrix(1.0), rhs, x, {1.0});
 
-
-        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), evt, opt);
-        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), evt);
-        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver(), opt);
-        // solve(MyMassMatrix(1.0), rhs, jac, x, {1.0}, DefaultObserver());
-
-        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), evt, opt);
-        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), evt);
-        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver(), opt);
-        // solve(MyMassMatrix(1.0), rhs, x, {1.0}, DefaultObserver());
-
-
+        sol.x.back();
 
         // double param = 1.0;
         // System my_system(MyMassMatrix(param), rhs, MyJacobian(), opt);
