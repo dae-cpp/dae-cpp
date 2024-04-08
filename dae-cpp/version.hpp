@@ -1,5 +1,5 @@
 /*
- * Defines custom types and shortcuts used in the project.
+ * Defines minor and major version of the DAE solver.
  *
  * This file is part of dae-cpp.
  *
@@ -21,7 +21,7 @@ namespace daecpp_namespace_name
 constexpr u_int16_t version_major{DAECPP_VERSION_MAJOR};
 
 // dae-cpp library minor version
-constexpr u_int16_t version_major{DAECPP_VERSION_MINOR};
+constexpr u_int16_t version_minor{DAECPP_VERSION_MINOR};
 
 } // namespace daecpp_namespace_name
 

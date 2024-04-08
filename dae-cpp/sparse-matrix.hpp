@@ -44,9 +44,9 @@ struct sparse_matrix
      * Duplicated elements will be summed up.
      *
      * Parameters:
-     *     A_ij - non-zero element (float_type)
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
+     *     A_ij - non-zero element (float_type)
      */
     inline void operator()(const int_type ind_i, const int_type ind_j, const float_type A_ij)
     {
@@ -60,9 +60,9 @@ struct sparse_matrix
      * Duplicated elements will be summed up.
      *
      * Parameters:
-     *     A_ij - non-zero element (float_type)
      *     ind_i - row index of the element (int_type)
      *     ind_j - column index of the element (int_type)
+     *     A_ij - non-zero element (float_type)
      */
     inline void add_element(const int_type ind_i, const int_type ind_j, const float_type A_ij)
     {
@@ -129,7 +129,7 @@ struct sparse_matrix
 
         Eigen::VectorXi nonzeros_per_col = Eigen::VectorXi::Constant(N, 0); // Number of non-zero elements per column
 
-        // Counts non-zero elements per column and checks the indexes
+        // Counts non-zero elements per column and checks the indices
         for (std::size_t k = 0; k < N_el; ++k)
         {
             ASSERT(i[k] < N, "Sparse matrix index i is out of boundaries: i = " << i[k] << ", matrix size is " << N << "x" << N);

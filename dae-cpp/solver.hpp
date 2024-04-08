@@ -23,6 +23,7 @@
 #include "solver-options.hpp"
 #include "timer.hpp"
 #include "vector-function.hpp"
+#include "version.hpp"
 
 namespace daecpp_namespace_name
 {
@@ -249,7 +250,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
         Timer *timer_init = new Timer(&t[timer::init]);
 
         // Initial output
-        PRINT(opt.verbosity >= 1, "Starting dae-cpp solver...");
+        PRINT(opt.verbosity >= 1, "Starting dae-cpp version " << version_major << '.' << version_minor << "...");
         PRINT((opt.verbosity >= 1) && is_jac_auto, "NOTE: Using automatic Jacobian...");
 
         // A copy of the vector of output times
@@ -841,6 +842,8 @@ public:
 
     SolutionHolder sol; // Solution holder
 
+    exit_code status{exit_code::unknown}; // Solver status (exit code)
+
     /*
      * DAE System class serves as a wrapper for lower level `solve(...)` function calls.
      * Contains Solver Options object and Solution Holder object.
@@ -865,7 +868,8 @@ public:
     template <class Jacobian>
     exit_code solve(const state_vector &x0, const double t_end, Jacobian jac)
     {
-        return core::internal::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
+        status = core::internal::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
+        return status;
     }
 
     /*
@@ -881,7 +885,8 @@ public:
      */
     exit_code solve(const state_vector &x0, const double t_end)
     {
-        return core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
+        status = core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
+        return status;
     }
 
     /*
@@ -898,7 +903,8 @@ public:
     template <class Jacobian>
     exit_code solve(const state_vector &x0, const std::vector<double> &t_output, Jacobian jac)
     {
-        return core::internal::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
+        status = core::internal::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
+        return status;
     }
 
     /*
@@ -914,7 +920,8 @@ public:
      */
     exit_code solve(const state_vector &x0, const std::vector<double> &t_output)
     {
-        return core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
+        status = core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
+        return status;
     }
 };
 

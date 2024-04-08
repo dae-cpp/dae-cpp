@@ -28,7 +28,7 @@ namespace daecpp_namespace_name
 {
 
 /*
- * Main timer class
+ * Main timer class. Measures time in ms.
  */
 class Timer
 {
@@ -37,7 +37,7 @@ class Timer
     using time_unit = std::chrono::microseconds;
 
     // Starts timer
-    std::chrono::time_point<clock> tic = clock::now();
+    std::chrono::time_point<clock> _tic = clock::now();
 
     // Points to a specific timer
     double *_t;
@@ -47,7 +47,7 @@ public:
 
     ~Timer()
     {
-        *_t += std::chrono::duration_cast<time_unit>(clock::now() - tic).count() * 1e-3; // ms
+        *_t += std::chrono::duration_cast<time_unit>(clock::now() - _tic).count() * 1e-3; // ms
     }
 };
 

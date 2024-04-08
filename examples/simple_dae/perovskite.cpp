@@ -217,15 +217,17 @@ int main()
 
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, Solution(sol), opt);
 
-        solve(MyMassMatrix(1.0), rhs, jac, x, 1.0, Solution(sol1), opt);
+        solve(MyMassMatrix(1.0), rhs, x, 1.0, Solution(sol1), opt);
 
         System my_system(MyMassMatrix(1.0), rhs);
 
         my_system.opt.verbosity = verbosity::extra;
 
-        int status = my_system.solve(x, 1.0, MyJacobian());
+        int status = my_system.solve(x, 100.0, MyJacobian());
 
         sol = my_system.sol;
+
+        my_system.sol.print({0, 1, 2, 10, 5, 1, 1000000});
 
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, sol);
         // // solve(MyMassMatrix(1.0), rhs, jac, x, t, opt);

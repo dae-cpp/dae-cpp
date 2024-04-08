@@ -58,7 +58,7 @@ public:
     {
         std::size_t size = x.size(); // System size
 
-        state_type x_(size);
+        state_type x_(size); // Vectors of `dual` numbers are defined with `_` suffix
 
         // Conversion to dual numbers for automatic differentiation
         for (std::size_t k = 0; k < size; ++k)
@@ -67,11 +67,11 @@ public:
         }
 
         // The vector lambda-function with parameters for which the Jacobian is needed
-        auto f = [&_rhs = _rhs, size](const state_type &x, const double t)
+        auto f = [&_rhs = _rhs, size](const state_type &x_, const double t)
         {
-            state_type f(size);
-            _rhs(f, x, t);
-            return f;
+            state_type f_(size);
+            _rhs(f_, x_, t);
+            return f_;
         };
 
         // Dense Jacobian matrix

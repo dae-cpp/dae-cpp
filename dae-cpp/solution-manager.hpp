@@ -15,7 +15,7 @@
 #ifndef DAECPP_SOLUTION_MANAGER_H
 #define DAECPP_SOLUTION_MANAGER_H
 
-#include <algorithm>
+#include <algorithm> // for `binary_search` and `sort`
 
 #include "typedefs.hpp"
 
@@ -53,8 +53,72 @@ struct SolutionHolder
     // Vector of the corresponding solution times `t`
     std::vector<double> t;
 
-    // TODO: Print `x` and `t`
-    // void print()
+    /*
+     * A helper function to print `x` and `t` on screen.
+     * By default, prints the entire vector `x` and the corresponding time `t`.
+     * Optional parameter: vector of solution indices for printing (`std::vector<std::size_t>`).
+     *
+     * Example:
+     *     print({0, 1, 4});  // Prints 4 columns: `t`, `x[0]`, `x[1]`, `x[4]` for each time `t`
+     */
+    void print(const std::vector<std::size_t> &ind = {}) const
+    {
+        ASSERT(t.size() == x.size(), "Solution vector x size is not equal to the solution time t vector size.");
+
+        // There's nothing to print
+        if (t.size() == 0)
+        {
+            return;
+        }
+
+        // Solution vector size
+        const std::size_t N = x[0].size();
+
+        // Vector of indices for output
+        std::vector<std::size_t> ind_out;
+
+        // Check and fill indices for output
+        if (ind.size())
+        {
+            // The user-defined list may contain duplicates and out-of-range values
+            ind_out.reserve(N);
+            for (const auto &i : ind)
+            {
+                if (i < N)
+                {
+                    ind_out.push_back(i);
+                }
+            }
+        }
+        else
+        {
+            ind_out.resize(N);
+            for (std::size_t i = 0; i < t.size(); ++i)
+            {
+                ind_out[i] = i;
+            }
+        }
+
+        // Header
+        std::cout << "Time";
+        for (const auto &i : ind_out)
+        {
+            std::cout << "\tx[" << i << "]";
+        }
+        std::cout << '\n';
+
+        // Loop over all rows
+        for (std::size_t i = 0; i < t.size(); ++i)
+        {
+            // Solution at time `t`
+            std::cout << t[i];
+            for (const auto &i_out : ind_out)
+            {
+                std::cout << '\t' << x[i][i_out];
+            }
+            std::cout << '\n';
+        }
+    }
 
     // TODO: Save to a file
     // void save(const char delimiter = ',')
