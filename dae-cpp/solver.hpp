@@ -112,23 +112,25 @@ std::string print_time(double val, double t_total)
 /*
  * Final output
  */
-inline void finalize(const Time &t, const int v, const Counters c)
+inline void finalize(const timer::Time &time, const int v, const Counters c)
 {
+    auto &t = time.timers;
+
     PRINT(v >= 1, "\nComputation time:" << std::right);
     PRINT(v >= 1, "------------------------------------------------------------");
-    PRINT(v >= 1, "  Initialization:           " << print_time(t.init, t.total));
-    PRINT(v >= 1, "  Time derivative:          " << print_time(t.time_derivative, t.total));
-    PRINT(v >= 1, "  RHS:                      " << print_time(t.rhs, t.total));
-    PRINT(v >= 1, "  Mass matrix:              " << print_time(t.mass, t.total));
-    PRINT(v >= 1, "  Jacobian matrix:          " << print_time(t.jacobian, t.total));
-    PRINT(v >= 1, "  Linear algebra:           " << print_time(t.linear_algebra, t.total));
-    PRINT(v >= 1, "  Matrix factorization:     " << print_time(t.factorization, t.total) << "  <--  " << c.n_fact_calls << " calls");
-    PRINT(v >= 1, "  Linear solver:            " << print_time(t.linear_solver, t.total) << "  <--  " << c.n_lin_calls << " calls");
-    PRINT(v >= 1, "  Error control:            " << print_time(t.error_check, t.total));
-    PRINT(v >= 1, "  Solution history update:  " << print_time(t.history, t.total));
-    PRINT(v >= 1, "  Other calculations:       " << print_time(t.other(), t.total));
+    PRINT(v >= 1, "  Initialization:       " << print_time(t[timer::init], time.total));
+    PRINT(v >= 1, "  Time derivative:      " << print_time(t[timer::time_derivative], time.total));
+    PRINT(v >= 1, "  RHS:                  " << print_time(t[timer::rhs], time.total));
+    PRINT(v >= 1, "  Mass matrix:          " << print_time(t[timer::mass], time.total));
+    PRINT(v >= 1, "  Jacobian matrix:      " << print_time(t[timer::jacobian], time.total));
+    PRINT(v >= 1, "  Linear algebra:       " << print_time(t[timer::linear_algebra], time.total));
+    PRINT(v >= 1, "  Matrix factorization: " << print_time(t[timer::factorization], time.total) << "  <--  " << c.n_fact_calls << " calls");
+    PRINT(v >= 1, "  Linear solver:        " << print_time(t[timer::linear_solver], time.total) << "  <--  " << c.n_lin_calls << " calls");
+    PRINT(v >= 1, "  Error control:        " << print_time(t[timer::error_check], time.total));
+    PRINT(v >= 1, "  Solution Manager:     " << print_time(t[timer::manager], time.total));
+    PRINT(v >= 1, "  Other calculations:   " << print_time(time.other(), time.total));
     PRINT(v >= 1, "------------------------------------------------------------");
-    PRINT(v >= 1, "Total time:                 " << print_time(t.total, t.total) << std::left);
+    PRINT(v >= 1, "Total time:             " << print_time(time.total, time.total) << std::left);
     PRINT(v >= 1, "------------------------------------------------------------\n");
 }
 
@@ -230,7 +232,10 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
     Counters c;
 
     // Specific timers
-    Time time;
+    timer::Time time;
+
+    // An alias for the specific timers array
+    auto &t = time.timers;
 
     // Solution outcome (success or error code)
     exit_code error_msg{unknown};
@@ -241,7 +246,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
         Timer timer_global(&time.total);
 
         // Measures initialization time
-        Timer *timer_init = new Timer(&time.init);
+        Timer *timer_init = new Timer(&t[timer::init]);
 
         // Initial output
         PRINT(opt.verbosity >= 1, "Starting dae-cpp solver...");
@@ -338,11 +343,14 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
         PRINT(opt.verbosity >= 1, "Calculating...");
 
         // Call Solution Manager functor with the initial condition
-        if (mgr(x0, 0.0))
         {
-            PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
-            goto result;
-        };
+            Timer timer(&t[timer::manager]);
+            if (mgr(x0, 0.0))
+            {
+                PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                goto result;
+            }
+        }
 
         // End of initialization. Stop the timer.
         delete timer_init;
@@ -411,7 +419,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     // Returns time derivative approximation dxdt and its corresponding derivative w.r.t. xk
                     try
                     {
-                        Timer timer(&time.time_derivative);
+                        Timer timer(&t[timer::time_derivative]);
                         alpha = time_derivative_approx(dxdt, xk, state, size);
                     }
                     catch (const std::exception &e)
@@ -423,7 +431,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     // Get and convert the RHS
                     try
                     {
-                        Timer timer(&time.rhs);
+                        Timer timer(&t[timer::rhs]);
 
                         state_type f__(size), xk__(size);
                         for (std::size_t k = 0; k < size; ++k)
@@ -450,7 +458,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     {
                         try
                         {
-                            Timer timer(&time.mass);
+                            Timer timer(&t[timer::mass]);
                             M.clear();
                             mass(M, state.t);
                             M.check();
@@ -471,7 +479,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     {
                         try
                         {
-                            Timer timer(&time.jacobian);
+                            Timer timer(&t[timer::jacobian]);
                             J.clear();
                             jac(J, xk, state.t);
                             J.check();
@@ -487,7 +495,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     // Matrix-vector operations
                     try
                     {
-                        Timer timer(&time.linear_algebra);
+                        Timer timer(&t[timer::linear_algebra]);
 
                         // b = M(t) * [dx/dt] - f
                         b = M_ * dxdt;
@@ -508,7 +516,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                     // Factorization
                     if (is_fact_enabled)
                     {
-                        Timer timer(&time.factorization);
+                        Timer timer(&t[timer::factorization]);
 
                         linsolver.compute(Jb);
 
@@ -524,7 +532,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
 
                     // Solve linear system Jb dx = b
                     {
-                        Timer timer(&time.linear_solver);
+                        Timer timer(&t[timer::linear_solver]);
 
                         dx = linsolver.solve(b);
 
@@ -551,7 +559,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
 
                     // Check convergence/divergence and update xk
                     {
-                        Timer timer(&time.error_check);
+                        Timer timer(&t[timer::error_check]);
 
                         for (std::size_t i = 0; i < size; ++i)
                         {
@@ -621,8 +629,6 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                 n_iter_failed = 0;
 
                 {
-                    Timer timer(&time.history);
-
                     // Updates state history
                     for (std::size_t i = 0; i < size; ++i)
                     {
@@ -685,11 +691,14 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                 print_char(opt.verbosity >= 2, '\n');
 
                 // Call Solution Manager functor with the current solution and time
-                if (mgr(state.x[0], state.t))
                 {
-                    PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
-                    goto result;
-                };
+                    Timer timer(&t[timer::manager]);
+                    if (mgr(state.x[0], state.t))
+                    {
+                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                        goto result;
+                    }
+                }
 
                 // We may already reached the target time
                 if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)

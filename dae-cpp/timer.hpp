@@ -53,36 +53,52 @@ public:
 
 namespace core
 {
+namespace timer
+{
+
+enum specific_timers_enum
+{
+    init,            // Initialization time
+    time_derivative, // Time to compute the time derivative approximation
+    rhs,             // Time to compute and convert the RHS
+    mass,            // Time to compute and convert the Mass matrix
+    jacobian,        // Time to compute and convert the Jacobian matrix
+    linear_algebra,  // Time to perform linear algebra operations
+    factorization,   // Time to perform sparse matrix factorization
+    linear_solver,   // Time spent by the linear solver
+    error_check,     // Time to perform error checks
+    manager          // Time spent to call Solution Manager
+};
 
 /*
  * Specific timers
  */
-struct Time
+class Time
 {
+    const int N{10}; // Total number of the specific timers
+
+public:
     double total{0.0}; // Total time spent by the DAE solver
 
-    // TODO: Might be worth combining them into something like std::map?
-    double init{0.0};            // Initialization time
-    double time_derivative{0.0}; // Time to compute the time derivative approximation
-    double rhs{0.0};             // Time to compute and convert the RHS
-    double mass{0.0};            // Time to compute and convert the Mass matrix
-    double jacobian{0.0};        // Time to compute and convert the Jacobian matrix
-    double linear_algebra{0.0};  // Time to perform linear algebra operations
-    double factorization{0.0};   // Time to perform sparse matrix factorization
-    double linear_solver{0.0};   // Time spent by the linear solver
-    double error_check{0.0};     // Time to perform error checks
-    double history{0.0};         // Time to update the solution vector history
+    std::vector<double> timers; // A vector of specific timers
+
+    Time() : timers(std::vector<double>(N, 0.0)) {}
 
     /*
      * Returns time spent for initialization and other calculations not covered by the specific timers
      */
     double other() const
     {
-        double sum = init + time_derivative + rhs + mass + jacobian + linear_algebra + factorization + linear_solver + error_check + history;
+        double sum{0.0};
+        for (const auto t : timers)
+        {
+            sum += t;
+        }
         return total - sum;
     }
 };
 
+} // namespace timer
 } // namespace core
 } // namespace daecpp_namespace_name
 
