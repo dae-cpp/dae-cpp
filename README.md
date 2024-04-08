@@ -6,6 +6,12 @@
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
+**_NOTE:_ This version of the library is now deprecated and no longer supported.
+Users are encouraged to transition to the forthcoming version, which is currently under development and scheduled for release later in April. The upcoming version boasts significant improvements in user-friendliness, documentation, and testing.
+In addition, it will be a header-only library without external dependencies such as Intel MKL.**
+
+**If your code still relies on the old (MKL-based) version of the solver, it is now archived on the [legacy](https://github.com/ikorotkin/dae-cpp/tree/legacy) branch of the repository.**
+
 ## What is dae-cpp
 
 A cross-platform, parallel C++ library for solving user-defined, stiff systems of DAEs (an initial value problem). The system may contain both differential and algebraic equations and can be written in the following matrix-vector form:
