@@ -221,10 +221,10 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     `is_jac_auto` - `true` if Jacobian is computed automatically, `false` otherwise (`bool`)
  *
  * Returns:
- *     `daecpp::error_code::success` if integration is successful or error code if integration is failed (`int`)
+ *     `daecpp::exit_code::success` if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager>
-error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vector &x0, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
+exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vector &x0, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
 {
     // Specific counters
     Counters c;
@@ -233,7 +233,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
     Time time;
 
     // Solution outcome (success or error code)
-    error_code error_msg{unknown};
+    exit_code error_msg{unknown};
 
     // Global timer
     {
@@ -515,7 +515,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
                         if (linsolver.info() != Eigen::Success)
                         {
                             PRINT(opt.verbosity >= 2, " <- decomposition failed");
-                            error_msg = error_code::linsolver_failed_decomposition;
+                            error_msg = exit_code::linsolver_failed_decomposition;
                             goto result; // Abort all loops and go straight to the results
                         }
 
@@ -531,7 +531,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
                         if (linsolver.info() != Eigen::Success)
                         {
                             PRINT(opt.verbosity >= 2, " <- linear solver failed");
-                            error_msg = error_code::linsolver_failed_solving;
+                            error_msg = exit_code::linsolver_failed_solving;
                             goto result; // Abort all loops and go straight to the results
                         }
 
@@ -612,7 +612,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
                     if (dt < opt.dt_min)
                     {
                         PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                        error_msg = error_code::diverged;
+                        error_msg = exit_code::diverged;
                         goto result; // Abort all loops and go straight to the results
                     }
                     continue;
@@ -649,7 +649,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
                     {
                         PRINT(opt.verbosity >= 2, " <- reached dt_min");
                         PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
-                        error_msg = error_code::diverged;
+                        error_msg = exit_code::diverged;
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
@@ -714,7 +714,7 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
 
         } // for (const auto &t1 : t_out) - Loop over all output times
 
-        error_msg = error_code::success;
+        error_msg = exit_code::success;
 
     result: // Using goto here is much more clear than using a sequence of `break` statements
 
@@ -745,10 +745,10 @@ error_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vect
  *     `opt` - (optional) solver options (`SolverOptions` object)
  *
  * Returns:
- *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+ *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, mgr, x0, t_end, {}, opt, false);
 }
@@ -766,10 +766,10 @@ inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0
  *     `opt` - (optional) solver options (`SolverOptions` object)
  *
  * Returns:
- *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+ *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-inline error_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, t_end, {}, opt, true);
 }
@@ -787,10 +787,10 @@ inline error_code solve(Mass mass, RHS rhs, const state_vector &x0, const double
  *     `opt` - (optional) solver options (`SolverOptions` object)
  *
  * Returns:
- *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+ *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, mgr, x0, 0.0, t_output, opt, false);
 }
@@ -808,10 +808,10 @@ inline error_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0
  *     `opt` - (optional) solver options (`SolverOptions` object)
  *
  * Returns:
- *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+ *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-inline error_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, 0.0, t_output, opt, true);
 }
@@ -851,10 +851,10 @@ public:
      *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
      *
      * Returns:
-     *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+     *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
      */
     template <class Jacobian>
-    error_code solve(const state_vector &x0, const double t_end, Jacobian jac)
+    exit_code solve(const state_vector &x0, const double t_end, Jacobian jac)
     {
         return core::internal::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
     }
@@ -868,9 +868,9 @@ public:
      *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
      *
      * Returns:
-     *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+     *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
      */
-    error_code solve(const state_vector &x0, const double t_end)
+    exit_code solve(const state_vector &x0, const double t_end)
     {
         return core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
     }
@@ -884,10 +884,10 @@ public:
      *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
      *
      * Returns:
-     *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+     *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
      */
     template <class Jacobian>
-    error_code solve(const state_vector &x0, const std::vector<double> &t_output, Jacobian jac)
+    exit_code solve(const state_vector &x0, const std::vector<double> &t_output, Jacobian jac)
     {
         return core::internal::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
     }
@@ -901,9 +901,9 @@ public:
      *     `jac` - (optional) Jacobian matrix (matrix of the RHS derivatives) (Jacobian matrix object)
      *
      * Returns:
-     *     `daecpp::error_code::success` (0) if integration is successful or error code if integration is failed (`int`)
+     *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
      */
-    error_code solve(const state_vector &x0, const std::vector<double> &t_output)
+    exit_code solve(const state_vector &x0, const std::vector<double> &t_output)
     {
         return core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
     }

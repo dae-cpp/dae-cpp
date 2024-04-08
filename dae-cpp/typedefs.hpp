@@ -36,7 +36,7 @@ namespace daecpp_namespace_name
 {
 
 // Solver error codes
-enum error_code
+enum exit_code
 {
     success = 0,
     diverged = 1,
