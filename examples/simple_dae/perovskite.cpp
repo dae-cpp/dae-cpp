@@ -221,7 +221,11 @@ int main()
 
         System my_system(MyMassMatrix(1.0), rhs);
 
-        my_system.solve(jac, x, 1.0, Solution(sol), opt);
+        my_system.opt.verbosity = verbosity::extra;
+
+        int status = my_system.solve(x, 1.0, MyJacobian());
+
+        sol = my_system.sol;
 
         // solve(MyMassMatrix(1.0), rhs, jac, x, t, sol);
         // // solve(MyMassMatrix(1.0), rhs, jac, x, t, opt);

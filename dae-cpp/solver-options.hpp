@@ -33,8 +33,8 @@ enum VerbosityLevel
 struct SolverOptions
 {
     // Verbosity level.
-    // Can be `off` (no output), `normal` (prints basic information), or `extra` (full output).
-    // Default value is `off`.
+    // Can be `verbosity::off` (no output), `verbosity::normal` (prints basic information), or `verbosity::extra` (full output).
+    // Default value is `verbosity::off`.
     verbosity::VerbosityLevel verbosity{verbosity::off};
 
     // Initial time step (0.01 by default).
