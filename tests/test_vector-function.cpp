@@ -1,9 +1,18 @@
+/*
+ * Testing:
+ * class VectorFunction
+ *
+ * This file is part of dae-cpp.
+ *
+ * dae-cpp is licensed under the MIT license.
+ * A copy of the license can be found in the LICENSE file.
+ *
+ * Copyright (c) 2024 Ivan Korotkin
+ */
+
 #include <dae-cpp/vector-function.hpp>
 
 #include "gtest/gtest.h"
-
-// Testing:
-// class VectorFunction
 
 namespace
 {
