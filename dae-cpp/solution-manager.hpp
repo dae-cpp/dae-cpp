@@ -1,5 +1,5 @@
 /*
- * Solution Manager class.
+ * Solution Manager classes.
  * Solution Manager functor will be called every time step providing the time `t` and
  * the corresponding solution `x` for further post-processing.
  * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
@@ -93,7 +93,7 @@ struct SolutionHolder
         else
         {
             ind_out.resize(N);
-            for (std::size_t i = 0; i < t.size(); ++i)
+            for (std::size_t i = 0; i < N; ++i)
             {
                 ind_out[i] = i;
             }
