@@ -146,7 +146,7 @@ public:
      *     `sol` - Solution holder object (SolutionHolder)
      *     `t_output` - (optional) a vector of output times for writing (`std::vector<double>`)
      */
-    explicit Solution(SolutionHolder &sol, const std::vector<double> t_output = {}) : _sol(sol), _t_out(t_output)
+    explicit Solution(SolutionHolder &sol, const std::vector<double> &t_output = {}) : _sol(sol), _t_out(t_output)
     {
         if (_t_out.size() > 0)
         {

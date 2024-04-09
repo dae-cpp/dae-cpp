@@ -43,18 +43,18 @@ public:
  * Performs algorithmic differentiation of the RHS using `autodiff` package.
  */
 template <class RHS>
-class JacobianAutomatic : public JacobianMatrix
+class JacobianAutomatic
 {
-    RHS &_rhs; // The RHS for differentiation (it is not moved because we need it in the solver)
+    RHS _rhs; // The RHS for differentiation (a copy)
 
 public:
-    explicit JacobianAutomatic(RHS &rhs) : JacobianMatrix(), _rhs(rhs) {}
+    explicit JacobianAutomatic(RHS rhs) : _rhs(rhs) {}
 
     /*
      * Automatic (algorithmic) Jacobian.
      * Performs algorithmic differentiation of the RHS using `autodiff` package.
      */
-    void operator()(sparse_matrix &J, const state_vector &x, const double t) const
+    void operator()(sparse_matrix &J, const state_vector &x, const double t)
     {
         const std::size_t size = x.size(); // System size
 
