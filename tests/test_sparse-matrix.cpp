@@ -44,6 +44,36 @@ TEST(SparseMatrix, AddElement)
     EXPECT_EQ(M.j.size(), 3);
 }
 
+TEST(SparseMatrix, AddElementOperator)
+{
+    sparse_matrix M;
+
+    // Using operator () instead of add_element
+    M(1, 2, 1.5);
+    M(3, 4, 2.5);
+    M(5, 6, 3.5);
+    M(5, 6, 3.5); // Duplicate
+
+    EXPECT_DOUBLE_EQ(M.A[0], 1.5);
+    EXPECT_DOUBLE_EQ(M.A[1], 2.5);
+    EXPECT_DOUBLE_EQ(M.A[2], 3.5);
+    EXPECT_DOUBLE_EQ(M.A[3], 3.5);
+
+    EXPECT_EQ(M.i[0], 1);
+    EXPECT_EQ(M.i[1], 3);
+    EXPECT_EQ(M.i[2], 5);
+    EXPECT_EQ(M.i[3], 5);
+
+    EXPECT_EQ(M.j[0], 2);
+    EXPECT_EQ(M.j[1], 4);
+    EXPECT_EQ(M.j[2], 6);
+    EXPECT_EQ(M.j[3], 6);
+
+    EXPECT_EQ(M.A.size(), 4);
+    EXPECT_EQ(M.i.size(), 4);
+    EXPECT_EQ(M.j.size(), 4);
+}
+
 TEST(SparseMatrix, Reserve)
 {
     sparse_matrix M;
@@ -101,19 +131,22 @@ TEST(SparseMatrix, Check)
 
     EXPECT_DOUBLE_EQ(M.A[0], 1e-6);
     EXPECT_DOUBLE_EQ(M.A[1], 1000.0);
+    EXPECT_DOUBLE_EQ(M.A[2], 2000.0);
 
     EXPECT_EQ(M.i[0], 0);
     EXPECT_EQ(M.i[1], 10);
+    EXPECT_EQ(M.i[2], 10);
 
     EXPECT_EQ(M.j[0], 1);
     EXPECT_EQ(M.j[1], 0);
+    EXPECT_EQ(M.j[2], 0);
 
     M.check();
 }
 
 TEST(SparseMatrix, CheckZero)
 {
-    sparse_matrix M;
+    sparse_matrix M; // Zero matrix
 
     M.check();
 
@@ -126,11 +159,10 @@ TEST(SparseMatrix, Dense)
 {
     sparse_matrix M;
 
-    M.reserve(4);
+    M.reserve(3);
     M.add_element(0, 0, 1.0);
     M.add_element(0, 1, 2.0);
     M.add_element(1, 0, 3.0);
-    M.add_element(1, 1, 4.0);
 
     M.check();
 
@@ -139,7 +171,13 @@ TEST(SparseMatrix, Dense)
     EXPECT_DOUBLE_EQ(A.coeffRef(0, 0), 1.0);
     EXPECT_DOUBLE_EQ(A.coeffRef(0, 1), 2.0);
     EXPECT_DOUBLE_EQ(A.coeffRef(1, 0), 3.0);
-    EXPECT_DOUBLE_EQ(A.coeffRef(1, 1), 4.0);
+    EXPECT_DOUBLE_EQ(A.coeffRef(1, 1), 0.0); // It wasn't defined, should be 0
+
+    // Alternatively
+    EXPECT_DOUBLE_EQ(A(0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(A(0, 1), 2.0);
+    EXPECT_DOUBLE_EQ(A(1, 0), 3.0);
+    EXPECT_DOUBLE_EQ(A(1, 1), 0.0);
 }
 
 TEST(SparseMatrix, Convert)

@@ -21,7 +21,7 @@ using namespace daecpp;
 
 TEST(VectorFunction, Definition)
 {
-    struct TestVectorFunction : public VectorFunction
+    struct TestVectorFunction : VectorFunction
     {
         void operator()(state_type &f, const state_type &x, const double t) const
         {

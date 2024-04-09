@@ -56,7 +56,7 @@ TEST(MassMatrix, Definition)
 
 TEST(MassMatrix, Identity)
 {
-    constexpr double N{1000};
+    constexpr std::size_t N{1000}; // Identity matrix size
     constexpr double t{10.0};
 
     MassMatrixIdentity mass(N);
@@ -78,7 +78,6 @@ TEST(MassMatrix, Identity)
 
 TEST(MassMatrix, Zero)
 {
-    constexpr double N{1000};
     constexpr double t{10.0};
 
     MassMatrixZero mass;
