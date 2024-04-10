@@ -91,7 +91,7 @@ inline void print_char(bool condition, char ch) noexcept
 /*
  * Converts and formats simulation time, estimates percentage
  */
-std::string print_time(double val, double t_total)
+inline std::string print_time(double val, double t_total)
 {
     double _t_coef{1.0};       // Default conversion coefficient for output
     std::string _t_unit{"ms"}; // Default time units for output
@@ -758,7 +758,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, mgr, x0, t_end, {}, opt, false);
 }
@@ -779,7 +779,7 @@ inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0,
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-inline exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, t_end, {}, opt, true);
 }
@@ -800,7 +800,7 @@ inline exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double 
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, jac, mgr, x0, 0.0, t_output, opt, false);
 }
@@ -821,7 +821,7 @@ inline exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0,
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-inline exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, 0.0, t_output, opt, true);
 }
