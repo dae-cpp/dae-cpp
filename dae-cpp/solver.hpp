@@ -274,11 +274,11 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
         opt.check();
 
         // Time step amplification threshold
-        unsigned int dt_increase_threshold = 2 * (opt.Newton_scheme + 1) + opt.dt_increase_threshold_delta;
+        int dt_increase_threshold = 2 * (opt.Newton_scheme + 1) + opt.dt_increase_threshold_delta;
         ASSERT(dt_increase_threshold > 0, "Too small delta `dt_increase_threshold_delta`: " << opt.dt_increase_threshold_delta);
 
         // Time step reduction threshold
-        unsigned int dt_decrease_threshold = 4 * (opt.Newton_scheme + 1) + opt.dt_decrease_threshold_delta;
+        int dt_decrease_threshold = 4 * (opt.Newton_scheme + 1) + opt.dt_decrease_threshold_delta;
         ASSERT(dt_decrease_threshold > 0, "Too small delta `dt_decrease_threshold_delta`: " << opt.dt_decrease_threshold_delta);
         ASSERT(dt_decrease_threshold > dt_increase_threshold, "Adaptive time stepping thresholds are not consistent with each other.");
 

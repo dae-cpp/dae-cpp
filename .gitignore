@@ -4,3 +4,4 @@ build/
 
 # VS Code files
 .vscode/
+.cache/

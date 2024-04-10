@@ -67,10 +67,10 @@ public:
         }
 
         // The vector lambda-function with parameters for which the Jacobian is needed
-        auto f = [&_rhs = _rhs, size](const state_type &x_, const double t)
+        auto f = [&rhs = _rhs, size](const state_type &x_, const double t)
         {
             state_type f_(size);
-            _rhs(f_, x_, t);
+            rhs(f_, x_, t);
             return f_;
         };
 

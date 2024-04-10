@@ -108,7 +108,7 @@ auto x_exact(double p, double t)
 constexpr double abs_err{1e-3};
 
 /*
- * Tests all possible parameter combinations to call `solve(...)` function
+ * Tests all possible parameter combinations used to call `solve(...)` function
  */
 TEST(SolverDefinition, SolverFunctions)
 {
@@ -173,7 +173,7 @@ TEST(SolverDefinition, SolverFunctions)
     EXPECT_NEAR(x.back().first, x_exact(param, time).first, abs_err);
     EXPECT_NEAR(x.back().second, x_exact(param, time).second, abs_err);
 
-    // Automatic Jacobian
+    // Explicit automatic Jacobian
     JacobianAutomatic jac_auto(rhs);
     ASSERT_EQ(solve(mass, rhs, jac_auto, x0, time, mgr, opt), 0);
     EXPECT_NEAR(x.back().first, x_exact(param, time).first, abs_err);
@@ -181,7 +181,7 @@ TEST(SolverDefinition, SolverFunctions)
 }
 
 /*
- * Tests all possible parameter combinations to call `solve(...)` function,
+ * Tests all possible parameter combinations used to call `solve(...)` function,
  * creating temporary objects "in place", in the function call.
  */
 TEST(SolverDefinition, SolverFunctionsInPlace)
@@ -294,6 +294,105 @@ TEST(SolverDefinition, SolverFunctionsInPlace)
               0);
     EXPECT_NEAR(x.back().first, x_exact(param, time).first, abs_err);
     EXPECT_NEAR(x.back().second, x_exact(param, time).second, abs_err);
+}
+
+/*
+ * Tests all possible parameter combinations used to create an object of System class
+ */
+TEST(SolverDefinition, SystemClass)
+{
+    double param{0.5};
+    double time{1.0};
+
+    std::vector<double> time_vec = {0.1, 0.2, 0.5, -0.1, 0.5, 0.8, 1.0, 0.0}; // Unsorted with duplicates and negatives
+
+    TestMassMatrix mass(param);
+    TestRHS rhs(param);
+    TestJacobian jac(param);
+
+    // Initial condition
+    state_vector x0(2);
+    x0[0] = 1.0;
+    x0[1] = -param * x0[0];
+
+    // System object
+    System testSystem(mass, rhs);
+
+    // Minimal
+    ASSERT_EQ(testSystem.solve(x0, time), 0);
+    ASSERT_EQ(testSystem.status, 0);
+    EXPECT_NEAR(testSystem.sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem.sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // + jac
+    ASSERT_EQ(testSystem.solve(x0, time, jac), 0);
+    ASSERT_EQ(testSystem.status, 0);
+    EXPECT_NEAR(testSystem.sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem.sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // Minimal with vector of times
+    ASSERT_EQ(testSystem.solve(x0, time_vec), 0);
+    ASSERT_EQ(testSystem.status, 0);
+    EXPECT_NEAR(testSystem.sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem.sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // + jac
+    ASSERT_EQ(testSystem.solve(x0, time_vec, jac), 0);
+    ASSERT_EQ(testSystem.status, 0);
+    EXPECT_NEAR(testSystem.sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem.sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // Explicit automatic Jacobian
+    JacobianAutomatic jac_auto(rhs);
+    ASSERT_EQ(testSystem.solve(x0, time_vec, jac_auto), 0);
+    ASSERT_EQ(testSystem.status, 0);
+    EXPECT_NEAR(testSystem.sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem.sol.x.back()[1], x_exact(param, time).second, abs_err);
+}
+
+/*
+ * Tests all possible parameter combinations used to create an object of System class,
+ * creating temporary objects "in place", in the function call.
+ */
+TEST(SolverDefinition, SystemClassInPlace)
+{
+    double param{0.5};
+    double time{1.0};
+
+    // System object -- FIXME: Not sure why it works via a pointer only here
+    System<TestMassMatrix, TestRHS> *testSystem = new System(TestMassMatrix(param), TestRHS(param));
+
+    // Minimal
+    ASSERT_EQ(testSystem->solve({1.0, -0.5}, 1.0), 0);
+    ASSERT_EQ(testSystem->status, 0);
+    EXPECT_NEAR(testSystem->sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem->sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // + jac
+    ASSERT_EQ(testSystem->solve({1.0, -0.5}, 1.0, TestJacobian(param)), 0);
+    ASSERT_EQ(testSystem->status, 0);
+    EXPECT_NEAR(testSystem->sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem->sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // Minimal with vector of times
+    ASSERT_EQ(testSystem->solve({1.0, -0.5}, {0.1, 0.2, 0.5, -0.1, 0.5, 0.8, 1.0, 0.0}), 0);
+    ASSERT_EQ(testSystem->status, 0);
+    EXPECT_NEAR(testSystem->sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem->sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // + jac
+    ASSERT_EQ(testSystem->solve({1.0, -0.5}, {0.1, 0.2, 0.5, -0.1, 0.5, 0.8, 1.0, 0.0}, TestJacobian(param)), 0);
+    ASSERT_EQ(testSystem->status, 0);
+    EXPECT_NEAR(testSystem->sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem->sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    // Explicit automatic Jacobian
+    ASSERT_EQ(testSystem->solve({1.0, -0.5}, 1.0, JacobianAutomatic(TestRHS(param))), 0);
+    ASSERT_EQ(testSystem->status, 0);
+    EXPECT_NEAR(testSystem->sol.x.back()[0], x_exact(param, time).first, abs_err);
+    EXPECT_NEAR(testSystem->sol.x.back()[1], x_exact(param, time).second, abs_err);
+
+    delete testSystem;
 }
 
 } // namespace
