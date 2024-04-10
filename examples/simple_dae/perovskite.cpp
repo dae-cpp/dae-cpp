@@ -1,4 +1,4 @@
-// g++ -O3 perovskite.cpp -o perovskite.exe -I/home/ivan/workspace/dae-cpp
+// g++ -O3 -std=c++17 -Wall perovskite.cpp -o perovskite.exe -I/home/ivan/workspace/dae-cpp
 
 #include <iostream>
 // #include <cmath>

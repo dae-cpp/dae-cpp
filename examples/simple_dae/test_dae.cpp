@@ -18,7 +18,7 @@
  * with the absolute tolerance at least 1e-6.
  */
 
-// g++ -O3 -std=c++17 -Wall simple_dae.cpp -o simple_dae.exe -I/home/ivan/workspace/dae-cpp
+// g++ -O3 -std=c++17 -Wall test_dae.cpp -o test_dae.exe -I/home/ivan/workspace/dae-cpp
 
 #include <iostream>
 // #include <cmath>
@@ -28,38 +28,6 @@
 #include <dae-cpp/solver.hpp> // the main header of dae-cpp library solver
 
 using namespace daecpp;
-
-/*
- * Singular mass matrix in simplified 3-array sparse format
- * =============================================================================
- * The matrix has the following form:
- * M = |1 0|
- *     |0 0|
- */
-// class MyMassMatrix : public MassMatrix
-// {
-// public:
-//     void operator()(sparse_matrix &M) const
-//     {
-//         // M.A.resize(1); // Number of non-zero elements
-//         // M.i.resize(1); // Number of non-zero elements
-//         // M.j.resize(1); // Number of non-zero elements
-
-//         // // Non-zero elements
-//         // M.A[0] = 1;
-//         // // M.A[1] = 0;
-
-//         // // Column index of each element given above
-//         // M.j[0] = 0;
-//         // // M.j[1] = 1;
-
-//         // // Row index of each element in M.A:
-//         // M.i[0] = 0;
-//         // // M.i[1] = 1;
-//         M.reserve(1);
-//         M.add_element(1.0, 0, 0);
-//     }
-// };
 
 struct MyMassMatrix
 {
@@ -74,7 +42,7 @@ struct MyMassMatrix
  * RHS of the problem
  * =============================================================================
  */
-class MyRHS// : public RHS
+class MyRHS // : public RHS
 {
 public:
     /*
@@ -83,61 +51,10 @@ public:
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        f[0] = x[1];
-        f[1] = x[0] * x[0] + x[1] * x[1] - 1.0;
-        // f[1] = x[0] + x[1]; // x[0] * x[0] + x[1] * x[1] - 1.0;
+        f[0] = x[1] * 1e-4;
+        f[1] = x[0] + x[1];
     }
 };
-
-// /*
-//  * (Optional) Observer
-//  * =============================================================================
-//  * Every time step checks that
-//  * (1) x*x + y*y = 1, and
-//  * (2) x(t) - sin(t) = 0 for t <= pi/2, x(t) = 1 for t > pi/2
-//  * and prints solution and errors to console.
-//  */
-// class MySolver : public Solver
-// {
-// public:
-//     MySolver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
-//         : Solver(rhs, jac, mass, opt)
-//     {
-//     }
-
-// #ifdef PLOTTING
-//     state_type x_axis, x0, x1;  // For plotting
-// #endif
-//     state_type err1, err2;  // To check errors
-
-//     /*
-//      * Overloaded observer.
-//      * Receives current solution vector and the current time every time step.
-//      */
-//     void observer(state_type &x, const double t)
-//     {
-//         double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0);
-//         double e2 = 0;
-
-//         if(t <= 1.5707963)
-//             e2 = std::abs(std::sin(t) - x[0]);
-//         else
-//             e2 = std::abs(x[0] - 1.0);
-
-//         std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << e1 << '\t'
-//                   << e2 << '\n';
-
-//         err1.push_back(e1);
-//         err2.push_back(e2);
-
-// #ifdef PLOTTING
-//         // Save data for plotting
-//         x_axis.push_back(t);
-//         x0.push_back(x[0]);
-//         x1.push_back(x[1]);
-// #endif
-//     }
-// };
 
 /*
  * (Optional) Analytical Jacobian in simplified 3-array sparse format
@@ -149,11 +66,9 @@ struct MyJacobian //: JacobianMatrix
     void operator()(sparse_matrix &J, const state_vector &x, const double t) // const
     {
         J.reserve(3);
-        J(0, 1, 1.0);
-        J(1, 0, 2.0 * x[0]);
-        J(1, 1, 2.0 * x[1]);
-        // J(1, 0, 1.0);
-        // J(1, 1, 1.0);
+        J(0, 1, 1.0e-4);
+        J(1, 0, 1.0);
+        J(1, 1, 1.0);
     }
 };
 
@@ -170,7 +85,7 @@ int main()
         Timer timer(&time);
 
         // Solution time 0 <= t <= pi
-        double t{10.0};
+        double t{10000.0};
 
         // Define the state vector
         state_vector x(2);
@@ -196,7 +111,8 @@ int main()
         opt.atol = 1e-8;
         opt.rtol = 1e-8;
         opt.Newton_scheme = 1;
-        // opt.dt_max = 0.01;
+        opt.dt_init = 0.01;
+        opt.dt_max = 256;
 
         opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)
@@ -211,25 +127,35 @@ int main()
         // Create an instance of the solver with particular RHS, Mass matrix,
         // Jacobian and solver options
         // MySolver solve(rhs, jac, mass);
-        // System simple_dae(mass, rhs, jac, opt);
-        // System simple_dae(mass, rhs, opt);
+        // System test_dae(mass, rhs, jac, opt);
+        // System test_dae(mass, rhs, opt);
 
         // daecpp::solve(mass, rhs, jac, x, t, opt);
         // daecpp::solve(mass, rhs, {1.0, -1.0}, 1.0, {0.5}, opt);
         // daecpp::solve(MyMassMatrix(), MyRHS(), x, 10.0, opt);
-        
+
         // daecpp::solve(MyMassMatrix(), MyRHS(), jac, {0, -1}, 3.14, opt);
 
-        System sys((MyMassMatrix()), (MyRHS()));
+        System sys(MyMassMatrix(), rhs);
 
         sys.opt = opt;
 
-        sys.solve({0, 1}, 3.14, jac);
+        sys.solve(x, t, jac);
+        std::cout << std::setprecision(14) << sys.sol.x.back()[0] << '\n';
+        // std::cout << "Status: " << sys.status << '\n'
+        //           << '\n'
+        //           << '\n';
 
-        sys.sol.print();
+        // for (int i = 0; i < 6; ++i)
+        // {
+        //     sys.opt.dt_max /= 2;
+        //     sys.solve(x, t, jac);
+        //     std::cout  << sys.sol.x.back()[0] << '\n';
+        //     // std::cout << "Status: " << sys.status << '\n'
+        //     //           << '\n'
+        //     //           << '\n';
+        // }
 
-
-        std::cout << "Status: " << sys.status << '\n';
         // std::cout << jac << '\n';
         // std::cout <<<< '\n';
 
@@ -256,9 +182,9 @@ int main()
         // or t.someFunction({ "1", "2", "3" });
 
         // std::vector<double> t_out{1, 2, 3, 4, 5, 2, 5, 0, -5};
-        // int status = simple_dae.solve(x, t);
-        // int status = simple_dae.solve(x, t, {1, 2, 3, 4, 5});
-        // int status = simple_dae.solve(x, t, std::move(t_out));
+        // int status = test_dae.solve(x, t);
+        // int status = test_dae.solve(x, t, {1, 2, 3, 4, 5});
+        // int status = test_dae.solve(x, t, std::move(t_out));
         // std::cout << "t_out size: " << t_out.size() << '\n';
 
         // using Eigen::MatrixXd;
