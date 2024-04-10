@@ -28,6 +28,9 @@ add_executable(${PROJECT_TEST} ${SOURCES_TEST})
 set(BUILD_GMOCK OFF CACHE BOOL "Builds the googlemock subproject")
 set(INSTALL_GTEST OFF CACHE BOOL "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)")
 
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
 add_subdirectory(googletest)
 
 include_directories("${PROJECT_SOURCE_DIR}/googletest/googletest/include" "${PROJECT_SOURCE_DIR}")

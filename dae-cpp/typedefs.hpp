@@ -47,9 +47,9 @@ enum exit_code
 
 // Unsigned integer type
 #ifdef DAECPP_LONG
-typedef u_int64_t int_type;
+typedef uint64_t int_type;
 #else
-typedef u_int32_t int_type;
+typedef uint32_t int_type;
 #endif
 
 // Floating point scalar

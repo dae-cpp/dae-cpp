@@ -73,8 +73,8 @@ struct SolverState
  */
 struct Counters
 {
-    u_int64_t n_fact_calls{0}; // Number of Jacobian matrix updates and factorizations
-    u_int64_t n_lin_calls{0};  // Number of linear solver calls
+    uint64_t n_fact_calls{0}; // Number of Jacobian matrix updates and factorizations
+    uint64_t n_lin_calls{0};  // Number of linear solver calls
 };
 
 /*
@@ -329,10 +329,10 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
         eivec dx;       // Linear system solution
 
         // Counts number of time steps
-        u_int64_t n_steps{0};
+        uint64_t n_steps{0};
 
         // Counts how many times the Newton iterator failed to converge in a row
-        u_int32_t n_iter_failed{0};
+        uint32_t n_iter_failed{0};
 
         // Output after initialization
         PRINT(opt.verbosity >= 2, "Float size:      " << 8 * sizeof(float_type) << " bit");
