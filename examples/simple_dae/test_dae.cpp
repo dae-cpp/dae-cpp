@@ -51,7 +51,7 @@ public:
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        f[0] = x[1] * 1e-4;
+        f[0] = x[1] * 1e-3;
         f[1] = x[0] + x[1];
     }
 };
@@ -66,7 +66,7 @@ struct MyJacobian //: JacobianMatrix
     void operator()(sparse_matrix &J, const state_vector &x, const double t) // const
     {
         J.reserve(3);
-        J(0, 1, 1.0e-4);
+        J(0, 1, 1e-3);
         J(1, 0, 1.0);
         J(1, 1, 1.0);
     }
@@ -107,14 +107,14 @@ int main()
         // parameters defined in solver_options.h
         SolverOptions opt;
 
-        opt.BDF_order = 4;
-        opt.atol = 1e-8;
-        opt.rtol = 1e-8;
+        // opt.BDF_order = 1;
+        opt.atol = 1e-10;
+        opt.rtol = 1e-10;
         opt.Newton_scheme = 1;
-        opt.dt_init = 0.01;
-        opt.dt_max = 256;
+        // opt.dt_init = 0.01;
+        // opt.dt_max = 1024;
 
-        opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
+        // opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
         //                         // defined in Observer function above)
 
         // We can override Jacobian class from dae-cpp library and provide
@@ -136,25 +136,40 @@ int main()
 
         // daecpp::solve(MyMassMatrix(), MyRHS(), jac, {0, -1}, 3.14, opt);
 
+        std::vector<double> t_list = {77, 166, 499, 999, 1450, 1990, 2222, 2888, 3333, 3850, 4444, 4930, 5555, 6060, 6500, 7070, 7777, 8333, 9090, 9500, 9090, 10000};
+
         System sys(MyMassMatrix(), rhs);
 
         sys.opt = opt;
 
-        sys.solve(x, t, jac);
-        std::cout << std::setprecision(14) << sys.sol.x.back()[0] << '\n';
-        // std::cout << "Status: " << sys.status << '\n'
-        //           << '\n'
-        //           << '\n';
+        double exact = 4.5399929762484851535591515560551e-5;
 
-        // for (int i = 0; i < 6; ++i)
-        // {
-        //     sys.opt.dt_max /= 2;
-        //     sys.solve(x, t, jac);
-        //     std::cout  << sys.sol.x.back()[0] << '\n';
-        //     // std::cout << "Status: " << sys.status << '\n'
-        //     //           << '\n'
-        //     //           << '\n';
-        // }
+        for (int order = 1; order <= 4; order++)
+        {
+
+            sys.opt.BDF_order = order;
+            sys.opt.dt_max = 500;
+
+            sys.solve(x, t_list, jac);
+
+            double first = abs(sys.sol.x.back()[0] - exact);
+            std::cout << std::setprecision(14) << first << '\n';
+            // std::cout << "Status: " << sys.status << '\n'
+            //           << '\n'
+            //           << '\n';
+
+            // for (int i = 0; i < 6; ++i)
+            // {
+                sys.opt.dt_max /= 10;
+                sys.solve(x, t_list, jac);
+                double second = abs(sys.sol.x.back()[0] - exact);
+                std::cout << second << '\n';
+                // std::cout << "Status: " << sys.status << '\n'
+                //           << '\n'
+                //           << '\n';
+            // }
+            std::cout << second/first << ' ' << (log(second)-log(first))/((log(500)-log(50))) << ' ' << log10(second/first) << '\n';
+        }
 
         // std::cout << jac << '\n';
         // std::cout <<<< '\n';
