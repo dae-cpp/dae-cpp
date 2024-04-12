@@ -702,13 +702,13 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                 }
 
                 // We may already reached the target time
-                if (dt < DAECPP_TIMESTEP_ROUNDING_ERROR)
+                if (dt < opt.dt_min)
                 {
-                    if (state.dt[2] > DAECPP_TIMESTEP_ROUNDING_ERROR)
+                    if (state.dt[2] > opt.dt_min)
                     {
                         dt = state.dt[2];
                     }
-                    else if (state.dt[1] > DAECPP_TIMESTEP_ROUNDING_ERROR)
+                    else if (state.dt[1] > opt.dt_min)
                     {
                         dt = state.dt[1];
                     }

@@ -122,7 +122,7 @@ struct SolverOptions
         ASSERT(dt_min > 0.0, "Minimum time step `dt_min` must be positive.");
         ASSERT(dt_max > 0.0, "Maximum time step `dt_max` must be positive.");
         ASSERT(dt_min < dt_init, "Minimum time step `dt_min` must be less than the initial time step `dt_init`.");
-        ASSERT(dt_min > DAECPP_TIMESTEP_ROUNDING_ERROR, "Minimum time step `dt_min` should be greater than the time step rounding error, which is " << DAECPP_TIMESTEP_ROUNDING_ERROR);
+        ASSERT(dt_min > 0.0, "Minimum time step `dt_min` should be positive.");
         ASSERT(dt_max >= dt_init, "Maximum time step `dt_max` must be greater than or equal to the initial time step `dt_init`.");
         ASSERT(atol > 0.0, "Absolute tolerance `atol` for the Newton algorithm must be positive.");
         ASSERT(rtol > 0.0, "Relative tolerance `rtol` for the Newton algorithm must be positive.");
