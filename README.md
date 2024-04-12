@@ -1,16 +1,20 @@
 # dae-cpp
 
-A simple but powerful header-only C++ solver for systems of Differential and Algebraic Equations (DAE).
+A simple but powerful header-only C++ solver for the systems of Differential-Algebraic Equations (DAE).
 
 ## What is dae-cpp
 
 ### How does it work
 
-Quasi-Newton method
+TODO: Quasi-Newton method...
 
 ### The main features of the solver
 
 ## Installation
+
+Header only, no need to install, just copy `dae-cpp` folder into your folder.
+
+Examples and tests can be compiled using CMake.
 
 ## Testing
 
@@ -32,27 +36,80 @@ ctest
 
 ## Quick start
 
-## How to use -- move to Documentation
+TODO: This is still work in progress.
+
+Trivial DAE system:
+
+```txt
+ | x' = y
+ | y  = cos(t)
+ 
+  Initial condition (t = 0):
+ | x = 0
+ | y = 1
+ 
+  Analytic solution:
+ | x = sin(t)
+ | y = cos(t)
+ ```
+
+ See [example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
 ### Step 0. Include dae-cpp into the project
 
-### Step 1. Define the initial state vector
+```cpp
+#include <dae-cpp/solver.hpp>
+```
 
-### Step 2. Set up the RHS
+### Step 1. Define the mass matrix of the system
 
-### Step 3. Set up the Mass matrix
+```cpp
+struct MyMassMatrix
+{
+    void operator()(sparse_matrix &M, const double t)
+    {
+        M(0, 0, 1.0); // Row 0, column 0, non-zero element 1.0
+    }
+};
+```
 
-### Step 4. Set up the Jacobian matrix
+### Step 2. Set up the vector-function (RHS) of the problem
 
-### Step 5. Set the solver options
+```cpp
+struct MyRHS
+{
+    void operator()(state_type &f, const state_type &x, const double t)
+    {
+        f[0] = x[1];          // y
+        f[1] = cos(t) - x[1]; // cos(t) - y
+    }
+};
+```
 
-### Step 6. Solve the system
+### Step 3. Define the initial state vector (initial condition)
 
-#### Optional: Set up Observer
+```cpp
+state_vector x0{0, 1};
+```
 
-#### Optional: Set up Event function
+### Step 4. Set up the DAE system
 
-### A note about Sparse Matrix Format
+```cpp
+MyMassMatrix mass; // Mass matrix object
+MyRHS rhs;         // The vector-function object
+
+System my_system(mass, rhs); // Defines the DAE system object
+```
+
+### Step 5. Solve the system
+
+```cpp
+double t{1.0}; // Defines the integration interval: t = [0, 1.0]
+
+my_system.solve(x0, t); // Solves the system with the given initial condition `x0` and time `t`
+```
+
+Solution vector of vectors `x` and the corresponding time vector `t` are stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
 ## Contribution and Feedback
 
@@ -73,6 +130,6 @@ Feel free to create a [GitHub issue](https://github.com/ikorotkin/dae-cpp/issues
 
 ## Licensing
 
-- [dae-cpp](https://github.com/ikorotkin/dae-cpp) is licensed under the [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
-- [autodiff](https://github.com/autodiff/autodiff) is licensed under the [MIT license](https://github.com/autodiff/autodiff/blob/main/LICENSE).
-- [Eigen]() ...
+- [dae-cpp](https://github.com/ikorotkin/dae-cpp) is licensed under the [MIT](https://github.com/dae-cpp/dae-cpp/blob/master/LICENSE) license.
+- [autodiff](https://github.com/autodiff/autodiff) is licensed under the [MIT](https://github.com/autodiff/autodiff/blob/main/LICENSE) license.
+- [Eigen](https://eigen.tuxfamily.org/) is licensed under the [MPL2](https://www.mozilla.org/en-US/MPL/2.0/) license.
