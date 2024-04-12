@@ -26,7 +26,7 @@ constexpr double abs_err{0.02};
 /*
  * Tests BDF-I time derivative approximation and its corresponding derivative w.r.t. xk
  */
-TEST(TimeStepper, SchemeI)
+TEST(TimeStepper, SchemeIexact)
 {
     constexpr std::size_t size{6};
 
@@ -62,6 +62,58 @@ TEST(TimeStepper, SchemeI)
         EXPECT_DOUBLE_EQ(dxdt[i], -(state.x[0][i] - xk[i]) / state.dt[0]);
     }
     EXPECT_DOUBLE_EQ(val, 1.0 / state.dt[0]);
+}
+
+/*
+ * Tests BDF-I time derivative approximation
+ */
+TEST(TimeStepper, SchemeI)
+{
+    constexpr std::size_t size{3};
+
+    eivec dxdt(size);
+    rvec xk(size);
+    SolverState state(size);
+
+    double val{};
+    double h0{};
+
+    // Equation 1:
+    auto f1 = [](const double t)
+    {
+        return -7.5 * t + 42;
+    };
+
+    // Equation 2:
+    auto f2 = [](const double t)
+    {
+        return 6.5 * t + 22;
+    };
+
+    // Equation 3:
+    auto f3 = [](const double t)
+    {
+        return -1.33 * t - 11;
+    };
+
+    // Test matrix
+    std::vector<double> dt0 = {0.0123, 0.0123, 0.000123, 1.23e-3, 1.23e-7, 1.23e-2, 4.5e-12};
+
+    for (std::size_t i = 0; i < dt0.size(); ++i)
+    {
+        state.dt[0] = dt0[i];
+
+        h0 = state.dt[0];
+
+        xk = {f1(0), f2(0), f3(0)};
+        state.x[0] = {f1(h0), f2(h0), f3(h0)};
+
+        val = time_derivative_approx(dxdt, xk, state, size);
+
+        EXPECT_NEAR(dxdt[0], 7.5, 2e-4);
+        EXPECT_NEAR(dxdt[1], -6.5, 2e-4);
+        EXPECT_NEAR(dxdt[2], 1.33, 2e-4);
+    }
 }
 
 /*
