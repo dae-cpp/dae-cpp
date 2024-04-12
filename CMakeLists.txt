@@ -5,16 +5,24 @@ project(dae-cpp)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# TODO: Add examples here
+######## Build examples ########
 
-#include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include ${BOOST_INCLUDE})
+set(EXAMPLE_LIST "quick_start")
+# set(EXAMPLE_LIST "quick_start" "simple_dae")
 
-#FILE(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+include_directories(${PROJECT_SOURCE_DIR})
 
-#add_executable(${PROJECT_NAME} ${SOURCES})
+foreach(EXAMPLE_NAME ${EXAMPLE_LIST})
 
+  FILE(GLOB SOURCES ${PROJECT_SOURCE_DIR}/examples/${EXAMPLE_NAME}/*.cpp)
 
-#### Build tests ####
+  add_executable(${EXAMPLE_NAME} ${SOURCES})
+
+  install(TARGETS ${EXAMPLE_NAME} DESTINATION bin)
+
+endforeach()
+
+######## Build tests ########
 
 set(PROJECT_TEST "dae-cpp-test")
 
@@ -33,7 +41,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 add_subdirectory(googletest)
 
-include_directories("${PROJECT_SOURCE_DIR}/googletest/googletest/include" "${PROJECT_SOURCE_DIR}")
+include_directories(${PROJECT_SOURCE_DIR}/googletest/googletest/include)
 
 target_link_libraries(${PROJECT_TEST} gtest_main gtest)
 
@@ -42,8 +50,4 @@ target_compile_definitions(${PROJECT_TEST} PRIVATE "TESTING")
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_TEST})
 
-
-#### Install ####
-
-# install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(TARGETS ${PROJECT_TEST} DESTINATION bin)

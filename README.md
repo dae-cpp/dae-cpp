@@ -12,7 +12,7 @@ TODO: Quasi-Newton method...
 
 ## Installation
 
-Header only, no need to install, just copy `dae-cpp` folder into your folder.
+Header only, no need to install, just copy `dae-cpp`, `Eigen`, and `autodiff` folders into your project.
 
 Examples and tests can be compiled using CMake.
 
