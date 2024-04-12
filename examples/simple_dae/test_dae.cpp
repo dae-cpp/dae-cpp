@@ -33,8 +33,9 @@ struct MyMassMatrix
 {
     void operator()(sparse_matrix &M, const double t) const // const is optional
     {
-        // M.reserve(1);
         M(0, 0, 1.0);
+        // M(0, 0, 1.0);
+        // M(1, 1, 1.0);
     }
 };
 
@@ -51,8 +52,11 @@ public:
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        f[0] = x[1] * 1e-3;
-        f[1] = x[0] + x[1];
+        f[0] = x[1];
+        f[1] = cos(t) - x[1];
+        // f[0] = sin(t) - x[1];
+        // f[1] = sin(t) - x[2];
+        // f[2] = cos(t) - x[0];
     }
 };
 
@@ -66,9 +70,11 @@ struct MyJacobian //: JacobianMatrix
     void operator()(sparse_matrix &J, const state_vector &x, const double t) // const
     {
         J.reserve(3);
-        J(0, 1, 1e-3);
-        J(1, 0, 1.0);
-        J(1, 1, 1.0);
+        J(0, 1, 1.0);
+        J(1, 1, -1.0);
+        // J(0, 1, -1.0);
+        // J(1, 2, -1.0);
+        // J(2, 0, -1.0);
     }
 };
 
@@ -85,14 +91,17 @@ int main()
         Timer timer(&time);
 
         // Solution time 0 <= t <= pi
-        double t{10000.0};
+        double t{100.0};
 
         // Define the state vector
         state_vector x(2);
 
         // Initial conditions
-        x[0] = 1;
-        x[1] = -1;
+        x[0] = 0;
+        x[1] = 1;
+        // x[0] = 1;
+        // x[1] = 0;
+        // x[2] = -2;
 
         // Set up the RHS of the problem.
         // Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -108,10 +117,10 @@ int main()
         SolverOptions opt;
 
         // opt.BDF_order = 1;
-        opt.atol = 1e-10;
-        opt.rtol = 1e-10;
+        opt.atol = 1e-12;
+        opt.rtol = 1e-12;
         opt.Newton_scheme = 1;
-        // opt.dt_init = 0.01;
+        // opt.dt_init = 0.001;
         // opt.dt_max = 1024;
 
         // opt.verbosity = verbosity::extra; // Suppress output to screen (we have our own output
@@ -136,40 +145,58 @@ int main()
 
         // daecpp::solve(MyMassMatrix(), MyRHS(), jac, {0, -1}, 3.14, opt);
 
-        std::vector<double> t_list = {77, 166, 499, 999, 1450, 1990, 2222, 2888, 3333, 3850, 4444, 4930, 5555, 6060, 6500, 7070, 7777, 8333, 9090, 9500, 9090, 10000};
+        // std::vector<double> t_list = {77, 166, 499, 999, 1450, 1990, 2222, 2888, 3333, 3850, 4444, 4930, 5555, 6060, 6500, 7070, 7777, 8333, 9090, 9500, 9090, 10000};
+        // std::vector<double> t_list;
+        // double val = 0.12345;
+        // while (val < t)
+        // {
+        //     t_list.push_back(val);
+        //     val += 34.5678; //12.3567;
+        // }
+        // t_list.push_back(t);
 
         System sys(MyMassMatrix(), rhs);
 
         sys.opt = opt;
 
-        double exact = 4.5399929762484851535591515560551e-5;
+        // double exact = sin(t) - 2.0 * cos(t); // z
+        // double exact = 2.0 * sin(t); // y
+        double exact = sin(t); //x
 
         for (int order = 1; order <= 4; order++)
         {
 
             sys.opt.BDF_order = order;
-            sys.opt.dt_max = 500;
+            sys.opt.dt_max = 1.0;
 
-            sys.solve(x, t_list, jac);
-
+            sys.solve(x, t, jac);
+        
             double first = abs(sys.sol.x.back()[0] - exact);
             std::cout << std::setprecision(14) << first << '\n';
             // std::cout << "Status: " << sys.status << '\n'
             //           << '\n'
             //           << '\n';
 
+            // while (val < t)
+            // {
+            //     t_list.push_back(val);
+            //     val += 3.45678; // 12.3567;
+            // }
+
             // for (int i = 0; i < 6; ++i)
             // {
-                sys.opt.dt_max /= 10;
-                sys.solve(x, t_list, jac);
-                double second = abs(sys.sol.x.back()[0] - exact);
-                std::cout << second << '\n';
-                // std::cout << "Status: " << sys.status << '\n'
-                //           << '\n'
-                //           << '\n';
+            sys.opt.dt_max /= 2;
+            sys.solve(x, t, jac);
+            double second = abs(sys.sol.x.back()[0] - exact);
+            std::cout << second << '\n';
+            // std::cout << "Status: " << sys.status << '\n'
+            //           << '\n'
+            //           << '\n';
             // }
-            std::cout << second/first << ' ' << (log(second)-log(first))/((log(500)-log(50))) << ' ' << log10(second/first) << '\n';
+            std::cout << "======== " << log2(second / first) << '\n';
         }
+
+        // sys.sol.print();
 
         // std::cout << jac << '\n';
         // std::cout <<<< '\n';

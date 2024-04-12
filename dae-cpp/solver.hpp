@@ -29,7 +29,7 @@ namespace daecpp_namespace_name
 {
 namespace core
 {
-namespace internal
+namespace detail
 {
 
 /*
@@ -739,7 +739,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
     return error_msg;
 }
 
-} // namespace internal
+} // namespace detail
 } // namespace core
 
 /*
@@ -760,7 +760,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
 exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
-    return core::internal::solve(mass, rhs, jac, mgr, x0, t_end, {}, opt, false);
+    return core::detail::solve(mass, rhs, jac, mgr, x0, t_end, {}, opt, false);
 }
 
 /*
@@ -781,7 +781,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const 
 template <class Mass, class RHS, class Manager = SolutionManager>
 exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
-    return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, t_end, {}, opt, true);
+    return core::detail::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, t_end, {}, opt, true);
 }
 
 /*
@@ -802,7 +802,7 @@ exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, 
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
 exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
-    return core::internal::solve(mass, rhs, jac, mgr, x0, 0.0, t_output, opt, false);
+    return core::detail::solve(mass, rhs, jac, mgr, x0, 0.0, t_output, opt, false);
 }
 
 /*
@@ -823,7 +823,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const 
 template <class Mass, class RHS, class Manager = SolutionManager>
 exit_code solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
-    return core::internal::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, 0.0, t_output, opt, true);
+    return core::detail::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, 0.0, t_output, opt, true);
 }
 
 /*
@@ -868,7 +868,7 @@ public:
     template <class Jacobian>
     exit_code solve(const state_vector &x0, const double t_end, Jacobian jac)
     {
-        status = core::internal::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
+        status = core::detail::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
         return status;
     }
 
@@ -885,7 +885,7 @@ public:
      */
     exit_code solve(const state_vector &x0, const double t_end)
     {
-        status = core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
+        status = core::detail::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
         return status;
     }
 
@@ -903,7 +903,7 @@ public:
     template <class Jacobian>
     exit_code solve(const state_vector &x0, const std::vector<double> &t_output, Jacobian jac)
     {
-        status = core::internal::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
+        status = core::detail::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
         return status;
     }
 
@@ -920,7 +920,7 @@ public:
      */
     exit_code solve(const state_vector &x0, const std::vector<double> &t_output)
     {
-        status = core::internal::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
+        status = core::detail::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
         return status;
     }
 };
