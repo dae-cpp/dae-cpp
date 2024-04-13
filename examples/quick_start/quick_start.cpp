@@ -103,30 +103,31 @@ int main()
     MyMassMatrix mass; // Mass matrix object
     MyRHS rhs;         // The vector-function object
 
-    System sys(mass, rhs); // Defines the DAE system object
+    System my_system(mass, rhs); // Defines the DAE system object
 
     // Alternatively:
-    // System sys((MyMassMatrix()), (MyRHS())); // Note the parentheses
+    // System my_system((MyMassMatrix()), (MyRHS())); // Note the parentheses
 
-    // Class `System` is a wrapper to a more flexible function daecpp::solve(...).
+    // Class `System` is a wrapper for a more flexible function daecpp::solve(...).
 
     state_vector x0{0, 1}; // Initial condition: x = 0, y = 1
-    double t{1.0};         // Solution interval: t = [0, 1.0]
+    double t_end{1.0};     // Solution interval: t = [0, t_end]
 
-    sys.opt.dt_max = 0.1; // Restrict the maximum time step via the solver options
+    // To update the solver options, for example, to enable solver output during computation, use `opt` property:
+    // my_system.opt.verbosity = verbosity::extra;
 
-    sys.solve(x0, t); // Solves the DAE system `sys` with the given initial condition `x0` and time `t`
+    my_system.solve(x0, t_end); // Solves the DAE system `my_system` with the given initial condition `x0` and time `t_end`
 
     // Alternatively:
-    // sys.solve(x0, t, MyJacobian()); // Added analytic Jacobian to speed up the computation
+    // my_system.solve(x0, t_end, MyJacobian()); // Add analytic Jacobian to speed up the computation (for big systems)
     // or
-    // int status = sys.solve({0, 1}, 1.0, MyJacobian()); // Note that `solve` can return the exit code
+    // int status = my_system.solve({0, 1}, 1.0, MyJacobian()); // Note that `solve` can return the exit code
 
-    sys.sol.print(); // Prints solution on screen
+    my_system.sol.print(); // Prints solution on screen
 
-    // Print the absolute error of the numerical `x` and `y` at time `t = 1` using
-    // `sys.sol.x` - a vector that contains numerical solution `x` and `y` at times `sys.sol.t`.
-    std::cout << "Abs. error: " << sys.sol.x.back()[0] - sin(t) << '\t' << sys.sol.x.back()[1] - cos(t) << '\n';
+    // Print the absolute error of the numerical solution `x` and `y` at time `t_end` using
+    // `my_system.sol.x` - a vector that contains numerical solution `x` and `y` at times `my_system.sol.t`.
+    std::cout << "Abs. error: " << my_system.sol.x.back()[0] - sin(t_end) << '\t' << my_system.sol.x.back()[1] - cos(t_end) << '\n';
 
     return 0;
 }

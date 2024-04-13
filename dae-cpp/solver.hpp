@@ -629,6 +629,8 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
 
                 n_iter_failed = 0;
 
+                double variability{0.0}; // Maximum relative variability of the solution
+
                 {
                     // Updates state history
                     for (std::size_t i = 0; i < size; ++i)
@@ -638,6 +640,16 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                         state.x[2][i] = state.x[1][i];
                         state.x[1][i] = state.x[0][i];
                         state.x[0][i] = xk[i];
+
+                        // Finds maximum relative variability
+                        if (state.x[1][i] != 0.0)
+                        {
+                            double rel_change = std::abs((state.x[1][i] - state.x[0][i]) / state.x[1][i]);
+                            if (rel_change > variability)
+                            {
+                                variability = rel_change;
+                            }
+                        }
                     }
 
                     // Updates time step history
@@ -648,7 +660,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                 }
 
                 // Make decision about new time step
-                if (iter >= dt_decrease_threshold)
+                if ((iter >= dt_decrease_threshold) || (variability > opt.variability_threshold_high))
                 {
                     dt /= opt.dt_decrease_factor;
                     print_char(opt.verbosity >= 2, '<');
@@ -660,7 +672,7 @@ exit_code solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vecto
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
-                if ((iter <= dt_increase_threshold - 1) && !delay_timestep_inc)
+                if ((iter <= dt_increase_threshold - 1) && (variability < opt.variability_threshold_low) && !delay_timestep_inc)
                 {
                     dt *= opt.dt_increase_factor;
                     if (dt > opt.dt_max)
