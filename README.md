@@ -4,11 +4,11 @@ A simple but powerful header-only C++ solver for systems of Differential-Algebra
 
 ## What is dae-cpp
 
-$$\mathbf{M}(t) \frac{\mathrm{d}\boldsymbol{x}}{\mathrm{d}t} = \boldsymbol{f}(\boldsymbol{x}, t),$$
+$$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-where...
+with
 
-The initial condition $\boldsymbol{x}\rvert_{t=0} = \boldsymbol{x_0}$... Interval $t \in [0, t_\mathrm{end}]$.
+$$\mathbf{x}\rvert_{t=0} = \mathbf{x}_0, \qquad t \in [0, t_\mathrm{end}].$$
 
 ### How does it work
 
