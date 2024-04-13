@@ -35,7 +35,9 @@ namespace daecpp_namespace_name
 {
 
 // Solver exit codes
-enum exit_code
+namespace exit_code
+{
+enum status
 {
     success = 0,
     diverged = 1,
@@ -43,6 +45,7 @@ enum exit_code
     linsolver_failed_solving = 3,
     unknown = 10
 };
+} // namespace exit_code
 
 // Unsigned integer type
 #ifdef DAECPP_LONG

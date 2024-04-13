@@ -17,6 +17,7 @@
 namespace daecpp_namespace_name
 {
 
+// Solver verbosity levels
 namespace verbosity
 {
 enum VerbosityLevel
