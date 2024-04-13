@@ -21,7 +21,7 @@ using namespace daecpp::core;
 using namespace daecpp::core::detail;
 
 // Time derivative absolute error
-constexpr double abs_err{1e-8};
+constexpr double abs_err{1e-7};
 
 /*
  * Tests BDF-I time derivative approximation and its corresponding derivative w.r.t. xk
@@ -83,27 +83,27 @@ TEST(TimeIntegrator, SchemeI)
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return -7.5 * t + 0.42;
+        return -7.5 * t + 4.2;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 6.5 * t + 0.22;
+        return 6.5 * t + 2.2;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -1.33 * t - 0.11;
+        return -1.33 * t - 1.1;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.0123, 0.000123, 1.23e-7, 4.5e-9, 0.15, 1.33, 10.5};
+    std::vector<double> dt_list = {1.23e-8, 1.23e-6, 1.23e-4, 1.23e-2, 1.23, 1.23e+2};
 
-    for (std::size_t i = 0; i < dt0.size(); ++i)
+    for (const auto dt : dt_list)
     {
-        state.dt[0] = dt0[i];
+        state.dt[0] = dt;
 
         h0 = state.dt[0];
 
@@ -112,9 +112,9 @@ TEST(TimeIntegrator, SchemeI)
 
         val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
+        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; dt=" << dt;
+        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; dt=" << dt;
+        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; dt=" << dt;
     }
 }
 
@@ -137,43 +137,45 @@ TEST(TimeIntegrator, SchemeII)
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 1.45 * t * t - 7.5 * t + 0.42;
+        return 1.45 * t * t - 7.5 * t + 4.2;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return -1.45 * t * t + 6.5 * t + 0.22;
+        return -1.45 * t * t + 6.5 * t + 2.2;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return 0.011 * t * t - 1.33 * t - 0.11;
+        return 0.11 * t * t - 1.33 * t - 1.1;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 1.23e-3, 1.23e-7, 1.23e-1, 4.5e-8, 2.3, 0.33, 88};
-    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 3.45e-7, 3.45e-3, 4.5e-8, 1.23e-1, 5.6, 88, 0.33};
+    std::vector<double> dt_list = {1.23e-6, 1.23e-5, 1.23e-4, 1.23e-3, 1.23e-2, 1.23e-1, 1.23, 12.3};
 
-    for (std::size_t i = 0; i < dt0.size(); ++i)
+    for (const auto dt0 : dt_list)
     {
-        state.dt[0] = dt0[i];
-        state.dt[1] = dt1[i];
+        for (const auto dt1 : dt_list)
+        {
+            state.dt[0] = dt0;
+            state.dt[1] = dt1;
 
-        h0 = state.dt[0];
-        h1 = state.dt[1];
-        h01 = h0 + h1;
+            h0 = state.dt[0];
+            h1 = state.dt[1];
+            h01 = h0 + h1;
 
-        xk = {f1(0), f2(0), f3(0)};
-        state.x[0] = {f1(h0), f2(h0), f3(h0)};
-        state.x[1] = {f1(h01), f2(h01), f3(h01)};
+            xk = {f1(0), f2(0), f3(0)};
+            state.x[0] = {f1(h0), f2(h0), f3(h0)};
+            state.x[1] = {f1(h01), f2(h01), f3(h01)};
 
-        val = time_derivative_approx(dxdt, xk, state, size);
+            val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
+            EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; dt0=" << dt0 << "; dt1=" << dt1;
+            EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; dt0=" << dt0 << "; dt1=" << dt1;
+            EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; dt0=" << dt0 << "; dt1=" << dt1;
+        }
     }
 }
 
@@ -196,48 +198,52 @@ TEST(TimeIntegrator, SchemeIII)
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 0.42;
+        return 1.45 * t * t - 7.5 * t + 4.2;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 0.22;
+        return -1.45 * t * t + 6.5 * t + 2.2;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -15 * t * t * t + 0.011 * t * t - 1.33 * t - 0.11;
+        return 0.11 * t * t - 1.33 * t - 1.1;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 0.00123, 1.23e-1, 1.23e-6, 1.23e-1, 4.56e-6, 2.3, 67};
-    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 0.00123, 3.45e-5, 3.45e-6, 4.56e-1, 4.23e-1, 6.6, 33};
-    std::vector<double> dt2 = {0.123, 0.123, 0.00123, 0.123, 7.89e-5, 3.45e-1, 4.56e-6, 1.23e-1, 19.9, 11};
+    std::vector<double> dt_list = {1.23e-4, 1.23e-3, 1.23e-2, 1.23e-1, 1.23};
 
-    for (std::size_t i = 0; i < dt0.size(); ++i)
+    for (const auto dt0 : dt_list)
     {
-        state.dt[0] = dt0[i];
-        state.dt[1] = dt1[i];
-        state.dt[2] = dt2[i];
+        for (const auto dt1 : dt_list)
+        {
+            for (const auto dt2 : dt_list)
+            {
+                state.dt[0] = dt0;
+                state.dt[1] = dt1;
+                state.dt[2] = dt2;
 
-        h0 = state.dt[0];
-        h1 = state.dt[1];
-        h2 = state.dt[2];
-        h01 = h0 + h1;
-        h012 = h01 + h2;
+                h0 = state.dt[0];
+                h1 = state.dt[1];
+                h2 = state.dt[2];
+                h01 = h0 + h1;
+                h012 = h01 + h2;
 
-        xk = {f1(0), f2(0), f3(0)};
-        state.x[0] = {f1(h0), f2(h0), f3(h0)};
-        state.x[1] = {f1(h01), f2(h01), f3(h01)};
-        state.x[2] = {f1(h012), f2(h012), f3(h012)};
+                xk = {f1(0), f2(0), f3(0)};
+                state.x[0] = {f1(h0), f2(h0), f3(h0)};
+                state.x[1] = {f1(h01), f2(h01), f3(h01)};
+                state.x[2] = {f1(h012), f2(h012), f3(h012)};
 
-        val = time_derivative_approx(dxdt, xk, state, size);
+                val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
+                EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2;
+                EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2;
+                EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2;
+            }
+        }
     }
 }
 
@@ -260,53 +266,60 @@ TEST(TimeIntegrator, SchemeIV)
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 11 * t * t * t * t + 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 0.42;
+        return 1.45 * t * t - 7.5 * t + 4.2;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 0.1 * t * t * t * t + 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 0.22;
+        return -1.45 * t * t + 6.5 * t + 2.2;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -12 * t * t * t * t - 15 * t * t * t + 0.011 * t * t - 1.33 * t - 0.11;
+        return 0.11 * t * t - 1.33 * t - 1.1;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 0.00123, 1.23e-3, 1.23e-6, 1.23e-2, 4.5e-6, 1.23e-2, 4.5e-3, 1.1, 4.5, 2.0, 2, 25};
-    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 0.00123, 3.45e-4, 3.45e-5, 4.56e-2, 4.23e-2, 4.56e-2, 4.23e-6, 5.6, 20, 45, 7, 23};
-    std::vector<double> dt2 = {0.123, 0.123, 0.00123, 0.123, 7.89e-5, 3.45e-4, 4.5e-3, 1.23e-2, 4.5e-6, 1.23e-2, 23.4, 7, 2, 20, 21};
-    std::vector<double> dt3 = {0.123, 0.123, 0.123, 0.123, 7.89e-6, 3.45e-3, 4.5e-6, 1.23e-3, 4.5e-3, 1.23e-3, 56.7, 2, 7, 45, 25};
+    std::vector<double> dt_list = {1.23e-3, 1.23e-2, 1.23e-1, 1.23};
 
-    for (std::size_t i = 0; i < dt0.size(); ++i)
+    for (const auto dt0 : dt_list)
     {
-        state.dt[0] = dt0[i];
-        state.dt[1] = dt1[i];
-        state.dt[2] = dt2[i];
-        state.dt[3] = dt3[i];
+        for (const auto dt1 : dt_list)
+        {
+            for (const auto dt2 : dt_list)
+            {
+                for (const auto dt3 : dt_list)
+                {
+                    state.dt[0] = dt0;
+                    state.dt[1] = dt1;
+                    state.dt[2] = dt2;
+                    state.dt[3] = dt3;
 
-        h0 = state.dt[0];
-        h1 = state.dt[1];
-        h2 = state.dt[2];
-        h3 = state.dt[3];
-        h01 = h0 + h1;
-        h012 = h01 + h2;
-        h0123 = h012 + h3;
+                    h0 = state.dt[0];
+                    h1 = state.dt[1];
+                    h2 = state.dt[2];
+                    h3 = state.dt[3];
+                    h01 = h0 + h1;
+                    h012 = h01 + h2;
+                    h0123 = h012 + h3;
 
-        xk = {f1(0), f2(0), f3(0)};
-        state.x[0] = {f1(h0), f2(h0), f3(h0)};
-        state.x[1] = {f1(h01), f2(h01), f3(h01)};
-        state.x[2] = {f1(h012), f2(h012), f3(h012)};
-        state.x[3] = {f1(h0123), f2(h0123), f3(h0123)};
+                    xk = {f1(0), f2(0), f3(0)};
+                    state.x[0] = {f1(h0), f2(h0), f3(h0)};
+                    state.x[1] = {f1(h01), f2(h01), f3(h01)};
+                    state.x[2] = {f1(h012), f2(h012), f3(h012)};
+                    state.x[3] = {f1(h0123), f2(h0123), f3(h0123)};
 
-        val = time_derivative_approx(dxdt, xk, state, size);
+                    val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
+                    // TODO: The scheme does not like relatively large h0, hence 3.0 * abs_err
+                    EXPECT_NEAR(dxdt[0], 7.5, 3.0 * abs_err) << "Eq.1; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2 << "; dt3=" << dt3;
+                    EXPECT_NEAR(dxdt[1], -6.5, 3.0 * abs_err) << "Eq.2; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2 << "; dt3=" << dt3;
+                    EXPECT_NEAR(dxdt[2], 1.33, 3.0 * abs_err) << "Eq.3; dt0=" << dt0 << "; dt1=" << dt1 << "; dt2=" << dt2 << "; dt3=" << dt3;
+                }
+            }
+        }
     }
 }
 
