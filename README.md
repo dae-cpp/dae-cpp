@@ -4,11 +4,11 @@ A simple but powerful header-only C++ solver for systems of Differential-Algebra
 
 ## What is dae-cpp
 
-$$
-\mathbf{M}(t) \frac{\mathrm{d}\boldsymbol{x}}{\mathrm{d}t} = \boldsymbol{f}(\boldsymbol{x}, t), \qquad
-\boldsymbol{x}|_{t=0} = \boldsymbol{x_0}, \qquad
-t \in [0, t_\mathrm{end}].
-$$
+$$\mathbf{M}(t) \frac{\mathrm{d}\boldsymbol{x}}{\mathrm{d}t} = \boldsymbol{f}(\boldsymbol{x}, t),$$
+
+where...
+
+The initial condition $\boldsymbol{x}\rvert_{t=0} = \boldsymbol{x_0}$... Interval $t \in [0, t_\mathrm{end}]$.
 
 ### How does it work
 
@@ -45,36 +45,36 @@ TODO: This is still work in progress.
 
 Trivial DAE system:
 
-$$
+```math
 \left\{
     \begin{alignedat}{3}
         \dot x & = y, \\
         y & = \cos(t).
     \end{alignedat}
 \right.
-$$
+```
 
 Initial condition:
 
-$$
+```math
 \left\{
     \begin{alignedat}{3}
-        x|_{t=0} & = 0, \\
-        y|_{t=0} & = 1.
+        x\rvert_{t=0} & = 0, \\
+        y\rvert_{t=0} & = 1.
     \end{alignedat}
 \right.
-$$
+```
 
 Analytic solution:
 
-$$
+```math
 \left\{
     \begin{alignedat}{3}
         x(t) & = \sin(t), \\
         y(t) & = \cos(t).
     \end{alignedat}
 \right.
-$$
+```
 
  See [example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
@@ -148,7 +148,7 @@ Solution vector of vectors `x` and the corresponding vector of times `t` are sto
 $$
 \mathbf{J} =
 \begin{vmatrix}
-0 & \phantom{-}1 \\
+0 & 1 \\
 0 & -1
 \end{vmatrix}.
 $$
