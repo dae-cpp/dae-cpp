@@ -20,13 +20,13 @@ namespace
 using namespace daecpp::core;
 using namespace daecpp::core::detail;
 
-// Absolute error
-constexpr double abs_err{0.02};
+// Time derivative absolute error
+constexpr double abs_err{1e-8};
 
 /*
  * Tests BDF-I time derivative approximation and its corresponding derivative w.r.t. xk
  */
-TEST(TimeStepper, SchemeIexact)
+TEST(TimeIntegrator, SchemeExact)
 {
     constexpr std::size_t size{6};
 
@@ -67,7 +67,7 @@ TEST(TimeStepper, SchemeIexact)
 /*
  * Tests BDF-I time derivative approximation
  */
-TEST(TimeStepper, SchemeI)
+TEST(TimeIntegrator, SchemeI)
 {
     constexpr std::size_t size{3};
 
@@ -75,29 +75,31 @@ TEST(TimeStepper, SchemeI)
     rvec xk(size);
     SolverState state(size);
 
+    state.order = 1;
+
     double val{};
     double h0{};
 
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return -7.5 * t + 42;
+        return -7.5 * t + 0.42;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 6.5 * t + 22;
+        return 6.5 * t + 0.22;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -1.33 * t - 11;
+        return -1.33 * t - 0.11;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.0123, 0.0123, 0.000123, 1.23e-3, 1.23e-7, 1.23e-2, 4.5e-12};
+    std::vector<double> dt0 = {0.0123, 0.000123, 1.23e-7, 4.5e-9, 0.15, 1.33, 10.5};
 
     for (std::size_t i = 0; i < dt0.size(); ++i)
     {
@@ -110,16 +112,16 @@ TEST(TimeStepper, SchemeI)
 
         val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, 2e-4);
-        EXPECT_NEAR(dxdt[1], -6.5, 2e-4);
-        EXPECT_NEAR(dxdt[2], 1.33, 2e-4);
+        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
+        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
+        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
     }
 }
 
 /*
  * Tests BDF-II time derivative approximation
  */
-TEST(TimeStepper, SchemeII)
+TEST(TimeIntegrator, SchemeII)
 {
     constexpr std::size_t size{3};
 
@@ -127,30 +129,32 @@ TEST(TimeStepper, SchemeII)
     rvec xk(size);
     SolverState state(size);
 
+    state.order = 2;
+
     double val{};
     double h0{}, h1{}, h01{};
 
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 1.45 * t * t - 7.5 * t + 42;
+        return 1.45 * t * t - 7.5 * t + 0.42;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return -1.45 * t * t + 6.5 * t + 22;
+        return -1.45 * t * t + 6.5 * t + 0.22;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return 0.011 * t * t - 1.33 * t - 11;
+        return 0.011 * t * t - 1.33 * t - 0.11;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.0123, 0.0123, 0.000123, 1.23e-3, 1.23e-7, 1.23e-2, 4.5e-12};
-    std::vector<double> dt1 = {0.0123, 0.000123, 0.0123, 3.45e-7, 3.45e-3, 4.5e-12, 1.23e-2};
+    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 1.23e-3, 1.23e-7, 1.23e-1, 4.5e-8, 2.3, 0.33, 88};
+    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 3.45e-7, 3.45e-3, 4.5e-8, 1.23e-1, 5.6, 88, 0.33};
 
     for (std::size_t i = 0; i < dt0.size(); ++i)
     {
@@ -167,16 +171,16 @@ TEST(TimeStepper, SchemeII)
 
         val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err);
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err);
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err);
+        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
+        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
+        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
     }
 }
 
 /*
  * Tests BDF-III time derivative approximation
  */
-TEST(TimeStepper, SchemeIII)
+TEST(TimeIntegrator, SchemeIII)
 {
     constexpr std::size_t size{3};
 
@@ -184,31 +188,33 @@ TEST(TimeStepper, SchemeIII)
     rvec xk(size);
     SolverState state(size);
 
+    state.order = 3;
+
     double val{};
     double h0{}, h1{}, h2{}, h01{}, h012{};
 
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 42;
+        return 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 0.42;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 22;
+        return 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 0.22;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -15 * t * t * t + 0.011 * t * t - 1.33 * t - 11;
+        return -15 * t * t * t + 0.011 * t * t - 1.33 * t - 0.11;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.0123, 0.0123, 0.000123, 0.000123, 1.23e-3, 1.23e-7, 1.23e-2, 4.5e-12};
-    std::vector<double> dt1 = {0.0123, 0.000123, 0.0123, 0.000123, 3.45e-7, 3.45e-7, 4.56e-2, 4.23e-2};
-    std::vector<double> dt2 = {0.0123, 0.0123, 0.000123, 0.0123, 7.89e-7, 3.45e-3, 4.5e-12, 1.23e-2};
+    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 0.00123, 1.23e-1, 1.23e-6, 1.23e-1, 4.56e-6, 2.3, 67};
+    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 0.00123, 3.45e-5, 3.45e-6, 4.56e-1, 4.23e-1, 6.6, 33};
+    std::vector<double> dt2 = {0.123, 0.123, 0.00123, 0.123, 7.89e-5, 3.45e-1, 4.56e-6, 1.23e-1, 19.9, 11};
 
     for (std::size_t i = 0; i < dt0.size(); ++i)
     {
@@ -229,16 +235,16 @@ TEST(TimeStepper, SchemeIII)
 
         val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err);
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err);
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err);
+        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
+        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
+        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
     }
 }
 
 /*
  * Tests BDF-IV time derivative approximation
  */
-TEST(TimeStepper, SchemeIV)
+TEST(TimeIntegrator, SchemeIV)
 {
     constexpr std::size_t size{3};
 
@@ -246,32 +252,34 @@ TEST(TimeStepper, SchemeIV)
     rvec xk(size);
     SolverState state(size);
 
+    state.order = 4;
+
     double val{};
     double h0{}, h1{}, h2{}, h3{}, h01{}, h012{}, h0123{};
 
     // Equation 1:
     auto f1 = [](const double t)
     {
-        return 11 * t * t * t * t + 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 42;
+        return 11 * t * t * t * t + 0.5 * t * t * t + 1.45 * t * t - 7.5 * t + 0.42;
     };
 
     // Equation 2:
     auto f2 = [](const double t)
     {
-        return 0.1 * t * t * t * t + 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 22;
+        return 0.1 * t * t * t * t + 5.5 * t * t * t - 1.45 * t * t + 6.5 * t + 0.22;
     };
 
     // Equation 3:
     auto f3 = [](const double t)
     {
-        return -12 * t * t * t * t - 15 * t * t * t + 0.011 * t * t - 1.33 * t - 11;
+        return -12 * t * t * t * t - 15 * t * t * t + 0.011 * t * t - 1.33 * t - 0.11;
     };
 
     // Test matrix
-    std::vector<double> dt0 = {0.0123, 0.0123, 0.000123, 0.000123, 1.23e-3, 1.23e-7, 1.23e-2, 4.5e-12, 1.23e-2, 4.5e-3};
-    std::vector<double> dt1 = {0.0123, 0.000123, 0.0123, 0.000123, 3.45e-4, 3.45e-5, 4.56e-2, 4.23e-2, 4.56e-2, 4.23e-12};
-    std::vector<double> dt2 = {0.0123, 0.0123, 0.000123, 0.0123, 7.89e-5, 3.45e-4, 4.5e-3, 1.23e-2, 4.5e-12, 1.23e-2};
-    std::vector<double> dt3 = {0.0123, 0.0123, 0.0123, 0.0123, 7.89e-7, 3.45e-3, 4.5e-12, 1.23e-3, 4.5e-3, 1.23e-3};
+    std::vector<double> dt0 = {0.123, 0.123, 0.00123, 0.00123, 1.23e-3, 1.23e-6, 1.23e-2, 4.5e-6, 1.23e-2, 4.5e-3, 1.1, 4.5, 2.0, 2, 25};
+    std::vector<double> dt1 = {0.123, 0.00123, 0.123, 0.00123, 3.45e-4, 3.45e-5, 4.56e-2, 4.23e-2, 4.56e-2, 4.23e-6, 5.6, 20, 45, 7, 23};
+    std::vector<double> dt2 = {0.123, 0.123, 0.00123, 0.123, 7.89e-5, 3.45e-4, 4.5e-3, 1.23e-2, 4.5e-6, 1.23e-2, 23.4, 7, 2, 20, 21};
+    std::vector<double> dt3 = {0.123, 0.123, 0.123, 0.123, 7.89e-6, 3.45e-3, 4.5e-6, 1.23e-3, 4.5e-3, 1.23e-3, 56.7, 2, 7, 45, 25};
 
     for (std::size_t i = 0; i < dt0.size(); ++i)
     {
@@ -296,9 +304,9 @@ TEST(TimeStepper, SchemeIV)
 
         val = time_derivative_approx(dxdt, xk, state, size);
 
-        EXPECT_NEAR(dxdt[0], 7.5, abs_err);
-        EXPECT_NEAR(dxdt[1], -6.5, abs_err);
-        EXPECT_NEAR(dxdt[2], 1.33, abs_err);
+        EXPECT_NEAR(dxdt[0], 7.5, abs_err) << "Eq.1; i=" << i;
+        EXPECT_NEAR(dxdt[1], -6.5, abs_err) << "Eq.2; i=" << i;
+        EXPECT_NEAR(dxdt[2], 1.33, abs_err) << "Eq.3; i=" << i;
     }
 }
 
