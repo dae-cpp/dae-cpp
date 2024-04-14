@@ -65,7 +65,7 @@ public:
      */
     void operator()(sparse_matrix &M, const double t)
     {
-        M.reserve(2 * p.N); // Reserves memory for 2N non-zero elements
+        M.reserve(p.N); // Reserves memory for `N` non-zero elements
 
         for (int_type i = 0; i < p.N; ++i)
         {
@@ -146,6 +146,7 @@ public:
 
         J.reserve(12 * N); // Overestimating but it's better than underestimate
 
+        // Fills Jacobian row by row
         for (int_type i = 0; i < 2 * N; ++i)
         {
             if (i == 0)
@@ -252,10 +253,8 @@ int main()
 
     // Solver options
     SolverOptions opt;
-    opt.Newton_scheme = 3;                // Faster scheme
-    opt.verbosity = verbosity::normal;    // Prints computation time and basic info
-    opt.variability_threshold_low = 1.0;  // Relax adaptive time stepping threshold
-    opt.variability_threshold_high = 1.0; // Relax adaptive time stepping threshold
+    opt.verbosity = verbosity::normal;        // Prints computation time and basic info
+    opt.solution_variability_control = false; // Switches off solution variability control for better performance
 
     // Solve the DAE system
     int status = solve(MyMassMatrix(params), MyRHS(params), MyJacobian(params),

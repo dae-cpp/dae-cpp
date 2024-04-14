@@ -100,12 +100,19 @@ struct SolverOptions
     // decrease the time step reduction threshold by setting `dt_decrease_threshold_delta` to -1 (or -2 and less).
     int dt_decrease_threshold_delta{0};
 
-    // Solution variability lower threshold. A positive floating point value between 0 and 1.
+    // Turns ON/OFF solution variability control.
+    // Solution variability control tightens up the adaptive time stepping algorithm, and it is ON by default.
+    // Switching it OFF can lead to a significant speed boost for big systems, but it can also lead to instability.
+    bool solution_variability_control{true};
+
+    // Solution variability lower threshold.
+    // The higher the value, the more likely the time step can be increased.
     // If the maximum relative change in the solution is above the lower threshold, the time step will NOT be increased.
     // Default value is 0.15.
     double variability_threshold_low{0.15};
 
-    // Solution variability higher threshold. A positive floating point value between 0 and 1.
+    // Solution variability higher threshold.
+    // The higher the value, the less likely the time step will be reduced.
     // If the maximum relative change in the solution is above the higher threshold, the time step will be reduced.
     // Default value is 0.5.
     double variability_threshold_high{0.5};
@@ -144,8 +151,8 @@ struct SolverOptions
         ASSERT(max_Newton_failed_attempts > 0, "`max_Newton_failed_attempts` should be positive.");
         ASSERT(dt_increase_factor >= 1.0, "Time step amplification factor `dt_increase_factor` should be greater than 1.");
         ASSERT(dt_decrease_factor >= 1.0, "Time step reduction factor `dt_decrease_factor` should be greater than 1.");
-        ASSERT((variability_threshold_low >= 0.0) && (variability_threshold_low <= 1.0), "Solution variability lower threshold should be in the interval between 0 and 1.");
-        ASSERT((variability_threshold_high >= 0.0) && (variability_threshold_high <= 1.0), "Solution variability higher threshold should be in the interval between 0 and 1.");
+        ASSERT(variability_threshold_low >= 0.0, "Solution variability lower threshold cannot be negative.");
+        ASSERT(variability_threshold_high >= 0.0, "Solution variability higher threshold cannot be negative.");
         ASSERT(variability_threshold_low <= variability_threshold_high, "Solution variability lower threshold should be less than the higher threshold.");
         ASSERT(num_threads > 0, "Number of threads `num_threads` should be 1 or more.");
         CHECK(num_threads <= 32, "Using more than 32 threads can lead to a significant performance degradation.");

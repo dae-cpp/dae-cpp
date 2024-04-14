@@ -642,12 +642,15 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                         state.x[0][i] = xk[i];
 
                         // Finds maximum relative variability
-                        if (state.x[1][i] != 0.0)
+                        if (opt.solution_variability_control)
                         {
-                            double rel_change = std::abs((state.x[1][i] - state.x[0][i]) / state.x[1][i]);
-                            if (rel_change > variability)
+                            if (state.x[1][i] != 0.0)
                             {
-                                variability = rel_change;
+                                double rel_change = std::abs((state.x[1][i] - state.x[0][i]) / state.x[1][i]);
+                                if (rel_change > variability)
+                                {
+                                    variability = rel_change;
+                                }
                             }
                         }
                     }
@@ -660,7 +663,8 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                 }
 
                 // Make decision about new time step
-                if ((iter >= dt_decrease_threshold) || (variability > opt.variability_threshold_high))
+                if ((iter >= dt_decrease_threshold) ||
+                    (variability > opt.variability_threshold_high))
                 {
                     dt /= opt.dt_decrease_factor;
                     print_char(opt.verbosity >= 2, '<');
@@ -672,7 +676,9 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
-                if ((iter <= dt_increase_threshold - 1) && (variability < opt.variability_threshold_low) && !delay_timestep_inc)
+                if ((iter <= dt_increase_threshold - 1) &&
+                    !delay_timestep_inc &&
+                    (variability <= opt.variability_threshold_low))
                 {
                     dt *= opt.dt_increase_factor;
                     if (dt > opt.dt_max)
