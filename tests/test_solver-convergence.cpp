@@ -86,8 +86,8 @@ TEST(SolverConvergence, Uniform)
     sys.opt.variability_threshold_low = 1.0;
     sys.opt.variability_threshold_high = 1.0;
 
-    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER);
-    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER);
+    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER + 1);
+    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER + 1);
 
     for (unsigned order = 1; order <= DAECPP_MAX_ORDER; order++)
     {
@@ -158,8 +158,8 @@ TEST(SolverConvergence, UniformWithJacobian)
     sys.opt.variability_threshold_low = 1.0;
     sys.opt.variability_threshold_high = 1.0;
 
-    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER);
-    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER);
+    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER + 1);
+    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER + 1);
 
     for (unsigned order = 1; order <= DAECPP_MAX_ORDER; order++)
     {
@@ -252,8 +252,8 @@ TEST(SolverConvergence, NonUniform)
     sys.opt.variability_threshold_low = 1.0;
     sys.opt.variability_threshold_high = 1.0;
 
-    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER);
-    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER);
+    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER + 1);
+    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER + 1);
 
     for (unsigned order = 1; order <= DAECPP_MAX_ORDER; order++)
     {

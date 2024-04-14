@@ -6,7 +6,7 @@ A simple but powerful header-only C++ solver for systems of Differential-Algebra
 
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-with $\mathbf{x}\rvert_{t=0} = \mathbf{x}_0$ and $t \in [0, t_\mathrm{end}]$.
+with $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$ and $`t \in [0, t_\mathrm{end}]`$.
 
 ### How does it work
 
