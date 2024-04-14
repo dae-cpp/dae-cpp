@@ -1,28 +1,42 @@
 # dae-cpp
 
-A simple but powerful header-only C++ solver for systems of Differential-Algebraic Equations (DAE).
+![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
+
+A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).
+
+**NOTE:** This is a massively reworked and updated version of `dae-cpp`, which is incompatible with the previous version. If your project still relies on the old `dae-cpp`, it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch.
 
 ## What is dae-cpp
 
+A cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
+
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-with $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$ and $`t \in [0, t_\mathrm{end}]`$.
+to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector function of the state vector $`\mathbf{x}`$ and time $t$.
 
 ### How does it work
 
-TODO: Quasi-Newton method...
+The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
+Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step and initiates a new iteration in time.
 
 ### The main features of the solver
 
+- Header only, no pre-compilation required.
+- Uses automatic (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/)) to compute the Jacobian matrix, if it is not provided by the user.
+- Fourth-order implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
+- A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
+- Mass matrix can be non-static (can depend on time) and it can be singular.
+- The library is extremely easy to use. A simple DAE can be set up using just a few lines of code (see [Quick Start](#quick-start) example below).
+
 ## Installation
 
-Header only, no need to install, just copy `dae-cpp`, `Eigen`, and `autodiff` folders into your project.
+This library is header only, no need to install, just copy `dae-cpp`, `Eigen`, and `autodiff` folders into your project.
 
-Examples and tests can be compiled using CMake.
+Examples and tests can be compiled using CMake (see [Testing](#testing)).
 
 ## Testing
 
-If you already cloned the project without `--recurse-submodules`, you can initialize and update `googletest` submodule by running
+If you already have cloned the project without `--recurse-submodules` option, you can initialize and update `googletest` submodule by running
 
 ```bash
 git submodule update --init
@@ -37,22 +51,20 @@ make
 ctest
 ```
 
-## Quick start
+## Quick Start
 
-TODO: This is still work in progress.
-
-Trivial DAE system:
+Consider the following (trivial) DAE system as a quick example:
 
 ```math
 \left\{
     \begin{alignedat}{3}
         \dot x & = y, \\
-        y & = \cos(t).
+        y & = \cos(t),
     \end{alignedat}
 \right.
 ```
 
-Initial condition:
+with the initial condition:
 
 ```math
 \left\{
@@ -63,7 +75,7 @@ Initial condition:
 \right.
 ```
 
-Analytic solution:
+This system contains one simple differential equation and one algebraic equation. The analytic solution is the following:
 
 ```math
 \left\{
@@ -74,7 +86,7 @@ Analytic solution:
 \right.
 ```
 
- See [example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
+Here is a simplified procedure of defining and solving the DAE system using `dae-cpp`.
 
 ### Step 0. Include dae-cpp header into the project
 
@@ -83,6 +95,8 @@ Analytic solution:
 ```
 
 ### Step 1. Define the mass matrix of the system
+
+Tha mass matrix contains only one non-zero element:
 
 $$
 \mathbf{M} =
@@ -128,9 +142,9 @@ System my_system(mass, rhs); // Defines the DAE system object
 
 ```cpp
 state_vector x0{0, 1}; // The initial state vector (initial condition)
-double t{1.0};         // The integration interval: t = [0, 1.0]
+double t_end{1.0};     // The integration interval: t = [0, 1.0]
 
-my_system.solve(x0, t); // Solves the system with the given initial condition `x0` and time `t`
+my_system.solve(x0, t_end); // Solves the system with the given initial condition `x0` and time `t_end`
 ```
 
 or simply
@@ -139,7 +153,9 @@ or simply
 my_system.solve({0, 1}, 1.0);
 ```
 
-Solution vector of vectors `x` and the corresponding vector of times `t` are stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
+Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
+
+The system is defined in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
 ### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
 
