@@ -64,9 +64,11 @@ struct TestJacobian
     }
 };
 
-// Absolute error
-constexpr double conv_err{0.05}; // I.e., for example, for 4th order BDF, the estimated order is in the interval [3.95, 4.05],
-                                 // which is quite tight!
+// Absolute errors
+constexpr double conv_err{0.05};           // I.e., for example, for 4th order BDF, the estimated order is in the interval [3.95, 4.05],
+                                           // which is quite tight!
+constexpr double conv_err_nonuniform{0.1}; // Absolute error for non-uniform case.
+                                           // E.g., 4th order BDF is expected to be in the [3.8, 4.0] interval.
 
 /*
  * Tests BDF order vs expected (estimated) order of convergence on uniform grid with automatic Jacobian
@@ -217,65 +219,93 @@ TEST(SolverConvergence, UniformWithJacobian)
  */
 TEST(SolverConvergence, NonUniform)
 {
-    double param{1e-3};
+    System sys((TestMassMatrix()), (TestRHS()));
 
-    // List of output times that breaks the time step uniformity
-    std::vector<double> t_list =
-        {77, 166, 499, 999, 1450, 1990, 2222, 2888, 3333, 3850, 4444, 4930, 5555, 6060, 6500, 7070, 7777, 8333, 9090, 9500, 9090, 10000};
+    state_vector x0{0, 1}; // Initial condition: x = 0, y = 1
+    double t_end{10.0};    // Solution interval: t = [0, t_end] -- several periods of sin(t)
 
-    // Initial condition
-    state_vector x0 = {1.0, -1.0};
+    // Lists of output times that break the time step uniformity
+    std::vector<double> t_list_1;
+    std::vector<double> t_list_2;
 
-    // Exact solution (`x[0]`) at time `t`
-    double x_exact = exp(-param * 10000.0);
+    // Populate list 1 for bigger time step
+    double t{0.123};
+    while (t < t_end)
+    {
+        t_list_1.push_back(t);
+        t += 0.123;
+    }
+    t_list_1.push_back(t_end);
 
-    // System sys((TestMassMatrix()), (TestRHS(param)));
+    // Populate list 2 for smaller time step
+    t = 0.0134;
+    while (t < t_end)
+    {
+        t_list_2.push_back(t);
+        t += 0.0134;
+    }
+    t_list_2.push_back(t_end);
 
-    // sys.opt.atol = 1e-10;
-    // sys.opt.rtol = 1e-10;
+    sys.opt.atol = 1e-10;
+    sys.opt.rtol = 1e-10;
+    sys.opt.dt_init = 1e-6;
+    sys.opt.variability_threshold_low = 1.0;
+    sys.opt.variability_threshold_high = 1.0;
 
-    // for (unsigned order = 1; order <= DAECPP_MAX_ORDER; order++)
-    // {
-    //     sys.opt.BDF_order = order;
-    //     sys.opt.dt_max = 10000.0 / 20.0; // Relatively big time step
+    std::vector<double> norm_dt_1(DAECPP_MAX_ORDER);
+    std::vector<double> norm_dt_2(DAECPP_MAX_ORDER);
 
-    //     ASSERT_EQ(sys.solve(x0, t_list, TestJacobian(param)), 0);
-    //     ASSERT_EQ(sys.status, 0);
+    for (unsigned order = 1; order <= DAECPP_MAX_ORDER; order++)
+    {
+        sys.sol.x.clear();
+        sys.sol.t.clear();
 
-    //     // Absolute error
-    //     double first = abs(sys.sol.x.back()[0] - x_exact);
+        sys.opt.BDF_order = order;
+        sys.opt.dt_max = 0.1;
 
-    //     if (order == 1)
-    //     {
-    //         EXPECT_LT(first, max_abs_err * 5); // First order method with big time step is innacurate
-    //     }
-    //     else
-    //     {
-    //         EXPECT_LT(first, max_abs_err);
-    //     }
+        ASSERT_EQ(sys.solve(x0, t_list_1), 0);
+        ASSERT_EQ(sys.status, 0);
 
-    //     sys.opt.dt_max /= 10; // Reduce time step 10 times
+        // Computes Norm 1 for dt1
+        for (std::size_t i = 0; i < sys.sol.t.size(); ++i)
+        {
+            double err = std::abs(sys.sol.x[i][0] - sin(sys.sol.t[i]));
+            if (err > norm_dt_1[order])
+            {
+                norm_dt_1[order] = err;
+            }
+        }
 
-    //     ASSERT_EQ(sys.solve(x0, t_list, TestJacobian(param)), 0);
-    //     ASSERT_EQ(sys.status, 0);
+        sys.opt.dt_max /= 10;
 
-    //     // Absolute error after reducing the time step
-    //     double second = abs(sys.sol.x.back()[0] - x_exact);
+        sys.sol.x.clear();
+        sys.sol.t.clear();
 
-    //     EXPECT_LT(second, max_abs_err);
+        ASSERT_EQ(sys.solve(x0, t_list_2), 0);
+        ASSERT_EQ(sys.status, 0);
 
-    //     // Order of convergence estimation
-    //     double order_est = log10(first / second);
+        // Computes Norm 1 for dt2
+        for (std::size_t i = 0; i < sys.sol.t.size(); ++i)
+        {
+            double err = abs(sys.sol.x[i][0] - sin(sys.sol.t[i]));
+            if (err > norm_dt_2[order])
+            {
+                norm_dt_2[order] = err;
+            }
+        }
 
-    //     if (order == 1)
-    //     {
-    //         EXPECT_NEAR(order_est, static_cast<double>(order) + 0.1, conv_err);
-    //     }
-    //     else
-    //     {
-    //         EXPECT_GT(order_est, static_cast<double>(order) - 1.0); // Higher-order methods lose up to 1 order of accuracy
-    //     }
-    // }
+        double order_estimated = log10(norm_dt_1[order] / norm_dt_2[order]);
+
+        // Estimated order of convergence
+        EXPECT_NEAR(order_estimated, static_cast<double>(order) - 0.1, conv_err_nonuniform);
+
+        // The higher order, the less error
+        if (order > 1)
+        {
+            EXPECT_LT(norm_dt_1[order], norm_dt_1[order - 1]);
+            EXPECT_LT(norm_dt_2[order], norm_dt_2[order - 1]);
+        }
+    }
 }
 
 } // namespace

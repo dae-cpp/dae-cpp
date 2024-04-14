@@ -117,7 +117,17 @@ int main()
         state_vector x0{0, 1}; // Initial condition: x = 0, y = 1
         double t_end{10.0};     // Solution interval: t = [0, t_end]
 
-        // my_system.opt.verbosity = verbosity::extra;
+    std::vector<double> t_list; // List of output times that breaks the time step uniformity
+
+    double t{0.123};
+    while (t < t_end)
+    {
+        t_list.push_back(t);
+        t += 0.123;
+    }
+    t_list.push_back(t_end);
+
+        my_system.opt.verbosity = verbosity::extra;
         my_system.opt.atol = 1e-10;
         my_system.opt.rtol = 1e-10;
         my_system.opt.dt_init = 0.000001;
@@ -141,7 +151,7 @@ int main()
             // my_system.opt.dt_init = 0.1;
             my_system.opt.dt_max = 0.1;
 
-            my_system.solve(x0, t_end);
+            my_system.solve(x0, t_list);
 
             // norm 1
             double norm1{0.0};
@@ -155,13 +165,14 @@ int main()
             }
             std::cout << "First: " << norm1 << '\n';
 
+            break;
             // my_system.opt.dt_init /= 2;
             my_system.opt.dt_max /= 10;
 
             my_system.sol.x.clear();
             my_system.sol.t.clear();
 
-            my_system.solve(x0, t_end);
+            my_system.solve(x0, t_list);
 
             // norm 1
             double norm2{0.0};
