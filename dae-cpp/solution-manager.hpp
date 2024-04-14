@@ -158,18 +158,18 @@ public:
      * Solution Manager functor will be called every time step providing the time `t` and
      * the corresponding solution `x` for further post-processing.
      */
-    int operator()(const state_vector &x_, const double t_)
+    int operator()(const state_vector &x, const double t)
     {
         if (_t_out.size() > 0)
         {
-            if (!std::binary_search(_t_out.begin(), _t_out.end(), t_))
+            if (!std::binary_search(_t_out.begin(), _t_out.end(), t))
             {
                 return 0;
             }
         }
 
-        _sol.x.emplace_back(x_);
-        _sol.t.emplace_back(t_);
+        _sol.x.emplace_back(x);
+        _sol.t.emplace_back(t);
 
         return 0;
     }
