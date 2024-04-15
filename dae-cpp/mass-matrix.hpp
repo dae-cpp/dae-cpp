@@ -45,7 +45,7 @@ class MassMatrixIdentity : public MassMatrix
     const int_type _N{0}; // Indentity matrix size
 
 public:
-    MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
+    explicit MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
 
     void operator()(sparse_matrix &M, const double t) const
     {

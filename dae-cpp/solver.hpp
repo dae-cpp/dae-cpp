@@ -49,7 +49,7 @@ struct SolverState
     /*
      * Resets solver state and allocates memory for solution history
      */
-    SolverState(const std::size_t size)
+    explicit SolverState(const std::size_t size)
     {
         for (int i = 0; i < DAECPP_MAX_ORDER; ++i)
         {

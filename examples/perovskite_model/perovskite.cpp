@@ -269,5 +269,5 @@ int main()
               << ", Phi_right = " << sol.x.back().back()
               << '\n';
 
-    return 0;
+    return status;
 }
