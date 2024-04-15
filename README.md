@@ -1,16 +1,16 @@
 # dae-cpp
 
-[![Build Status](https://travis-ci.com/ikorotkin/dae-cpp.svg?branch=master)](https://travis-ci.com/ikorotkin/dae-cpp)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4aa33eb3a2834808a6cd1b81e0d8cc23)](https://www.codacy.com/app/ikorotkin/dae-cpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ikorotkin/dae-cpp&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://travis-ci.com/dae-cpp/dae-cpp.svg?branch=legacy)](https://travis-ci.com/dae-cpp/dae-cpp)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4aa33eb3a2834808a6cd1b81e0d8cc23)](https://www.codacy.com/app/dae-cpp/dae-cpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dae-cpp/dae-cpp&amp;utm_campaign=Badge_Grade)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3256507.svg)](https://doi.org/10.5281/zenodo.3256507)
 
 A simple but powerful C++ solver for Differential Algebraic Equation (DAE) systems.
 
 **_NOTE:_ This version of the library is now deprecated and no longer supported.
-Users are encouraged to transition to the forthcoming version, which is currently under development and scheduled for release later in April. The upcoming version boasts significant improvements in user-friendliness, documentation, and testing.
+Users are encouraged to transition to the [forthcoming version](https://github.com/dae-cpp/dae-cpp), which is currently under development. The upcoming version boasts significant improvements in user-friendliness, documentation, and testing.
 In addition, it will be a header-only library without external dependencies such as Intel MKL.**
 
-**If your code still relies on the old (MKL-based) version of the solver, it is now archived on the [legacy](https://github.com/ikorotkin/dae-cpp/tree/legacy) branch of the repository.**
+**If your code still relies on the old (MKL-based) version of the solver, it is now archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch of the repository.**
 
 ## What is dae-cpp
 
@@ -37,7 +37,7 @@ BDF time stepper reduces the original DAE system to a system of nonlinear equati
 -   A user can get access to the solution at each time step by overriding Observer function (this is optional).
 -   The library provides a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module for plotting.
 -   The user-defined RHS, Mass matrix and Jacobian can be saved to a file for debugging or visualisation if needed.
--   Easy-to-follow examples (see, for example, [simple_dae.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
+-   Easy-to-follow examples (see, for example, [simple_dae.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp) or [perovskite.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite.cpp)) to kick-start the user's project.
 
 ## Installation
 
@@ -92,7 +92,7 @@ sudo apt-get install python3 python3-dev python3-numpy python3-matplotlib
 Then download dae-cpp library:
 
 ```bash
-git clone https://github.com/ikorotkin/dae-cpp.git
+git clone https://github.com/dae-cpp/dae-cpp.git
 ```
 
 The easiest way to install the library and compile all examples is just to create the build directory, then execute `cmake` (providing installation path) and `make`:
@@ -120,7 +120,7 @@ The DAE solver can perform a quick self test. To build the test, dae-cpp should 
 ctest
 ```
 
-During this test the solver will solve DAE systems from [examples](https://github.com/ikorotkin/dae-cpp/tree/master/examples) directory using analytical (if available) and numerical Jacobians, and then compare the results with the reference solutions.
+During this test the solver will solve DAE systems from [examples](https://github.com/dae-cpp/dae-cpp/tree/legacy/examples) directory using analytical (if available) and numerical Jacobians, and then compare the results with the reference solutions.
 
 #### More building options
 
@@ -144,12 +144,12 @@ Download and install [Git](https://git-scm.com/download/win) and [CMake](https:/
 From `Git Bash` command line clone dae-cpp library (you may need to create a working directory first):
 
 ```bash
-git clone https://github.com/ikorotkin/dae-cpp.git
+git clone https://github.com/dae-cpp/dae-cpp.git
 ```
 
 Start CMake (`cmake-gui`), choose the source code path (`dae-cpp` folder) and empty target directory (it will contain Visual Studio project files). Press "Configure" button.
 
-If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see [More building options](https://github.com/ikorotkin/dae-cpp#more-building-options) above) and re-configure the project.
+If CMake cannot find any of the libraries, it will print an error message. You can modify the paths and other parameters (see [More building options](https://github.com/dae-cpp/dae-cpp#more-building-options) above) and re-configure the project.
 
 If configuration is successful, press "Configure" again to update the cache and then "Generate". In the target directory you will find Visual Studio project files.
 
@@ -182,7 +182,7 @@ git config --global user.email your@email
 Then from the working directory download dae-cpp library source files:
 
 ```bash
-git clone https://github.com/ikorotkin/dae-cpp.git
+git clone https://github.com/dae-cpp/dae-cpp.git
 ```
 
 Check the version of `gcc` compiler by typing `gcc` and pressing `Tab` key a few times in the terminal, it will show you the version of `gcc` currently installed, for example, `gcc-9` (you could use the command `gcc --version` but it may point to `clang` compiler for Mac that does not support OpenMP out of the box).
@@ -217,7 +217,7 @@ ctest
 
 ## How to use
 
-Please refer to [simple_dae.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.cpp) as an example.
+Please refer to [simple_dae.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/simple_dae/simple_dae.cpp), [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp), [perovskite.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite.cpp) or [diffusion_2d.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/diffusion_2d/diffusion_2d.cpp) as an example.
 
 The main usage algorithm can be the following. Consider we have a system of DAEs written in a matrix-vector form, with some Mass matrix, RHS, and some initial conditions.
 
@@ -249,7 +249,7 @@ We can get access to each element of the state vector **x** as to `std::vector` 
 
 ### Step 2. Set up the RHS
 
-Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp) or [diffusion_2d_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d_RHS.cpp).
+Create MyRHS class that inherits the abstract `daecpp::RHS` class from dae-cpp library. The parent RHS class contains a pure virtual functor (operator `()`), that must be overridden in the child class. See, for example, [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp), [perovskite_RHS.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite_RHS.cpp) or [diffusion_2d_RHS.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/diffusion_2d/diffusion_2d_RHS.cpp).
 
 Once the RHS class is overridden, we can create an instance of the child class with some user-defined parameter container *p*:
 
@@ -257,7 +257,7 @@ Once the RHS class is overridden, we can create an instance of the child class w
 MyRHS rhs(p);
 ```
 
-In the child MyRHS class the user can also override `stop_condition` virtual function. By default (if not overridden) the function always returns `false`. The user may override this behaviour and set up one or several stop conditions for the solver depending on the solution **x** at the current time *t*. As soon as the function returns `true`, the solver will finalise the current time step and return the current solution. A trivial example of the stop condition function can be found in [perovskite_RHS.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_RHS.cpp).
+In the child MyRHS class the user can also override `stop_condition` virtual function. By default (if not overridden) the function always returns `false`. The user may override this behaviour and set up one or several stop conditions for the solver depending on the solution **x** at the current time *t*. As soon as the function returns `true`, the solver will finalise the current time step and return the current solution. A trivial example of the stop condition function can be found in [perovskite_RHS.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite_RHS.cpp).
 
 For the debugging purposes, the RHS can be saved to a file:
 
@@ -270,7 +270,7 @@ In this example we saved two RHS vectors, at time 0 and 0.1.
 
 ### Step 3. Set up the Mass matrix
 
-Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format). See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
+Create MyMassMatrix class that inherits the abstract `daecpp::MassMatrix` class from dae-cpp library. Similar to the previous step, the parent MassMatrix class contains a pure virtual functor (operator `()`), that must be overridden in the child class. Refer to [perovskite_Mass.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite_Mass.cpp) or [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp) as an example. Note that the matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format). See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 Create an instance of the child MyMassMatrix class with the given size *N*:
 
@@ -292,7 +292,7 @@ mass.dump();
 
 ### Step 4. Set up Jacobian matrix
 
-We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix. See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
+We can provide analytical Jacobian by overriding `daecpp::Jacobian` class from the dae-cpp library (see [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp) or [perovskite_Jacobian.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite_Jacobian.cpp)) or just use numerically estimated one (this may significantly slow down the computation for large *N*). If provided, analytical Jacobian matrix should be defined in [three array sparse format](https://software.intel.com/en-us/mkl-developer-reference-c-sparse-blas-csr-matrix-storage-format) similar to the Mass matrix. See also [a note about Sparse Matrix Format](#a-note-about-Sparse-Matrix-Format).
 
 If we don't provide analytical Jacobian we should estimate it with the given tolerance:
 
@@ -325,7 +325,7 @@ Here we compared two Jacobians at time 0.1 with the relative tolerance 10<sup>-4
 
 ### Step 5. Set the solver options
 
-The solver has lots of options related to the solution process. They all have some default values (defined in [solver_options.h](https://github.com/ikorotkin/dae-cpp/blob/master/src/solver_options.h)) but they can be overridden by a user:
+The solver has lots of options related to the solution process. They all have some default values (defined in [solver_options.h](https://github.com/dae-cpp/dae-cpp/blob/legacy/src/solver_options.h)) but they can be overridden by a user:
 
 ```cpp
 // Create an instance of the solver options and update some of the solver
@@ -364,28 +364,28 @@ solve(x, t1);   // continues solving in the interval [t_c; t1] and
 
 Every call the solver will take the previous solution **x** (if available from the previous call) and overwrite it with a new one at the given time.
 
-But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(...)` function from `daecpp::Solver` class. This observer function receives the current solution vector **x** and the current time *t* every time step and allows a user to get access to the solution at each time layer. An example of a simple observer is given in the file [robertson.cpp](https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.cpp), also in [perovskite_observer.h](https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite_observer.h).
+But a proper (and more efficient) way to get intermediate results is to override `virtual void observer(...)` function from `daecpp::Solver` class. This observer function receives the current solution vector **x** and the current time *t* every time step and allows a user to get access to the solution at each time layer. An example of a simple observer is given in the file [robertson.cpp](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.cpp), also in [perovskite_observer.h](https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite_observer.h).
 
 ### Step 7 (optional). Plot results
 
-Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed and the solver was built with `PLOTTING=ON`, the [perovskite](https://github.com/ikorotkin/dae-cpp/tree/master/examples/perovskite) example will produce the following plot:
+Solution can be visualised using a simple [C++ interface](https://github.com/lava/matplotlib-cpp) to Python [matplotlib](https://matplotlib.org/) module. For example, if `python`, `numpy` and `matplotlib` are installed and the solver was built with `PLOTTING=ON`, the [perovskite](https://github.com/dae-cpp/dae-cpp/tree/legacy/examples/perovskite) example will produce the following plot:
 
 <p align="center">
-  <img src="https://github.com/ikorotkin/dae-cpp/blob/master/examples/perovskite/perovskite.png">
+  <img src="https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/perovskite/perovskite.png">
 </p>
 
 Here *P(x)* is the ion concentration in a perovskite solar cell, and *Phi(x)* is the corresponding potential distribution.
 
-The second example, [diffusion_2d](https://github.com/ikorotkin/dae-cpp/tree/master/examples/diffusion_2d), will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
+The second example, [diffusion_2d](https://github.com/dae-cpp/dae-cpp/tree/legacy/examples/diffusion_2d), will produce a two-dimensional Gaussian function, a solution of two-dimensional diffusion problem with an instantaneous point source in the middle of the plane:
 
 <p align="center">
-  <img src="https://github.com/ikorotkin/dae-cpp/blob/master/examples/diffusion_2d/diffusion_2d.png">
+  <img src="https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/diffusion_2d/diffusion_2d.png">
 </p>
 
-The third example, [robertson](https://github.com/ikorotkin/dae-cpp/tree/master/examples/robertson), solves [Robertson stiff DAE problem](https://www.mathworks.com/help/matlab/ref/ode15s.html) with a conservation law. It produces the following figure:
+The third example, [robertson](https://github.com/dae-cpp/dae-cpp/tree/legacy/examples/robertson), solves [Robertson stiff DAE problem](https://www.mathworks.com/help/matlab/ref/ode15s.html) with a conservation law. It produces the following figure:
 
 <p align="center">
-  <img src="https://github.com/ikorotkin/dae-cpp/blob/master/examples/robertson/robertson.png">
+  <img src="https://github.com/dae-cpp/dae-cpp/blob/legacy/examples/robertson/robertson.png">
 </p>
 
 Note that by default the plotting is switched off in the examples, but the plotting-related code can be activated using `#define PLOTTING` at the very beginning of each example. Activating the plotting refers to `matplotlibcpp.h` header located in `src/external/matplotlib-cpp/` directory.
@@ -420,9 +420,9 @@ This form will be automatically converted to the three-array sparse format compa
 
 Please feel free to contribute into the project!
 
-If you have any questions, suggestion, or a feedback, please, submit an [issue](https://github.com/ikorotkin/dae-cpp/issues).
+If you have any questions, suggestion, or a feedback, please, submit an [issue](https://github.com/dae-cpp/dae-cpp/issues).
 
 ## Licensing
 
--   dae-cpp is fully open source under [MIT license](https://github.com/ikorotkin/dae-cpp/blob/master/LICENSE).
+-   dae-cpp is fully open source under [MIT license](https://github.com/dae-cpp/dae-cpp/blob/legacy/LICENSE).
 -   Intel MKL is free for use and redistribution under [Intel Simplified Software License](https://software.intel.com/en-us/license/intel-simplified-software-license).
