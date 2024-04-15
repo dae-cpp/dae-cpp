@@ -1,4 +1,4 @@
-name: CMake on multiple platforms
+name: CMake tests on multiple platforms
 
 on:
   push:

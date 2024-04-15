@@ -8,16 +8,16 @@ A simple but powerful header-only C++ solver for [systems of Differential-Algebr
 
 ## What is dae-cpp
 
-A cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
+`dae-cpp` is a cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector function of the state vector $`\mathbf{x}`$ and time $t$.
+to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector-function of the state vector $`\mathbf{x}`$ and time $t$.
 
 ### How does it work
 
-The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
-Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step and initiates a new iteration in time.
+The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further down to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
+Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. This gives us the numerical solution of the entire DAE system at the current time step. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step size and initiates a new iteration in time.
 
 ### The main features of the solver
 
@@ -86,7 +86,7 @@ This system contains one simple differential equation and one algebraic equation
 \right.
 ```
 
-Here is a simplified procedure of defining and solving the DAE system using `dae-cpp`.
+Below is a simplified procedure of defining and solving the DAE system using `dae-cpp`.
 
 ### Step 0. Include dae-cpp header into the project
 
@@ -116,7 +116,7 @@ struct MyMassMatrix
 };
 ```
 
-### Step 2. Define the vector-function (RHS) of the problem
+### Step 2. Define the vector-function (RHS) of the system
 
 ```cpp
 struct MyRHS
@@ -142,9 +142,9 @@ System my_system(mass, rhs); // Defines the DAE system object
 
 ```cpp
 state_vector x0{0, 1}; // The initial state vector (initial condition)
-double t_end{1.0};     // The integration interval: t = [0, 1.0]
+double t{1.0};         // The integration interval: t = [0, 1.0]
 
-my_system.solve(x0, t_end); // Solves the system with the given initial condition `x0` and time `t_end`
+my_system.solve(x0, t); // Solves the system with the given initial condition `x0` and time `t`
 ```
 
 or simply
@@ -159,6 +159,8 @@ The system is defined in the [Quick Start example](https://github.com/dae-cpp/da
 
 ### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
 
+Differentiating the RHS w.r.t. $x$ and $y$ gives the following Jacobian matrix:
+
 $$
 \mathbf{J} =
 \begin{vmatrix}
@@ -166,6 +168,8 @@ $$
 0 & -1
 \end{vmatrix}.
 $$
+
+This matrix can be defined in the code as
 
 ```cpp
 struct MyJacobian
