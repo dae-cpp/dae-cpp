@@ -1,2 +1,0 @@
-#cmakedefine DAE_FORTRAN_STYLE
-#cmakedefine DAE_SINGLE

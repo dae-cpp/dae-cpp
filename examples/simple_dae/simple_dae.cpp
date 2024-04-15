@@ -1,282 +1,167 @@
 /*
- * Solves a very simple system of differential algebraic equation as a test:
+ * Solves another simple system of differential algebraic equations.
+ * This example introduces Solution Manager, that will work as solution observer.
  *
- * x' = y
- * 0  = x*x + y*y - 1
+ * The system:
+ * | x' = y
+ * | x*x + y*y = 1
  *
- * Initial conditions are: x = 0, y = 1 for t = 0.
+ * Initial condition (t = 0):
+ * | x = 0
+ * | y = 1
  *
- * The solution of this system is
+ * Analytic solution for t = [0, pi/2]:
+ * | x = sin(t)
+ * | y = cos(t)
  *
- * x = sin(t), y = cos(t), 0 <= t <= pi/2;
- * x = 1, y = 0, t > pi/2.
+ * There is also another, trivial solution x = 1, y = 0, t > pi/2,
+ * so we will be solving the system in the interval t = [0, pi/2].
  *
- * Each time step we will check that
- * (1) x*x + y*y = 1 for any t, and
- * (2) x(t) = sin(t) for t <= pi/2, x(t) = 1 for t > pi/2
+ * Every time step, we will check that:
+ *   1. x*x + y*y = 1
+ *   2. x(t) = sin(t)
+ * and print the absolute errors.
  *
- * with the absolute tolerance at least 1e-6.
+ * This file is part of dae-cpp.
+ *
+ * dae-cpp is licensed under the MIT license.
+ * A copy of the license can be found in the LICENSE file.
+ *
+ * Copyright (c) 2024 Ivan Korotkin
  */
 
-#include <iostream>
-#include <cmath>
-#include <algorithm>  // for std::max_element
+// Main dae-cpp header
+#include <dae-cpp/solver.hpp>
 
-#include "../../src/solver.h"  // the main header of dae-cpp library solver
-
+// dae-cpp namespace
 using namespace daecpp;
 
-// python3 + numpy + matplotlib should be installed in order to enable plotting
-// #define PLOTTING
-
-#ifdef PLOTTING
-#include "../../src/external/matplotlib-cpp/matplotlibcpp.h"
-namespace plt = matplotlibcpp;
-#endif
+constexpr double pi{3.14159265358979323846};
 
 /*
- * Singular mass matrix in simplified 3-array sparse format
- * =============================================================================
- * The matrix has the following form:
+ * Singular mass matrix in sparse format:
+ *
  * M = |1 0|
  *     |0 0|
  */
-class MyMassMatrix : public MassMatrix
+struct MyMassMatrix
 {
-public:
-    void operator()(sparse_matrix_holder &M)
+    /*
+     * Defines the mass matrix `M` of the DAE system `M dx/dt = f`.
+     * The mass matrix should be defined in sparse format (non-zero elements only) and can depend on time `t`.
+     * Matrix `M` is empty and should be filled with non-zero elements.
+     */
+    void operator()(sparse_matrix &M, const double t)
     {
-        M.A.resize(2);   // Number of non-zero and diagonal elements
-        M.ia.resize(2);  // Number of non-zero and diagonal elements
-        M.ja.resize(2);  // Number of non-zero and diagonal elements
-
-        // Non-zero and diagonal elements
-        M.A[0] = 1;
-        M.A[1] = 0;
-
-        // Column index of each element given above
-        M.ja[0] = 0;
-        M.ja[1] = 1;
-
-        // Row index of each element in M.A:
-        M.ia[0] = 0;
-        M.ia[1] = 1;
+        M(0, 0, 1.0); // Row 0, column 0, non-zero element 1.0
     }
 };
 
 /*
- * RHS of the problem
- * =============================================================================
+ * The vector-function (RHS) of the problem:
+ *
+ * f(x,y,t) = | y
+ *            | x*x + y*y - 1
  */
-class MyRHS : public RHS
+struct MyRHS
 {
-public:
     /*
-     * Receives current solution vector x and the current time t.
-     * Defines the RHS f.
+     * Defines the RHS (vector function) `f` of the DAE system `M dx/dt = f`.
+     * Takes vector `x` and time `t` and returns the RHS vector `f`.
+     * Vector `f` is already pre-allocated with `f.size() == x.size()`.
+     *
+     * For the given DAE system,
+     * | x = x[0]
+     * | y = x[1]
      */
-    void operator()(const state_type &x, state_type &f, const double t)
+    void operator()(state_type &f, const state_type &x, const double t)
     {
-        f[0] = x[1];
-        f[1] = x[0] * x[0] + x[1] * x[1] - 1.0;
+        f[0] = x[1];                          // y
+        f[1] = x[0] * x[0] + x[1] * x[1] - 1; // x*x + y*y - 1
     }
 };
 
 /*
- * (Optional) Observer
- * =============================================================================
- * Every time step checks that
- * (1) x*x + y*y = 1, and
- * (2) x(t) - sin(t) = 0 for t <= pi/2, x(t) = 1 for t > pi/2
- * and prints solution and errors to console.
+ * (OPTIONAL) Analytic Jacobian in sparse format.
+ * The DAE solver will use automatic (algorithmic) differentiation if analytic Jacobian is not provided.
+ * However, providing the analytic Jacobian can significantly speed up the computation for large systems.
+ *
+ * Differentiating the RHS w.r.t. x[0] and x[1] gives the following Jacobian matrix:
+ *
+ * J = |0  1 |
+ *     |2x 2y|
  */
-class MySolver : public Solver
+struct MyJacobian
 {
-public:
-    MySolver(RHS &rhs, Jacobian &jac, MassMatrix &mass, SolverOptions &opt)
-        : Solver(rhs, jac, mass, opt)
-    {
-    }
-
-#ifdef PLOTTING
-    state_type x_axis, x0, x1;  // For plotting
-#endif
-    state_type err1, err2;  // To check errors
-
     /*
-     * Overloaded observer.
-     * Receives current solution vector and the current time every time step.
+     * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
+     * Takes vector `x` and time `t` and returns the Jacobian matrix `J`.
+     * Matrix `J` is empty and should be filled with non-zero elements.
      */
-    void observer(state_type &x, const double t)
+    void operator()(sparse_matrix &J, const state_vector &x, const double t)
     {
-        double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0);
-        double e2 = 0;
-
-        if(t <= 1.5707963)
-            e2 = std::abs(std::sin(t) - x[0]);
-        else
-            e2 = std::abs(x[0] - 1.0);
-
-        std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << e1 << '\t'
-                  << e2 << '\n';
-
-        err1.push_back(e1);
-        err2.push_back(e2);
-
-#ifdef PLOTTING
-        // Save data for plotting
-        x_axis.push_back(t);
-        x0.push_back(x[0]);
-        x1.push_back(x[1]);
-#endif
+        J.reserve(3);        // Pre-allocates memory for 3 non-zero elements (optional)
+        J(0, 1, 1.0);        // Row 0, column 1, non-zero element `1.0`
+        J(1, 0, 2.0 * x[0]); // Row 1, column 0, non-zero element `2x`
+        J(1, 1, 2.0 * x[1]); // Row 1, column 1, non-zero element `2y`
     }
 };
 
 /*
- * (Optional) Analytical Jacobian in simplified 3-array sparse format
- * =============================================================================
+ * User-defined Solution Manager to post-process solution every time step.
+ * In this example, it works as a passive observer that saves solution error during computation.
  */
-class MyJacobian : public Jacobian
+class MyObserver
 {
+    state_vector &_err1, &_err2; // Vectors of the solution errors
+
 public:
-    explicit MyJacobian(RHS &rhs) : Jacobian(rhs) {}
+    MyObserver(state_vector &err1, state_vector &err2) : _err1(err1), _err2(err2) {}
 
     /*
-     * Receives current solution vector x and the current time t. Defines the
-     * analytical Jacobian matrix J.
+     * Solution Manager functor will be called every time step providing the time `t` and
+     * the corresponding solution `x` for further post-processing.
+     * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
      */
-    void operator()(sparse_matrix_holder &J, const state_type &x,
-                    const double t)
+    virtual int operator()(const state_vector &x, const double t)
     {
-        // Initialize Jacobian in simplified sparse format
-        J.A.resize(4);
-        J.ia.resize(4);
-        J.ja.resize(4);
+        double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0); // Error 1
+        double e2 = std::abs(std::sin(t) - x[0]);              // Error 2
 
-        // Non-zero and diagonal elements
-        J.A[0] = 0.0;
-        J.A[1] = 1.0;
-        J.A[2] = 2.0 * x[0];
-        J.A[3] = 2.0 * x[1];
+        // Every time step, print time t, x(t), y(t), Error 1, Error 2
+        // std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << e1 << '\t' << e2 << '\n';
 
-        // Column index of each element given above
-        J.ja[0] = 0;
-        J.ja[1] = 1;
-        J.ja[2] = 0;
-        J.ja[3] = 1;
+        _err1.push_back(e1);
+        _err2.push_back(e2);
 
-        // Row index of each non-zero or diagonal element of A
-        J.ia[0] = 0;
-        J.ia[1] = 0;
-        J.ia[2] = 1;
-        J.ia[3] = 1;
+        return 0;
     }
 };
 
 /*
  * MAIN FUNCTION
  * =============================================================================
- * Returns '0' if solution comparison is OK or '1' if solution error is above
- * the acceptable tolerances.
  */
 int main()
 {
-    // Solution time 0 <= t <= pi
-    double t1 = 3.14;
+    state_vector x0{0, 1}; // Initial condition: x = 0, y = 1
+    double t_end{pi / 2};  // Solution interval: t = [0, t_end]
 
-    // Define the state vector
-    state_type x(2);
+    state_vector error1, error2; // Absolute errors
 
-    // Initial conditions
-    x[0] = 0;
-    x[1] = 1;
+    int status = solve(MyMassMatrix(), MyRHS(), x0, t_end, MyObserver(error1, error2)); // Solves the DAE system
 
-    // Set up the RHS of the problem.
-    // Class MyRHS inherits abstract RHS class from dae-cpp library.
-    MyRHS rhs;
+    // To add analytic Jacobian:
+    // int status = solve(MyMassMatrix(), MyRHS(), MyJacobian(), x0, t_end, MyObserver(error1, error2));
 
-    // Set up the Mass Matrix of the problem.
-    // MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
-    MyMassMatrix mass;
+    // To add user-defined solver options:
+    // SolverOptions opt;
+    // opt.verbosity = verbosity::extra;
+    // opt.dt_init = 0.001;
+    // int status = solve(MyMassMatrix(), MyRHS(), MyJacobian(), x0, t_end, MyObserver(error1, error2), opt);
 
-    // Create an instance of the solver options and update some of the solver
-    // parameters defined in solver_options.h
-    SolverOptions opt;
+    // Print both errors at the very end of computation
+    std::cout << "Abs. error: " << error1.back() << '\t' << error2.back() << '\n';
 
-    opt.dt_init = 1.0e-2;   // Change the initial time step.
-                            // It should be relatively small, because the first
-                            // step in time is first order accuracy.
-                            // Reducing dt_init decreases the error (2)
-    opt.time_stepping = 1;  // Use simple stability-based adaptive time stepping
-                            // algorithm.
-    opt.bdf_order = 6;      // Use BDF-6
-    opt.verbosity = 0;      // Suppress output to screen (we have our own output
-                            // defined in Observer function above)
-
-    // We can override Jacobian class from dae-cpp library and provide
-    // analytical Jacobian.
-    MyJacobian jac(rhs);
-
-    // Or we can use numerically estimated Jacobian with the given tolerance.
-    // Jacobian jac_est(rhs, 1e-6);
-
-    // This will decrease the error (1) for x*x + y*y = 1
-#ifdef DAE_SINGLE
-    opt.atol = 1e-6;  // Redefine absolute tolerance for single precision
-    opt.rtol = 1e-6;  // Redefine relative tolerance for single precision
-#else
-    opt.atol = 1e-8;  // Redefine absolute tolerance for double precision
-    opt.rtol = 1e-8;  // Redefine relative tolerance for double precision
-#endif
-
-    // Create an instance of the solver with particular RHS, Mass matrix,
-    // Jacobian and solver options
-    MySolver solve(rhs, jac, mass, opt);
-
-    // Now we are ready to solve the set of DAEs
-    std::cout << "\nStarting DAE solver...\n";
-    std::cout << "time\tx\ty\terror1\terror2\n";
-
-    // Solve the system
-    int status = solve(x, t1);
-
-    // Check errors
-    double max_err1 = *std::max_element(solve.err1.begin(), solve.err1.end());
-    double max_err2 = *std::max_element(solve.err2.begin(), solve.err2.end());
-
-    std::cout << "\nMaximum absoulte error (1) x*x + y*y = 1: " << max_err1
-              << '\n';
-    std::cout << "Maximum absolute error (2) x(t) - sin(t) = 0 for t <= pi/2 "
-                 "or x(t) = 1 for t > pi/2: "
-              << max_err2 << '\n';
-
-    // Plot the solution
-#ifdef PLOTTING
-    plt::figure();
-    plt::figure_size(640, 480);
-    plt::named_semilogx("x", solve.x_axis, solve.x0);
-    plt::named_semilogx("y", solve.x_axis, solve.x1);
-    plt::xlabel("time");
-    plt::title("Simple 2x2 DAE system");
-    plt::grid(true);
-    plt::legend();
-
-    // Save figure
-    const char *filename = "simple_dae.png";
-    std::cout << "Saving result to " << filename << "...\n";
-    plt::save(filename);
-#endif
-
-#ifdef DAE_SINGLE
-    const bool check_result = (max_err1 > 1e-6 || max_err2 > 1e-6 || status);
-#else
-    const bool check_result = (max_err1 > 1e-15 || max_err2 > 1e-6 || status);
-#endif
-
-    if(check_result)
-        std::cout << "...Test FAILED\n\n";
-    else
-        std::cout << "...done\n\n";
-
-    return check_result;
+    return 0;
 }

@@ -1,11 +1,7 @@
+# Executables and builds
+build/
 *.exe
-.vs/
-.vscode/ipch/
-Debug/
-Release/
-x64/
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-build*/
+
+# VS Code files
+.vscode/
+.cache/
