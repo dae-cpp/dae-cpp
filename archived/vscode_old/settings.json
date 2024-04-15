@@ -1,5 +1,0 @@
-{
-    "editor.renderWhitespace": "boundary",
-    "C_Cpp.clang_format_fallbackStyle": "none",
-    "C_Cpp.clang_format_path": "/usr/bin/clang-format"
-}
