@@ -283,7 +283,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
         ASSERT(dt_decrease_threshold > dt_increase_threshold, "Adaptive time stepping thresholds are not consistent with each other.");
 
         // Maximum number of iteration per time step
-        unsigned int max_Newton_iter = opt.max_Jacobian_updates * (opt.Newton_scheme + 1);
+        int max_Newton_iter = opt.max_Jacobian_updates * (opt.Newton_scheme + 1);
 
         // System size
         auto size = x0.size();
@@ -408,7 +408,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
 
                 bool is_diverged{false}; // True if Newton iterations diverged
 
-                unsigned int iter{}; // Newton iteration loop index - we will need this value later
+                int iter{}; // Newton iteration loop index - we will need this value later
 
                 /*
                  * Newton iteration loop
@@ -463,7 +463,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                             M.clear();
                             mass(M, state.t);
                             M.check();
-                            M_ = M.convert(size);
+                            M_ = M.convert(static_cast<int_type>(size));
                         }
                         catch (const std::exception &e)
                         {
@@ -484,7 +484,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                             J.clear();
                             jac(J, xk, state.t);
                             J.check();
-                            Jb = J.convert(size);
+                            Jb = J.convert(static_cast<int_type>(size));
                         }
                         catch (const std::exception &e)
                         {

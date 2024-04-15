@@ -42,10 +42,10 @@ public:
  */
 class MassMatrixIdentity : public MassMatrix
 {
-    const std::size_t _N{0}; // Indentity matrix size
+    const int_type _N{0}; // Indentity matrix size
 
 public:
-    MassMatrixIdentity(const std::size_t N) : MassMatrix(), _N(N) {}
+    MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
 
     void operator()(sparse_matrix &M, const double t) const
     {
@@ -53,7 +53,7 @@ public:
         M.i.resize(_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
         M.j.resize(_N);
 
-        for (std::size_t i = 0; i < _N; ++i)
+        for (int_type i = 0; i < _N; ++i)
         {
             M.i[i] = i;
             M.j[i] = i;
