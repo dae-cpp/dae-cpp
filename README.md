@@ -6,12 +6,6 @@ A simple but powerful header-only C++ solver for [systems of Differential-Algebr
 
 **NOTE:** This is a massively reworked and updated version of `dae-cpp`, which is incompatible with the previous version. If your project still relies on the old `dae-cpp`, it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch.
 
-**_NOTE:_ This version of the library is now deprecated and no longer supported.
-Users are encouraged to transition to the forthcoming version, which is currently under development and scheduled for release later in April. The upcoming version boasts significant improvements in user-friendliness, documentation, and testing.
-In addition, it will be a header-only library without external dependencies such as Intel MKL.**
-
-**If your code still relies on the old (MKL-based) version of the solver, it is now archived on the [legacy](https://github.com/ikorotkin/dae-cpp/tree/legacy) branch of the repository.**
-
 ## What is dae-cpp
 
 `dae-cpp` is a cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
