@@ -81,7 +81,7 @@ struct SolverOptions
     // If the algorithm fails to converge after `max_Jacobian_updates` Jacobian matrix updates and factorizations per time step,
     // the Newton iterations will be considered as diverged. The solver will try to roll back and decrease the time step.
     // Default value is 8.
-    unsigned int max_Jacobian_updates{8};
+    int max_Jacobian_updates{8};
 
     // If the Newton method fails to converge 'max_Newton_failed_attempts' times in a row,
     // the solver will try to update Jacobian matrix every single iteration next time step (for Quasi-Newton methods).

@@ -43,7 +43,7 @@ class Timer
     double *_t;
 
 public:
-    Timer(double *t) : _t(t) {}
+    explicit Timer(double *t) : _t(t) {}
 
     ~Timer()
     {

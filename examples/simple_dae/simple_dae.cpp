@@ -163,5 +163,5 @@ int main()
     // Print both errors at the very end of computation
     std::cout << "Abs. error: " << error1.back() << '\t' << error2.back() << '\n';
 
-    return 0;
+    return status;
 }

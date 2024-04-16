@@ -174,7 +174,7 @@ TEST(LinearSolver, BigSystem)
 
     b -= xb; // Should be 0
 
-    for (std::size_t i = 0; i < b.size(); ++i)
+    for (int i = 0; i < b.size(); ++i)
     {
         ASSERT_NEAR(b[i], 0.0, abs_err_big_system) << "i=" << i;
     }

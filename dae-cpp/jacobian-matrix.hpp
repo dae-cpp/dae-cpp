@@ -56,12 +56,12 @@ public:
      */
     void operator()(sparse_matrix &J, const state_vector &x, const double t)
     {
-        const std::size_t size = x.size(); // System size
+        const int_type size = static_cast<int_type>(x.size()); // System size
 
         state_type x_(size); // Vectors of `dual` numbers are defined with `_` suffix
 
         // Conversion to dual numbers for automatic differentiation
-        for (std::size_t k = 0; k < size; ++k)
+        for (int_type k = 0; k < size; ++k)
         {
             x_[k] = x[k];
         }
@@ -78,9 +78,9 @@ public:
         Eigen::MatrixXd jac = autodiff::jacobian(f, wrt(x_), at(x_, t));
 
         // Convert dense matrix to sparse format
-        for (std::size_t j = 0; j < size; ++j)
+        for (int_type j = 0; j < size; ++j)
         {
-            for (std::size_t i = 0; i < size; ++i)
+            for (int_type i = 0; i < size; ++i)
             {
                 const double val = jac(i, j);
 

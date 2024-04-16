@@ -5,3 +5,6 @@ build/
 # VS Code files
 .vscode/
 .cache/
+
+# Visual Studio files
+.vs/
