@@ -645,7 +645,8 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                         // Finds maximum relative variability
                         if (opt.solution_variability_control)
                         {
-                            if (state.x[1][i] != 0.0)
+                            if ((std::abs(state.x[1][i]) > opt.variability_tolerance) &&
+                                (std::abs(state.x[0][i]) > opt.variability_tolerance))
                             {
                                 double rel_change = std::abs((state.x[1][i] - state.x[0][i]) / state.x[1][i]);
                                 if (rel_change > variability)

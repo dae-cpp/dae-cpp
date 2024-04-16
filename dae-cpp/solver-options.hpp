@@ -105,6 +105,13 @@ struct SolverOptions
     // Switching it OFF can lead to a significant speed boost for big systems, but it can also lead to instability.
     bool solution_variability_control{true};
 
+    // Solution variability tolerance.
+    // Solution variability is the maximum relative change in the solution every time step.
+    // If the absolute value of the solution is very close to zero, the relative change can be very high, leading to unnecessary small time steps.
+    // To prevent this, the solver will ignore the values below the solution variability tolerance.
+    // The default value is 1e-4. Consider increasing it if the solver reduces the time step too much.
+    double variability_tolerance{1e-4};
+
     // Solution variability lower threshold.
     // The higher the value, the more likely the time step can be increased.
     // If the maximum relative change in the solution is above the lower threshold, the time step will NOT be increased.
@@ -151,6 +158,7 @@ struct SolverOptions
         ASSERT(max_Newton_failed_attempts > 0, "`max_Newton_failed_attempts` should be positive.");
         ASSERT(dt_increase_factor >= 1.0, "Time step amplification factor `dt_increase_factor` should be greater than 1.");
         ASSERT(dt_decrease_factor >= 1.0, "Time step reduction factor `dt_decrease_factor` should be greater than 1.");
+        ASSERT(variability_tolerance >= 0.0, "Solution variability tolerance cannot be negative.");
         ASSERT(variability_threshold_low >= 0.0, "Solution variability lower threshold cannot be negative.");
         ASSERT(variability_threshold_high >= 0.0, "Solution variability higher threshold cannot be negative.");
         ASSERT(variability_threshold_low <= variability_threshold_high, "Solution variability lower threshold should be less than the higher threshold.");
