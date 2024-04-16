@@ -349,6 +349,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
             if (mgr(x0, 0.0))
             {
                 PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                error_msg = exit_code::success;
                 goto result;
             }
         }
@@ -715,6 +716,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                     if (mgr(state.x[0], state.t))
                     {
                         PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                        error_msg = exit_code::success;
                         goto result;
                     }
                 }
