@@ -1,18 +1,20 @@
 # dae-cpp
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
+![version](https://img.shields.io/badge/version-2.0.0-blue)
+![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?link=https%3A%2F%2Fdae-cpp.github.io%2F)
 
 A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).
 
 **NOTE:** This is a massively reworked and updated version of `dae-cpp`, which is incompatible with the previous version. If your project still relies on the old `dae-cpp`, it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch.
 
-## What is dae-cpp
+## What is `dae-cpp`
 
 `dae-cpp` is a cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector-function of the state vector $`\mathbf{x}`$ and time $t$.
+to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector function of the state vector $`\mathbf{x}`$ and time $t$.
 
 ### How does it work
 
@@ -51,6 +53,12 @@ make
 ctest
 ```
 
+## Documentation, examples, and CHANGELOG
+
+- For more information about the solver, please refer to the [Documentation](https://dae-cpp.github.io/) pages.
+- Ready to use examples are given in the [examples](https://github.com/dae-cpp/dae-cpp/tree/master/examples) directory of this repository.
+- All notable user-facing changes to this project are documented in the [CHANGELOG](https://dae-cpp.github.io/changelog.html).
+
 ## Quick Start
 
 Consider the following (trivial) DAE system as a quick example:
@@ -88,7 +96,7 @@ This system contains one simple differential equation and one algebraic equation
 
 Below is a simplified procedure of defining and solving the DAE system using `dae-cpp`.
 
-### Step 0. Include dae-cpp header into the project
+### Step 0. Include `dae-cpp` header into the project
 
 ```cpp
 #include <dae-cpp/solver.hpp>
@@ -116,7 +124,7 @@ struct MyMassMatrix
 };
 ```
 
-### Step 2. Define the vector-function (RHS) of the system
+### Step 2. Define the vector function (RHS) of the system
 
 ```cpp
 struct MyRHS
@@ -156,6 +164,8 @@ my_system.solve({0, 1}, 1.0);
 Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
 The system is defined in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
+
+For more information, refer to the [Documentation](https://dae-cpp.github.io/).
 
 ### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
 
