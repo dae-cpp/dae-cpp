@@ -67,8 +67,6 @@ public:
 class MassMatrixZero : public MassMatrix
 {
 public:
-    MassMatrixZero() : MassMatrix() {}
-
     void operator()(sparse_matrix &M, const double t) const
     {
         M.A.clear();
