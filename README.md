@@ -2,15 +2,15 @@
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
 ![version](https://img.shields.io/badge/version-2.0.0-blue)
-![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?link=https%3A%2F%2Fdae-cpp.github.io%2F)
+[![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
-A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).
+**_A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE)._**
 
-**NOTE:** This is a massively reworked and updated version of `dae-cpp`, which is incompatible with the previous version. If your project still relies on the old `dae-cpp`, it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch.
+**NOTE:** `dae-cpp` has been redesigned and there were breaking changes between `v1.x` and `v2.x`. If your project still relies on the old `dae-cpp` (`v1.x`), it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch. For the new version (`v2.x`), see [Documentation](https://dae-cpp.github.io/) and the notes below.
 
 ## What is `dae-cpp`
 
-`dae-cpp` is a cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
+`dae-cpp` is a cross-platform, header-only C++17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
@@ -163,7 +163,7 @@ my_system.solve({0, 1}, 1.0);
 
 Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
-The system is defined in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
+The entire source code is provided in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
 For more information, refer to the [Documentation](https://dae-cpp.github.io/).
 
