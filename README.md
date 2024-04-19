@@ -57,7 +57,7 @@ ctest
 
 - For more information about the solver, please refer to the [Documentation](https://dae-cpp.github.io/) pages.
 - Ready to use examples are given in the [examples](https://github.com/dae-cpp/dae-cpp/tree/master/examples) directory of this repository.
-- All notable user-facing changes to this project are documented in the [CHANGELOG](https://dae-cpp.github.io/changelog.html).
+- All notable user-facing changes to this project are documented in the [CHANGELOG](https://dae-cpp.github.io/CHANGELOG.html).
 
 ## Quick Start
 
@@ -152,7 +152,7 @@ System my_system(mass, rhs); // Defines the DAE system object
 state_vector x0{0, 1}; // The initial state vector (initial condition)
 double t{1.0};         // The integration interval: t = [0, 1.0]
 
-my_system.solve(x0, t); // Solves the system with the given initial condition `x0` and time `t`
+my_system.solve(x0, t); // Solves the system with initial condition `x0` and time `t`
 ```
 
 or simply
