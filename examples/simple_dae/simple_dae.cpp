@@ -123,7 +123,7 @@ public:
      * the corresponding solution `x` for further post-processing.
      * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
      */
-    virtual int operator()(const state_vector &x, const double t)
+    int operator()(const state_vector &x, const double t)
     {
         double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0); // Error 1
         double e2 = std::abs(std::sin(t) - x[0]);              // Error 2

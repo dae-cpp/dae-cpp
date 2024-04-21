@@ -212,7 +212,7 @@ public:
      * the corresponding solution `x` for further post-processing.
      * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
      */
-    virtual int operator()(const state_vector &x, const double t)
+    int operator()(const state_vector &x, const double t)
     {
         _sol.x.emplace_back(x);
         _sol.t.emplace_back(t);
