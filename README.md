@@ -4,7 +4,7 @@
 ![version](https://img.shields.io/badge/version-2.0.0-blue)
 [![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
-**_A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE)._**
+**A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).**
 
 **NOTE:** `dae-cpp` has been redesigned and there were breaking changes between `v1.x` and `v2.x`. If your project still relies on the old `dae-cpp` (`v1.x`), it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch. For the new version (`v2.x`), see [Documentation](https://dae-cpp.github.io/) and the notes below.
 
@@ -24,8 +24,8 @@ Eigen's sparse solver performs two steps: factorization (decomposition) of the J
 ### The main features of the solver
 
 - Header only, no pre-compilation required.
-- Uses automatic (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/)) to compute the Jacobian matrix, if it is not provided by the user.
-- Fourth-order implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
+- Uses [automatic](https://en.wikipedia.org/wiki/Automatic_differentiation) (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/) package) to compute the Jacobian matrix, if it is not provided by the user.
+- Fourth-order variable-step implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
 - A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
 - Mass matrix can be non-static (can depend on time) and it can be singular.
 - The library is extremely easy to use. A simple DAE can be set up using just a few lines of code (see [Quick Start](#quick-start) example below).
@@ -214,7 +214,7 @@ Thank you for considering contributing to the project! Whether you're an experie
 
 ### How to contribute
 
-0. Create a GitHub issue if you want to suggest or discuss your changes.
+0. Create a [GitHub issue](https://github.com/dae-cpp/dae-cpp/issues) if you want to suggest or discuss your changes.
 1. Fork the repository and clone it to your local machine.
 2. Create a new branch for your contributions.
 3. Make your changes and ensure they adhere to our coding standards.
