@@ -108,7 +108,7 @@ Optionally, add `daecpp` namespace:
 using namespace daecpp;
 ```
 
-### Step 1. Define the mass matrix of the system
+### Step 1. Define the [mass matrix](https://dae-cpp.github.io/mass-matrix.html) of the system
 
 Tha mass matrix contains only one non-zero element:
 
@@ -130,7 +130,7 @@ struct MyMassMatrix
 };
 ```
 
-### Step 2. Define the vector function (RHS) of the system
+### Step 2. Define the [vector function](https://dae-cpp.github.io/vector-function.html) (RHS) of the system
 
 ```cpp
 struct MyRHS
@@ -143,7 +143,7 @@ struct MyRHS
 };
 ```
 
-### Step 3. Set up the DAE system
+### Step 3. [Set up](https://dae-cpp.github.io/solve.html#system-class) the DAE system
 
 ```cpp
 MyMassMatrix mass; // Mass matrix object
@@ -152,7 +152,7 @@ MyRHS rhs;         // Vector-function object
 System my_system(mass, rhs); // Defines the DAE system object
 ```
 
-### Step 4. Solve the system
+### Step 4. [Solve](https://dae-cpp.github.io/solve.html#system-class-solve-method) the system
 
 ```cpp
 state_vector x0{0, 1}; // The initial state vector (initial condition)
@@ -173,7 +173,7 @@ The entire source code is provided in the [Quick Start example](https://github.c
 
 For more information, refer to the [Documentation](https://dae-cpp.github.io/).
 
-### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
+### (Optional) Step 5. Define the [Jacobian matrix](https://dae-cpp.github.io/jacobian-matrix.html) to boost the computation speed
 
 Differentiating the RHS w.r.t. $x$ and $y$ gives the following Jacobian matrix:
 
@@ -199,13 +199,13 @@ struct MyJacobian
 };
 ```
 
-Then add user-defined Jacobian to speed up the computation (useful for big systems):
+Then add the user-defined Jacobian to speed up the computation (useful for big systems):
 
 ```cpp
 my_system.solve(x0, t, MyJacobian());
 ```
 
-### (Optional) Step 6. Tweak the solver options
+### (Optional) Step 6. Tweak the [solver options](https://dae-cpp.github.io/solver-options.html)
 
 For example, restrict the maximum time step:
 
