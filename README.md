@@ -102,6 +102,12 @@ Below is a simplified procedure of defining and solving the DAE system using `da
 #include <dae-cpp/solver.hpp>
 ```
 
+Optionally, add `daecpp` namespace:
+
+```cpp
+using namespace daecpp;
+```
+
 ### Step 1. Define the mass matrix of the system
 
 Tha mass matrix contains only one non-zero element:
