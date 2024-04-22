@@ -199,10 +199,10 @@ struct MyJacobian
 };
 ```
 
-Then add user-defined Jacobian to the DAE system definition:
+Then add user-defined Jacobian to speed up the computation (useful for big systems):
 
 ```cpp
-System my_system(mass, rhs, MyJacobian()); // Defines the DAE system with Jacobian
+my_system.solve(x0, t, MyJacobian());
 ```
 
 ### (Optional) Step 6. Tweak the solver options
@@ -210,8 +210,8 @@ System my_system(mass, rhs, MyJacobian()); // Defines the DAE system with Jacobi
 For example, restrict the maximum time step:
 
 ```cpp
-my_system.opt.dt_max = 0.1;   // Update `dt_max`
-my_system.solve({0, 1}, 1.0); // Restart the computation
+my_system.opt.dt_max = 0.1;           // Update `dt_max`
+my_system.solve(x0, t, MyJacobian()); // Restart the computation
 ```
 
 ## Contribution and Feedback
