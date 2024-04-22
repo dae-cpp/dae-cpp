@@ -42,18 +42,18 @@ public:
  */
 class MassMatrixIdentity : public MassMatrix
 {
-    const int_type _N{0}; // Indentity matrix size
+    const int_type m_N{0}; // Indentity matrix size
 
 public:
-    explicit MassMatrixIdentity(const int_type N) : MassMatrix(), _N(N) {}
+    explicit MassMatrixIdentity(const int_type N) : MassMatrix(), m_N(N) {}
 
     void operator()(sparse_matrix &M, const double t) const
     {
-        M.A.resize(_N, 1.0);
-        M.i.resize(_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
-        M.j.resize(_N);
+        M.A.resize(m_N, 1.0);
+        M.i.resize(m_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
+        M.j.resize(m_N);
 
-        for (int_type i = 0; i < _N; ++i)
+        for (int_type i = 0; i < m_N; ++i)
         {
             M.i[i] = i;
             M.j[i] = i;
@@ -67,8 +67,6 @@ public:
 class MassMatrixZero : public MassMatrix
 {
 public:
-    MassMatrixZero() : MassMatrix() {}
-
     void operator()(sparse_matrix &M, const double t) const
     {
         M.A.clear();

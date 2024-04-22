@@ -113,17 +113,17 @@ struct MyJacobian
  */
 class MyObserver
 {
-    state_vector &_err1, &_err2; // Vectors of the solution errors
+    state_vector &m_err1, &m_err2; // Vectors of the solution errors
 
 public:
-    MyObserver(state_vector &err1, state_vector &err2) : _err1(err1), _err2(err2) {}
+    MyObserver(state_vector &err1, state_vector &err2) : m_err1(err1), m_err2(err2) {}
 
     /*
      * Solution Manager functor will be called every time step providing the time `t` and
      * the corresponding solution `x` for further post-processing.
      * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
      */
-    virtual int operator()(const state_vector &x, const double t)
+    int operator()(const state_vector &x, const double t)
     {
         double e1 = std::abs(x[0] * x[0] + x[1] * x[1] - 1.0); // Error 1
         double e2 = std::abs(std::sin(t) - x[0]);              // Error 2
@@ -131,8 +131,8 @@ public:
         // Every time step, print time t, x(t), y(t), Error 1, Error 2
         // std::cout << t << '\t' << x[0] << '\t' << x[1] << '\t' << e1 << '\t' << e2 << '\n';
 
-        _err1.push_back(e1);
-        _err2.push_back(e2);
+        m_err1.push_back(e1);
+        m_err2.push_back(e2);
 
         return 0;
     }

@@ -1,28 +1,6 @@
 /*
- * This example solves a big DAE system that describes potential distribution
- * and ion concentration in a perovskite solar cell:
- *
- * | dP/dt = d/dx(dP/dx + P * dPhi/dx),
- * | d^2(Phi)/dx^2 = (1 - P)/lambda^2,
- *
- * where P is the ion concentration (dimensionless),
- * Phi is the potential (dimensionless) along axis x, 0 <= x <= 1.
- * Lambda parameter is a constant.
- *
- * Initial condition (t = 0):
- * | P = 1
- * | Phi = 0
- *
- * Boundary conditions:
- * | (dP/dx + P * dPhi/dx) = 0 for x = 0 and x = 1,
- * | Phi(t,x=0) = -t,
- * | Phi(t,x=1) = t.
- *
- * The system will be solved using Finite Difference approach in the time interval t = [0, 10].
- *
- * This example introduces Solution Manager, that will work as solution observer and a simple event function.
- * It also shows how parameters, such as the number of discretization points, can be passed to the mass matrix,
- * vector function, and Jacobian matrix.
+ * Integration test of the solver.
+ * Based on the `perovskite_model` example.
  *
  * This file is part of dae-cpp.
  *
@@ -32,15 +10,15 @@
  * Copyright (c) 2024 Ivan Korotkin
  */
 
-// Main dae-cpp header
 #include <dae-cpp/solver.hpp>
 
-// dae-cpp namespace
+#include "gtest/gtest.h"
+
+namespace
+{
+
 using namespace daecpp;
 
-/*
- * DAE system parameters
- */
 struct MyParams
 {
     int_type N{4000};   // Number of discretization points
@@ -48,9 +26,6 @@ struct MyParams
     double lambda{1.0}; // Lambda parameter
 };
 
-/*
- * Singular mass matrix in sparse format
- */
 class MyMassMatrix
 {
     MyParams p; // Parameters
@@ -58,11 +33,6 @@ class MyMassMatrix
 public:
     explicit MyMassMatrix(MyParams &params) : p(params) {}
 
-    /*
-     * Defines the mass matrix `M` of the DAE system `M dx/dt = f`.
-     * The mass matrix should be defined in sparse format (non-zero elements only) and can depend on time `t`.
-     * Matrix `M` is empty and should be filled with non-zero elements.
-     */
     void operator()(sparse_matrix &M, const double t)
     {
         M.reserve(p.N); // Reserves memory for `N` non-zero elements
@@ -74,9 +44,6 @@ public:
     }
 };
 
-/*
- * The vector-function (RHS) of the problem
- */
 class MyRHS
 {
     MyParams p; // Parameters
@@ -84,11 +51,6 @@ class MyRHS
 public:
     explicit MyRHS(MyParams &params) : p(params) {}
 
-    /*
-     * Defines the RHS (vector function) `f` of the DAE system `M dx/dt = f`.
-     * Takes vector `x` and time `t` and returns the RHS vector `f`.
-     * Vector `f` is already pre-allocated with `f.size() == x.size()`.
-     */
     void operator()(state_type &f, const state_type &x, const double t)
     {
         // Derived parameters
@@ -117,11 +79,6 @@ public:
     }
 };
 
-/*
- * Analytic Jacobian in sparse format.
- * The DAE solver will use automatic (algorithmic) differentiation if analytic Jacobian is not provided.
- * However, providing the analytic Jacobian can significantly speed up the computation for large systems.
- */
 class MyJacobian
 {
     MyParams p; // Parameters
@@ -129,11 +86,6 @@ class MyJacobian
 public:
     explicit MyJacobian(MyParams &params) : p(params) {}
 
-    /*
-     * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
-     * Takes vector `x` and time `t` and returns the Jacobian matrix `J`.
-     * Matrix `J` is empty and should be filled with non-zero elements.
-     */
     void operator()(sparse_matrix &J, const state_vector &x, const double t)
     {
         // Derived parameters
@@ -195,10 +147,6 @@ public:
     }
 };
 
-/*
- * User-defined Solution Manager to post-process solution every time step.
- * In this example, it works as a passive observer and as an event function.
- */
 class MySolutionManager
 {
     // A reference to the solution holder object
@@ -207,12 +155,7 @@ class MySolutionManager
 public:
     explicit MySolutionManager(SolutionHolder &sol) : m_sol(sol) {}
 
-    /*
-     * Solution Manager functor will be called every time step providing the time `t` and
-     * the corresponding solution `x` for further post-processing.
-     * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
-     */
-    int operator()(const state_vector &x, const double t)
+    virtual int operator()(const state_vector &x, const double t)
     {
         m_sol.x.emplace_back(x);
         m_sol.t.emplace_back(t);
@@ -228,11 +171,11 @@ public:
     }
 };
 
-/*
- * MAIN FUNCTION
- * =============================================================================
- */
-int main()
+// Absolute errors
+constexpr double abs_err{0.0};
+constexpr double abs_err_fine{1e-14};
+
+TEST(Integration, PerovskiteModel)
 {
     // Solution parameters
     MyParams params;
@@ -253,7 +196,7 @@ int main()
 
     // Solver options
     SolverOptions opt;
-    opt.verbosity = verbosity::normal;        // Prints computation time and basic info
+    opt.verbosity = verbosity::off;           // Prints computation time and basic info
     opt.solution_variability_control = false; // Switches off solution variability control for better performance
 
     // Solve the DAE system
@@ -261,13 +204,70 @@ int main()
                        x0, t_end,
                        MySolutionManager(sol), opt);
 
-    // Soluton vs time `t` is in the `sol` object.
-    // Print P at the left boundary, and Phi at the right boundary of the domain.
-    std::cout << "MySolutionManager: "
-              << "t = " << sol.t.back()
-              << ", P_left = " << sol.x.back()[0]
-              << ", Phi_right = " << sol.x.back().back()
-              << '\n';
+    ASSERT_EQ(status, 0);
 
-    return status;
+    // Soluton vs time `t` is in the `sol` object.
+    ASSERT_GT(sol.x.size(), 0);
+    ASSERT_GT(sol.t.size(), 0);
+
+    ASSERT_DOUBLE_EQ(sol.t.back(), t_end);
+
+    // Comparison with MATLAB numerical solution
+    auto N = params.N;
+    EXPECT_NEAR(sol.x.back()[0], 19.9949, 0.05);
+    EXPECT_NEAR(sol.x.back()[(N - 1) / 10] * 0.1 + sol.x.back()[(N - 1) / 10 + 1] * 0.9, 2.72523, 1e-2);
+    EXPECT_NEAR(sol.x.back()[(N - 1) / 5] * 0.2 + sol.x.back()[(N - 1) / 5 + 1] * 0.8, 0.382148, 1e-3);
+    EXPECT_NEAR(sol.x.back()[N], -10.0, abs_err_fine);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 1] * 0.2 + sol.x.back()[N + (N - 1) / 5 * 1 + 1] * 0.8, -6.04056, 1e-4);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 2] * 0.4 + sol.x.back()[N + (N - 1) / 5 * 2 + 1] * 0.6, -2.08970, 0.006);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 3] * 0.6 + sol.x.back()[N + (N - 1) / 5 * 3 + 1] * 0.4, 1.90021, 0.015);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 4] * 0.8 + sol.x.back()[N + (N - 1) / 5 * 4 + 1] * 0.2, 5.93011, 0.02);
+    EXPECT_NEAR(sol.x.back().back(), 10.0, abs_err_fine);
 }
+
+TEST(Integration, PerovskiteModelDefault)
+{
+    // Solution parameters
+    MyParams params;
+    params.N = 4000;
+
+    // Initial condition
+    state_vector x0(2 * params.N);
+    for (int_type i = 0; i < params.N; ++i)
+    {
+        x0[i] = 1.0;
+    }
+
+    // Solution interval: t = [0, t_end]
+    double t_end{10.0};
+
+    // Solution holder
+    SolutionHolder sol;
+
+    // Solve the DAE system
+    int status = solve(MyMassMatrix(params), MyRHS(params), MyJacobian(params),
+                       x0, t_end,
+                       MySolutionManager(sol));
+
+    ASSERT_EQ(status, 0);
+
+    // Soluton vs time `t` is in the `sol` object.
+    ASSERT_GT(sol.x.size(), 0);
+    ASSERT_GT(sol.t.size(), 0);
+
+    ASSERT_DOUBLE_EQ(sol.t.back(), t_end);
+
+    // Comparison with MATLAB numerical solution
+    auto N = params.N;
+    EXPECT_NEAR(sol.x.back()[0], 19.9949, 0.05);
+    EXPECT_NEAR(sol.x.back()[(N - 1) / 10] * 0.1 + sol.x.back()[(N - 1) / 10 + 1] * 0.9, 2.72523, 1e-2);
+    EXPECT_NEAR(sol.x.back()[(N - 1) / 5] * 0.2 + sol.x.back()[(N - 1) / 5 + 1] * 0.8, 0.382148, 1e-3);
+    EXPECT_NEAR(sol.x.back()[N], -10.0, abs_err_fine);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 1] * 0.2 + sol.x.back()[N + (N - 1) / 5 * 1 + 1] * 0.8, -6.04056, 1e-4);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 2] * 0.4 + sol.x.back()[N + (N - 1) / 5 * 2 + 1] * 0.6, -2.08970, 0.006);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 3] * 0.6 + sol.x.back()[N + (N - 1) / 5 * 3 + 1] * 0.4, 1.90021, 0.015);
+    EXPECT_NEAR(sol.x.back()[N + (N - 1) / 5 * 4] * 0.8 + sol.x.back()[N + (N - 1) / 5 * 4 + 1] * 0.2, 5.93011, 0.02);
+    EXPECT_NEAR(sol.x.back().back(), 10.0, abs_err_fine);
+}
+
+} // namespace

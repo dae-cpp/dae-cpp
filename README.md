@@ -1,18 +1,20 @@
 # dae-cpp
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
+![version](https://img.shields.io/badge/version-2.0.0-blue)
+[![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
-A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).
+**A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).**
 
-**NOTE:** This is a massively reworked and updated version of `dae-cpp`, which is incompatible with the previous version. If your project still relies on the old `dae-cpp`, it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch.
+**NOTE:** `dae-cpp` has been redesigned and there were breaking changes between `v1.x` and `v2.x`. If your project still relies on the old `dae-cpp` (`v1.x`), it is archived in the [legacy](https://github.com/dae-cpp/dae-cpp/tree/legacy) branch. For the new version (`v2.x`), see [Documentation](https://dae-cpp.github.io/) and the notes below.
 
-## What is dae-cpp
+## What is `dae-cpp`
 
-`dae-cpp` is a cross-platform, header-only C++-17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
+`dae-cpp` is a cross-platform, header-only C++17 library for solving stiff systems of DAEs (an initial value problem). DAE systems can contain both differential and algebraic equations and can be written in the following matrix-vector form:
 
 $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}, t),$$
 
-to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector-function of the state vector $`\mathbf{x}`$ and time $t$.
+to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector function of the state vector $`\mathbf{x}`$ and time $t$.
 
 ### How does it work
 
@@ -22,8 +24,8 @@ Eigen's sparse solver performs two steps: factorization (decomposition) of the J
 ### The main features of the solver
 
 - Header only, no pre-compilation required.
-- Uses automatic (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/)) to compute the Jacobian matrix, if it is not provided by the user.
-- Fourth-order implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
+- Uses [automatic](https://en.wikipedia.org/wiki/Automatic_differentiation) (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/) package) to compute the Jacobian matrix, if it is not provided by the user.
+- Fourth-order variable-step implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
 - A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
 - Mass matrix can be non-static (can depend on time) and it can be singular.
 - The library is extremely easy to use. A simple DAE can be set up using just a few lines of code (see [Quick Start](#quick-start) example below).
@@ -50,6 +52,12 @@ cmake ..
 make
 ctest
 ```
+
+## Documentation, examples, and CHANGELOG
+
+- For more information about the solver, please refer to the [Documentation](https://dae-cpp.github.io/) pages.
+- Ready to use examples are given in the [examples](https://github.com/dae-cpp/dae-cpp/tree/master/examples) directory of this repository.
+- All notable user-facing changes to this project are documented in the [CHANGELOG](https://dae-cpp.github.io/CHANGELOG.html).
 
 ## Quick Start
 
@@ -88,13 +96,19 @@ This system contains one simple differential equation and one algebraic equation
 
 Below is a simplified procedure of defining and solving the DAE system using `dae-cpp`.
 
-### Step 0. Include dae-cpp header into the project
+### Step 0. Include `dae-cpp` header into the project
 
 ```cpp
 #include <dae-cpp/solver.hpp>
 ```
 
-### Step 1. Define the mass matrix of the system
+Optionally, add `daecpp` namespace:
+
+```cpp
+using namespace daecpp;
+```
+
+### Step 1. Define the [mass matrix](https://dae-cpp.github.io/mass-matrix.html) of the system
 
 Tha mass matrix contains only one non-zero element:
 
@@ -116,7 +130,7 @@ struct MyMassMatrix
 };
 ```
 
-### Step 2. Define the vector-function (RHS) of the system
+### Step 2. Define the [vector function](https://dae-cpp.github.io/vector-function.html) (RHS) of the system
 
 ```cpp
 struct MyRHS
@@ -129,7 +143,7 @@ struct MyRHS
 };
 ```
 
-### Step 3. Set up the DAE system
+### Step 3. [Set up](https://dae-cpp.github.io/solve.html#system-class) the DAE system
 
 ```cpp
 MyMassMatrix mass; // Mass matrix object
@@ -138,13 +152,13 @@ MyRHS rhs;         // Vector-function object
 System my_system(mass, rhs); // Defines the DAE system object
 ```
 
-### Step 4. Solve the system
+### Step 4. [Solve](https://dae-cpp.github.io/solve.html#system-class-solve-method) the system
 
 ```cpp
 state_vector x0{0, 1}; // The initial state vector (initial condition)
 double t{1.0};         // The integration interval: t = [0, 1.0]
 
-my_system.solve(x0, t); // Solves the system with the given initial condition `x0` and time `t`
+my_system.solve(x0, t); // Solves the system with initial condition `x0` and time `t`
 ```
 
 or simply
@@ -155,9 +169,11 @@ my_system.solve({0, 1}, 1.0);
 
 Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
-The system is defined in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
+The entire source code is provided in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
-### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
+For more information, refer to the [Documentation](https://dae-cpp.github.io/).
+
+### (Optional) Step 5. Define the [Jacobian matrix](https://dae-cpp.github.io/jacobian-matrix.html) to boost the computation speed
 
 Differentiating the RHS w.r.t. $x$ and $y$ gives the following Jacobian matrix:
 
@@ -183,19 +199,19 @@ struct MyJacobian
 };
 ```
 
-Then add user-defined Jacobian to the DAE system definition:
+Then add the user-defined Jacobian to speed up the computation (useful for big systems):
 
 ```cpp
-System my_system(mass, rhs, MyJacobian()); // Defines the DAE system with Jacobian
+my_system.solve(x0, t, MyJacobian());
 ```
 
-### (Optional) Step 6. Tweak the solver options
+### (Optional) Step 6. Tweak the [solver options](https://dae-cpp.github.io/solver-options.html)
 
 For example, restrict the maximum time step:
 
 ```cpp
-my_system.opt.dt_max = 0.1;   // Update `dt_max`
-my_system.solve({0, 1}, 1.0); // Restart the computation
+my_system.opt.dt_max = 0.1;           // Update `dt_max`
+my_system.solve(x0, t, MyJacobian()); // Restart the computation
 ```
 
 ## Contribution and Feedback
@@ -204,7 +220,7 @@ Thank you for considering contributing to the project! Whether you're an experie
 
 ### How to contribute
 
-0. Create a GitHub issue if you want to suggest or discuss your changes.
+0. Create a [GitHub issue](https://github.com/dae-cpp/dae-cpp/issues) if you want to suggest or discuss your changes.
 1. Fork the repository and clone it to your local machine.
 2. Create a new branch for your contributions.
 3. Make your changes and ensure they adhere to our coding standards.

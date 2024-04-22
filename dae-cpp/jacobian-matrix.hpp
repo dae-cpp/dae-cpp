@@ -45,10 +45,10 @@ public:
 template <class RHS>
 class JacobianAutomatic
 {
-    RHS _rhs; // The RHS for differentiation (a copy)
+    RHS m_rhs; // The RHS for differentiation (a copy)
 
 public:
-    explicit JacobianAutomatic(RHS rhs) : _rhs(rhs) {}
+    explicit JacobianAutomatic(RHS rhs) : m_rhs(rhs) {}
 
     /*
      * Automatic (algorithmic) Jacobian.
@@ -67,7 +67,7 @@ public:
         }
 
         // The vector lambda-function with parameters for which the Jacobian is needed
-        auto f = [&rhs = _rhs, size](const state_type &x_, const double t)
+        auto f = [&rhs = m_rhs, size](const state_type &x_, const double t)
         {
             state_type f_(size);
             rhs(f_, x_, t);

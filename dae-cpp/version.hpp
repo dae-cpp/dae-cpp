@@ -18,10 +18,13 @@ namespace daecpp_namespace_name
 {
 
 // dae-cpp library major version
-constexpr uint16_t version_major{DAECPP_VERSION_MAJOR};
+static constexpr uint16_t version_major{DAECPP_VERSION_MAJOR};
 
 // dae-cpp library minor version
-constexpr uint16_t version_minor{DAECPP_VERSION_MINOR};
+static constexpr uint16_t version_minor{DAECPP_VERSION_MINOR};
+
+// dae-cpp library patch version
+static constexpr uint16_t version_patch{DAECPP_VERSION_PATCH};
 
 } // namespace daecpp_namespace_name
 

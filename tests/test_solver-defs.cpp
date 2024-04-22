@@ -26,15 +26,15 @@ using namespace daecpp;
  */
 class TestMassMatrix
 {
-    const double _param;
+    const double m_param;
 
 public:
-    TestMassMatrix(const double p) : _param(p) {}
+    TestMassMatrix(const double p) : m_param(p) {}
 
     void operator()(sparse_matrix &M, const double t)
     {
         M.reserve(1);
-        M(0, 0, 1.0 / _param);
+        M(0, 0, 1.0 / m_param);
     }
 };
 
@@ -43,15 +43,15 @@ public:
  */
 class TestRHS
 {
-    const double _param;
+    const double m_param;
 
 public:
-    TestRHS(const double p) : _param(p) {}
+    TestRHS(const double p) : m_param(p) {}
 
     void operator()(state_type &f, const state_type &x, const double t)
     {
         f[0] = x[1];
-        f[1] = x[0] * _param + x[1];
+        f[1] = x[0] * m_param + x[1];
     }
 };
 
@@ -60,16 +60,16 @@ public:
  */
 class TestJacobian
 {
-    const double _param;
+    const double m_param;
 
 public:
-    TestJacobian(const double p) : _param(p) {}
+    TestJacobian(const double p) : m_param(p) {}
 
     void operator()(sparse_matrix &J, const state_vector &x, const double t)
     {
         J.reserve(3);
         J(0, 1, 1.0);
-        J(1, 0, _param);
+        J(1, 0, m_param);
         J(1, 1, 1.0);
     }
 };
@@ -81,16 +81,16 @@ class TestManager
 {
     typedef std::vector<std::pair<float_type, float_type>> pair_type;
 
-    pair_type &_x;
-    std::vector<double> &_t;
+    pair_type &m_x;
+    std::vector<double> &m_t;
 
 public:
-    TestManager(pair_type &x, std::vector<double> &t) : _x(x), _t(t) {}
+    TestManager(pair_type &x, std::vector<double> &t) : m_x(x), m_t(t) {}
 
     int operator()(const state_vector &x, const double t)
     {
-        _x.push_back(std::make_pair(x[0], x[1]));
-        _t.push_back(t);
+        m_x.push_back(std::make_pair(x[0], x[1]));
+        m_t.push_back(t);
         return 0;
     }
 };
