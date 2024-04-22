@@ -202,10 +202,10 @@ public:
 class MySolutionManager
 {
     // A reference to the solution holder object
-    SolutionHolder &_sol;
+    SolutionHolder &m_sol;
 
 public:
-    explicit MySolutionManager(SolutionHolder &sol) : _sol(sol) {}
+    explicit MySolutionManager(SolutionHolder &sol) : m_sol(sol) {}
 
     /*
      * Solution Manager functor will be called every time step providing the time `t` and
@@ -214,8 +214,8 @@ public:
      */
     int operator()(const state_vector &x, const double t)
     {
-        _sol.x.emplace_back(x);
-        _sol.t.emplace_back(t);
+        m_sol.x.emplace_back(x);
+        m_sol.t.emplace_back(t);
 
         if (x[0] < 0)
         {

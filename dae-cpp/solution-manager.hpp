@@ -132,10 +132,10 @@ struct SolutionHolder
 class Solution : public SolutionManager
 {
     // A reference to the solution holder object
-    SolutionHolder &_sol;
+    SolutionHolder &m_sol;
 
     // Output times
-    std::vector<double> _t_out; // Need a copy for sorting
+    std::vector<double> m_t_out; // Need a copy for sorting
 
 public:
     /*
@@ -146,11 +146,11 @@ public:
      *     `sol` - Solution holder object (SolutionHolder)
      *     `t_output` - (optional) a vector of output times for writing (`std::vector<double>`)
      */
-    explicit Solution(SolutionHolder &sol, const std::vector<double> &t_output = {}) : _sol(sol), _t_out(t_output)
+    explicit Solution(SolutionHolder &sol, const std::vector<double> &t_output = {}) : m_sol(sol), m_t_out(t_output)
     {
-        if (_t_out.size() > 0)
+        if (m_t_out.size() > 0)
         {
-            std::sort(_t_out.begin(), _t_out.end());
+            std::sort(m_t_out.begin(), m_t_out.end());
         }
     }
 
@@ -160,16 +160,16 @@ public:
      */
     int operator()(const state_vector &x, const double t)
     {
-        if (_t_out.size() > 0)
+        if (m_t_out.size() > 0)
         {
-            if (!std::binary_search(_t_out.begin(), _t_out.end(), t))
+            if (!std::binary_search(m_t_out.begin(), m_t_out.end(), t))
             {
                 return 0;
             }
         }
 
-        _sol.x.emplace_back(x);
-        _sol.t.emplace_back(t);
+        m_sol.x.emplace_back(x);
+        m_sol.t.emplace_back(t);
 
         return 0;
     }

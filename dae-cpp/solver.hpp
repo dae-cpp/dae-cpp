@@ -93,17 +93,17 @@ inline void print_char(bool condition, char ch) noexcept
  */
 inline std::string print_time(double val, double t_total)
 {
-    double _t_coef{1.0};       // Default conversion coefficient for output
-    std::string _t_unit{"ms"}; // Default time units for output
+    double t_coef{1.0};       // Default conversion coefficient for output
+    std::string t_unit{"ms"}; // Default time units for output
 
     if (t_total > 1e4)
     {
-        _t_unit = "s";  // seconds
-        _t_coef = 1e-3; // ms -> s
+        t_coef = 1e-3; // ms -> s
+        t_unit = "s";  // seconds
     }
 
     std::ostringstream oss;
-    oss << std::setw(11) << val * _t_coef << ' ' << _t_unit;
+    oss << std::setw(11) << val * t_coef << ' ' << t_unit;
     oss << std::setprecision(3);
     oss << "  (" << (int)(val / t_total * 1e5) / 1000.0 << "%)";
     std::string var = oss.str();
@@ -855,8 +855,8 @@ exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const std::v
 template <class Mass, class RHS>
 class System
 {
-    Mass _mass; // Mass matrix holder
-    RHS _rhs;   // The system RHS holder
+    Mass m_mass; // Mass matrix holder
+    RHS m_rhs;   // The system RHS holder
 
 public:
     SolverOptions opt = SolverOptions(); // Solver options
@@ -873,7 +873,7 @@ public:
      *     `mass` - Mass matrix (Mass matrix object)
      *     `rhs` - the Right-Hand Side (vector function) of the DAE system (Vector function object)
      */
-    System(Mass mass, RHS rhs) : _mass(mass), _rhs(rhs) {}
+    System(Mass mass, RHS rhs) : m_mass(mass), m_rhs(rhs) {}
 
     /*
      * Integrates the system of DAEs in the interval `t = [0; t_end]` with the initial condition `x0`.
@@ -889,7 +889,7 @@ public:
     template <class Jacobian>
     exit_code::status solve(const state_vector &x0, const double t_end, Jacobian jac)
     {
-        status = core::detail::solve(_mass, _rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
+        status = core::detail::solve(m_mass, m_rhs, jac, Solution(sol), x0, t_end, {}, opt, false);
         return status;
     }
 
@@ -906,7 +906,7 @@ public:
      */
     exit_code::status solve(const state_vector &x0, const double t_end)
     {
-        status = core::detail::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol), x0, t_end, {}, opt, true);
+        status = core::detail::solve(m_mass, m_rhs, JacobianAutomatic(m_rhs), Solution(sol), x0, t_end, {}, opt, true);
         return status;
     }
 
@@ -924,7 +924,7 @@ public:
     template <class Jacobian>
     exit_code::status solve(const state_vector &x0, const std::vector<double> &t_output, Jacobian jac)
     {
-        status = core::detail::solve(_mass, _rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
+        status = core::detail::solve(m_mass, m_rhs, jac, Solution(sol, t_output), x0, 0.0, t_output, opt, false);
         return status;
     }
 
@@ -941,7 +941,7 @@ public:
      */
     exit_code::status solve(const state_vector &x0, const std::vector<double> &t_output)
     {
-        status = core::detail::solve(_mass, _rhs, JacobianAutomatic(_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
+        status = core::detail::solve(m_mass, m_rhs, JacobianAutomatic(m_rhs), Solution(sol, t_output), x0, 0.0, t_output, opt, true);
         return status;
     }
 };

@@ -37,17 +37,17 @@ class Timer
     using time_unit = std::chrono::microseconds;
 
     // Starts timer
-    std::chrono::time_point<clock> _tic = clock::now();
+    std::chrono::time_point<clock> m_tic = clock::now();
 
     // Points to a specific timer
-    double *_t;
+    double *m_t;
 
 public:
-    explicit Timer(double *t) : _t(t) {}
+    explicit Timer(double *t) : m_t(t) {}
 
     ~Timer()
     {
-        *_t += std::chrono::duration_cast<time_unit>(clock::now() - _tic).count() * 1e-3; // ms
+        *m_t += std::chrono::duration_cast<time_unit>(clock::now() - m_tic).count() * 1e-3; // ms
     }
 };
 
@@ -75,14 +75,14 @@ enum specific_timers_enum
  */
 class Time
 {
-    const int N{10}; // Total number of the specific timers
+    const int m_N{10}; // Total number of the specific timers
 
 public:
     double total{0.0}; // Total time spent by the DAE solver
 
     std::vector<double> timers; // A vector of specific timers
 
-    Time() : timers(std::vector<double>(N, 0.0)) {}
+    Time() : timers(std::vector<double>(m_N, 0.0)) {}
 
     /*
      * Returns time spent for initialization and other calculations not covered by the specific timers
