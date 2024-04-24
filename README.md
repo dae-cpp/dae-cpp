@@ -110,7 +110,7 @@ using namespace daecpp;
 
 ### Step 1. Define the [mass matrix](https://dae-cpp.github.io/mass-matrix.html) of the system
 
-Tha mass matrix contains only one non-zero element:
+The mass matrix contains only one non-zero element:
 
 $$
 \mathbf{M} =
@@ -167,7 +167,7 @@ or simply
 my_system.solve({0, 1}, 1.0);
 ```
 
-Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
+Vector of solution vectors `x` and vector of the corresponding times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
 The entire source code is provided in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
@@ -199,11 +199,13 @@ struct MyJacobian
 };
 ```
 
-Then add the user-defined Jacobian to speed up the computation (useful for big systems):
+Then add the user-defined Jacobian to the `solve()` method:
 
 ```cpp
 my_system.solve(x0, t, MyJacobian());
 ```
+
+Defining analytic Jacobian matrix can significantly speed up the computation (especially for big systems).
 
 ### (Optional) Step 6. Tweak the [solver options](https://dae-cpp.github.io/solver-options.html)
 
