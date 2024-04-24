@@ -250,7 +250,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
         Timer *timer_init = new Timer(&t[timer::init]);
 
         // Initial output
-        PRINT(opt.verbosity >= 1, "Starting dae-cpp version " << version_major << '.' << version_minor << "...");
+        PRINT(opt.verbosity >= 1, "Starting dae-cpp version " << version_major << '.' << version_minor << '.' << version_patch << "...");
         PRINT((opt.verbosity >= 1) && is_jac_auto, "NOTE: Using automatic Jacobian...");
 
         // A copy of the vector of output times
