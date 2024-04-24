@@ -344,6 +344,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
         PRINT(opt.verbosity >= 1, "Calculating...");
 
         // Call Solution Manager functor with the initial condition
+        try
         {
             Timer timer(&t[timer::manager]);
             if (mgr(x0, 0.0))
@@ -352,6 +353,11 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                 error_msg = exit_code::success;
                 goto result;
             }
+        }
+        catch (const std::exception &e)
+        {
+            ERROR("Solution Manager functor call failed.\n"
+                  << e.what());
         }
 
         // End of initialization. Stop the timer.
@@ -712,6 +718,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                 print_char(opt.verbosity >= 2, '\n');
 
                 // Call Solution Manager functor with the current solution and time
+                try
                 {
                     Timer timer(&t[timer::manager]);
                     if (mgr(state.x[0], state.t))
@@ -720,6 +727,11 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
                         error_msg = exit_code::success;
                         goto result;
                     }
+                }
+                catch (const std::exception &e)
+                {
+                    ERROR("Solution Manager functor call failed.\n"
+                          << e.what());
                 }
 
                 // We may already reached the target time
