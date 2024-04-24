@@ -55,8 +55,8 @@ public:
 
         for (std::size_t i = 0; i < m_N; ++i)
         {
-            M.i[i] = i;
-            M.j[i] = i;
+            M.i[i] = static_cast<int_type>(i);
+            M.j[i] = static_cast<int_type>(i);
         }
     }
 };
