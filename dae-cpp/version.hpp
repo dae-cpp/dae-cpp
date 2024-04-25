@@ -1,5 +1,5 @@
 /*
- * Defines minor and major version of the DAE solver.
+ * Defines major, minor, and patch version of the DAE solver.
  *
  * This file is part of dae-cpp.
  *
