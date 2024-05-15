@@ -1,5 +1,5 @@
 /*
- * Solves an equation of flame propagation:
+ * Solves equation of flame propagation:
  *
  * | y' = y^2 - y^3
  *
@@ -47,7 +47,7 @@ struct MyRHS
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        dual_type y = x[0];
+        dual_type y = x[0]; // Note `dual_type` (not `double`) because the solver will automatically differentiate `f` w.r.t. `y`
         f[0] = y * y - y * y * y;
     }
 };
@@ -68,7 +68,7 @@ int main()
     double t_end{2.0 / delta}; // Solution interval: 0 < t < (2 / delta)
 
     // Update the solver options
-    my_system.opt.dt_init = t_end / 10.0;            // Increase the initial time step
+    my_system.opt.dt_init = t_end / 100.0;           // Increase the initial time step (but not too much, because the first time step is of 1st order)
     my_system.opt.dt_increase_threshold_delta = -2;  // Try to increase the time step less often
     my_system.opt.variability_threshold_low = 0.10;  // Do not increase time step if the solution changes more than 10%
     my_system.opt.variability_threshold_high = 0.10; // Decrease the time step if the solution changes more than 10%
