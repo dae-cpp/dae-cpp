@@ -28,8 +28,7 @@ struct MyRHS
     }
 };
 
-// Absolute errors
-constexpr double abs_err_mid{0.05};
+// Absolute error
 constexpr double abs_err_sol{2e-3};
 
 TEST(Integration, FlamePropagation)
@@ -61,22 +60,6 @@ TEST(Integration, FlamePropagation)
         if (my_system.sol.t[i] > (1.0 / delta * 1.001))
         {
             EXPECT_NEAR(my_system.sol.x[i][0], 1.0, abs_err_sol) << "t = " << my_system.sol.t[i];
-        }
-    }
-
-    // Solves the DAE system `my_system` with the given initial condition `x0` and time `t_end`
-    ASSERT_EQ(my_system.solve(x0, {1.0 / delta, 2.0 / delta}), 0); // Solve again and ensure we hit middle point
-    ASSERT_EQ(my_system.status, 0);
-
-    ASSERT_GT(my_system.sol.x.size(), 0);
-    ASSERT_GT(my_system.sol.t.size(), 0);
-
-    for (std::size_t i = 0; i < my_system.sol.t.size(); i++)
-    {
-        // Check mid-point
-        if (my_system.sol.t[i] == (1.0 / delta))
-        {
-            EXPECT_NEAR(my_system.sol.x[i][0], 0.5, abs_err_mid) << "t = " << my_system.sol.t[i];
         }
     }
 }

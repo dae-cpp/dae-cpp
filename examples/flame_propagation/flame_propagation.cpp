@@ -60,25 +60,25 @@ int main()
 {
     MyRHS rhs; // The vector-function object
 
-    System my_system(MassMatrixIdentity(1), rhs); // Defines the DAE system object
+    System my_system(MassMatrixIdentity(1), rhs); // Defines the DAE system object, note the identity 1x1 mass matrix
 
     const double delta = 1e-4; // Parameter `delta`: 0.01 - not very stiff problem, 1e-4 - stiff problem
 
-    state_vector x0{delta};    // Initial condition: y(0) = delta
+    state_vector y0{delta};    // Initial condition: y(0) = delta
     double t_end{2.0 / delta}; // Solution interval: 0 < t < (2 / delta)
 
     // Update the solver options
     my_system.opt.dt_init = t_end / 100.0;           // Increase the initial time step (but not too much, because the first time step is of 1st order)
     my_system.opt.dt_increase_threshold_delta = -2;  // Try to increase the time step less often
-    my_system.opt.variability_threshold_low = 0.10;  // Do not increase time step if the solution changes more than 10%
+    my_system.opt.variability_threshold_low = 0.10;  // Do not increase the time step if the solution changes more than 10%
     my_system.opt.variability_threshold_high = 0.10; // Decrease the time step if the solution changes more than 10%
     // my_system.opt.verbosity = verbosity::extra;   // Prints the time step information on screen
 
-    // Solves the DAE system `my_system` with the given initial condition `x0` and time `t_end`
-    my_system.solve(x0, t_end);
+    // Solves the DAE system `my_system` with the given initial condition `y0` and time `t_end`
+    my_system.solve(y0, t_end);
 
     // Prints solution on screen
     my_system.sol.print();
 
-    return 0;
+    return my_system.status;
 }
