@@ -24,7 +24,7 @@
 // dae-cpp version
 #define DAECPP_VERSION_MAJOR 2
 #define DAECPP_VERSION_MINOR 0
-#define DAECPP_VERSION_PATCH 0
+#define DAECPP_VERSION_PATCH 1
 
 // Internal constants
 #define DAECPP_MAX_ORDER 4
@@ -61,6 +61,9 @@ typedef float float_type;
 #else
 typedef double float_type;
 #endif
+
+// Floating point dual number for automatic differentiation
+typedef autodiff::real dual_type;
 
 namespace core
 {

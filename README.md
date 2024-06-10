@@ -1,7 +1,7 @@
 # dae-cpp
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
-![version](https://img.shields.io/badge/version-2.0.0-blue)
+![version](https://img.shields.io/badge/version-2.0.1-blue)
 [![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
 **A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).**
@@ -16,11 +16,6 @@ $$\mathbf{M}(t) \frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{f}(\mathbf{x}
 
 to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial condition $`\mathbf{x}\rvert_{t=0} = \mathbf{x}_0`$. Here $`\mathbf{M}(t)`$ is the mass matrix (can depend on time), $`\mathbf{x}(t)`$ is the state vector, and $`\mathbf{f}(\mathbf{x}, t)`$ is the (nonlinear) vector function of the state vector $`\mathbf{x}`$ and time $t$.
 
-### How does it work
-
-The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further down to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
-Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. This gives us the numerical solution of the entire DAE system at the current time step. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step size and initiates a new iteration in time.
-
 ### The main features of the solver
 
 - Header only, no pre-compilation required.
@@ -29,6 +24,11 @@ Eigen's sparse solver performs two steps: factorization (decomposition) of the J
 - A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
 - Mass matrix can be non-static (can depend on time) and it can be singular.
 - The library is extremely easy to use. A simple DAE can be set up using just a few lines of code (see [Quick Start](#quick-start) example below).
+
+### How does it work
+
+The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further down to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
+Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. This gives us the numerical solution of the entire DAE system at the current time step. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step size and initiates a new iteration in time.
 
 ## Installation
 
@@ -108,9 +108,9 @@ Optionally, add `daecpp` namespace:
 using namespace daecpp;
 ```
 
-### Step 1. Define the mass matrix of the system
+### Step 1. Define the [mass matrix](https://dae-cpp.github.io/mass-matrix.html) of the system
 
-Tha mass matrix contains only one non-zero element:
+The mass matrix contains only one non-zero element:
 
 $$
 \mathbf{M} =
@@ -130,7 +130,7 @@ struct MyMassMatrix
 };
 ```
 
-### Step 2. Define the vector function (RHS) of the system
+### Step 2. Define the [vector function](https://dae-cpp.github.io/vector-function.html) (RHS) of the system
 
 ```cpp
 struct MyRHS
@@ -143,7 +143,7 @@ struct MyRHS
 };
 ```
 
-### Step 3. Set up the DAE system
+### Step 3. [Set up](https://dae-cpp.github.io/solve.html#system-class) the DAE system
 
 ```cpp
 MyMassMatrix mass; // Mass matrix object
@@ -152,7 +152,7 @@ MyRHS rhs;         // Vector-function object
 System my_system(mass, rhs); // Defines the DAE system object
 ```
 
-### Step 4. Solve the system
+### Step 4. [Solve](https://dae-cpp.github.io/solve.html#system-class-solve-method) the system
 
 ```cpp
 state_vector x0{0, 1}; // The initial state vector (initial condition)
@@ -167,13 +167,13 @@ or simply
 my_system.solve({0, 1}, 1.0);
 ```
 
-Solution vector of vectors `x` and the corresponding vector of times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
+Vector of solution vectors `x` and vector of the corresponding times `t` will be stored in `my_system.sol.x` and `my_system.sol.t`, respectively.
 
 The entire source code is provided in the [Quick Start example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/quick_start/quick_start.cpp).
 
 For more information, refer to the [Documentation](https://dae-cpp.github.io/).
 
-### (Optional) Step 5. Define the Jacobian matrix to boost the computation speed
+### (Optional) Step 5. Define the [Jacobian matrix](https://dae-cpp.github.io/jacobian-matrix.html) to boost the computation speed
 
 Differentiating the RHS w.r.t. $x$ and $y$ gives the following Jacobian matrix:
 
@@ -199,19 +199,21 @@ struct MyJacobian
 };
 ```
 
-Then add user-defined Jacobian to the DAE system definition:
+Then add the user-defined Jacobian to the `solve()` method:
 
 ```cpp
-System my_system(mass, rhs, MyJacobian()); // Defines the DAE system with Jacobian
+my_system.solve(x0, t, MyJacobian());
 ```
 
-### (Optional) Step 6. Tweak the solver options
+Defining analytic Jacobian matrix can significantly speed up the computation (especially for big systems).
+
+### (Optional) Step 6. Tweak the [solver options](https://dae-cpp.github.io/solver-options.html)
 
 For example, restrict the maximum time step:
 
 ```cpp
-my_system.opt.dt_max = 0.1;   // Update `dt_max`
-my_system.solve({0, 1}, 1.0); // Restart the computation
+my_system.opt.dt_max = 0.1;           // Update `dt_max`
+my_system.solve(x0, t, MyJacobian()); // Restart the computation
 ```
 
 ## Contribution and Feedback
