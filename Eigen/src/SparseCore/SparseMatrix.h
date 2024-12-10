@@ -788,8 +788,11 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     Base::operator=(other);
   }
 
-  inline SparseMatrix(SparseMatrix&& other)
-      : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0) {
+  /** Move constructor */
+  inline SparseMatrix(SparseMatrix&& other) : SparseMatrix() { this->swap(other); }
+
+  template <typename OtherDerived>
+  inline SparseMatrix(SparseCompressedBase<OtherDerived>&& other) : SparseMatrix() {
     *this = other.derived().markAsRValue();
   }
 
@@ -857,7 +860,10 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     return *this;
   }
 
-  inline SparseMatrix& operator=(SparseMatrix&& other) { return *this = other.derived().markAsRValue(); }
+  inline SparseMatrix& operator=(SparseMatrix&& other) {
+    this->swap(other);
+    return *this;
+  }
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
   template <typename OtherDerived>
@@ -871,6 +877,12 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
 
   template <typename OtherDerived>
   EIGEN_DONT_INLINE SparseMatrix& operator=(const SparseMatrixBase<OtherDerived>& other);
+
+  template <typename OtherDerived>
+  inline SparseMatrix& operator=(SparseCompressedBase<OtherDerived>&& other) {
+    *this = other.derived().markAsRValue();
+    return *this;
+  }
 
 #ifndef EIGEN_NO_IO
   friend std::ostream& operator<<(std::ostream& s, const SparseMatrix& m) {

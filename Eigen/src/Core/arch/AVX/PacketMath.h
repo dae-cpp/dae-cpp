@@ -270,9 +270,7 @@ struct packet_traits<uint32_t> : default_packet_traits {
 template <>
 struct packet_traits<int64_t> : default_packet_traits {
   typedef Packet4l type;
-  // There is no half-size packet for current Packet4l.
-  // TODO: support as SSE path.
-  typedef Packet4l half;
+  typedef Packet2l half;
   enum { Vectorizable = 1, AlignedOnScalar = 1, HasCmp = 1, size = 4 };
 };
 template <>
@@ -332,6 +330,7 @@ template <>
 struct unpacket_traits<Packet4d> {
   typedef double type;
   typedef Packet2d half;
+  typedef Packet4l integer_packet;
   enum {
     size = 4,
     alignment = Aligned32,
@@ -368,7 +367,7 @@ struct unpacket_traits<Packet8ui> {
 template <>
 struct unpacket_traits<Packet4l> {
   typedef int64_t type;
-  typedef Packet4l half;
+  typedef Packet2l half;
   enum {
     size = 4,
     alignment = Aligned32,
@@ -623,22 +622,22 @@ EIGEN_DEVICE_FUNC inline Packet4ul pgather<uint64_t, Packet4ul>(const uint64_t* 
 template <>
 EIGEN_DEVICE_FUNC inline void pscatter<int64_t, Packet4l>(int64_t* to, const Packet4l& from, Index stride) {
   __m128i low = _mm256_extractf128_si256(from, 0);
-  to[stride * 0] = _mm_extract_epi64(low, 0);
-  to[stride * 1] = _mm_extract_epi64(low, 1);
+  to[stride * 0] = _mm_extract_epi64_0(low);
+  to[stride * 1] = _mm_extract_epi64_1(low);
 
   __m128i high = _mm256_extractf128_si256(from, 1);
-  to[stride * 2] = _mm_extract_epi64(high, 0);
-  to[stride * 3] = _mm_extract_epi64(high, 1);
+  to[stride * 2] = _mm_extract_epi64_0(high);
+  to[stride * 3] = _mm_extract_epi64_1(high);
 }
 template <>
 EIGEN_DEVICE_FUNC inline void pscatter<uint64_t, Packet4ul>(uint64_t* to, const Packet4ul& from, Index stride) {
   __m128i low = _mm256_extractf128_si256(from, 0);
-  to[stride * 0] = _mm_extract_epi64(low, 0);
-  to[stride * 1] = _mm_extract_epi64(low, 1);
+  to[stride * 0] = _mm_extract_epi64_0(low);
+  to[stride * 1] = _mm_extract_epi64_1(low);
 
   __m128i high = _mm256_extractf128_si256(from, 1);
-  to[stride * 2] = _mm_extract_epi64(high, 0);
-  to[stride * 3] = _mm_extract_epi64(high, 1);
+  to[stride * 2] = _mm_extract_epi64_0(high);
+  to[stride * 3] = _mm_extract_epi64_1(high);
 }
 template <>
 EIGEN_STRONG_INLINE void pstore1<Packet4l>(int64_t* to, const int64_t& a) {
@@ -652,21 +651,21 @@ EIGEN_STRONG_INLINE void pstore1<Packet4ul>(uint64_t* to, const uint64_t& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet4l>(const Packet4l& a) {
-  return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
+  return _mm_extract_epi64_0(_mm256_castsi256_si128(a));
 }
 template <>
 EIGEN_STRONG_INLINE uint64_t pfirst<Packet4ul>(const Packet4ul& a) {
-  return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
+  return _mm_extract_epi64_0(_mm256_castsi256_si128(a));
 }
 template <>
 EIGEN_STRONG_INLINE int64_t predux<Packet4l>(const Packet4l& a) {
   __m128i r = _mm_add_epi64(_mm256_castsi256_si128(a), _mm256_extractf128_si256(a, 1));
-  return _mm_extract_epi64(r, 0) + _mm_extract_epi64(r, 1);
+  return _mm_extract_epi64_0(r) + _mm_extract_epi64_1(r);
 }
 template <>
 EIGEN_STRONG_INLINE uint64_t predux<Packet4ul>(const Packet4ul& a) {
   __m128i r = _mm_add_epi64(_mm256_castsi256_si128(a), _mm256_extractf128_si256(a, 1));
-  return numext::bit_cast<uint64_t>(_mm_extract_epi64(r, 0) + _mm_extract_epi64(r, 1));
+  return numext::bit_cast<uint64_t>(_mm_extract_epi64_0(r) + _mm_extract_epi64_1(r));
 }
 #define MM256_SHUFFLE_EPI64(A, B, M) _mm256_shuffle_pd(_mm256_castsi256_pd(A), _mm256_castsi256_pd(B), M)
 EIGEN_DEVICE_FUNC inline void ptranspose(PacketBlock<Packet4l, 4>& kernel) {

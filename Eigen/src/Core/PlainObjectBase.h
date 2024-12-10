@@ -452,7 +452,9 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
   /** This is a special case of the templated operator=. Its purpose is to
    * prevent a default operator= from hiding the templated operator=.
    */
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const PlainObjectBase& other) { return _set(other); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Derived& operator=(const PlainObjectBase& other) {
+    return _set(other);
+  }
 
   /** \sa MatrixBase::lazyAssign() */
   template <typename OtherDerived>
@@ -470,28 +472,29 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
   // Prevent user from trying to instantiate PlainObjectBase objects
   // by making all its constructor protected. See bug 1074.
  protected:
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PlainObjectBase() : m_storage() {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr PlainObjectBase() : m_storage() {
     //       EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
   }
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
   // FIXME is it still needed ?
   /** \internal */
-  EIGEN_DEVICE_FUNC explicit PlainObjectBase(internal::constructor_without_unaligned_array_assert)
+  EIGEN_DEVICE_FUNC constexpr explicit PlainObjectBase(internal::constructor_without_unaligned_array_assert)
       : m_storage(internal::constructor_without_unaligned_array_assert()) {
     // EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED
   }
 #endif
 
-  EIGEN_DEVICE_FUNC PlainObjectBase(PlainObjectBase&& other) EIGEN_NOEXCEPT : m_storage(std::move(other.m_storage)) {}
+  EIGEN_DEVICE_FUNC constexpr PlainObjectBase(PlainObjectBase&& other) EIGEN_NOEXCEPT
+      : m_storage(std::move(other.m_storage)) {}
 
-  EIGEN_DEVICE_FUNC PlainObjectBase& operator=(PlainObjectBase&& other) EIGEN_NOEXCEPT {
+  EIGEN_DEVICE_FUNC constexpr PlainObjectBase& operator=(PlainObjectBase&& other) EIGEN_NOEXCEPT {
     m_storage = std::move(other.m_storage);
     return *this;
   }
 
   /** Copy constructor */
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PlainObjectBase(const PlainObjectBase& other)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr PlainObjectBase(const PlainObjectBase& other)
       : Base(), m_storage(other.m_storage) {}
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PlainObjectBase(Index size, Index rows, Index cols)
       : m_storage(size, rows, cols) {
@@ -749,7 +752,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
   // aliasing is dealt once in internal::call_assignment
   // so at this stage we have to assume aliasing... and resising has to be done later.
   template <typename OtherDerived>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& _set(const DenseBase<OtherDerived>& other) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Derived& _set(const DenseBase<OtherDerived>& other) {
     internal::call_assignment(this->derived(), other.derived());
     return this->derived();
   }
@@ -760,7 +763,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
    * \sa operator=(const MatrixBase<OtherDerived>&), _set()
    */
   template <typename OtherDerived>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& _set_noalias(const DenseBase<OtherDerived>& other) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Derived& _set_noalias(const DenseBase<OtherDerived>& other) {
     // I don't think we need this resize call since the lazyAssign will anyways resize
     // and lazyAssign will be called by the assign selector.
     //_resize_to_match(other);

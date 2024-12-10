@@ -145,6 +145,27 @@ EIGEN_STRONG_INLINE Packet2d vec2d_unpackhi(const Packet2d& a, const Packet2d& b
 
 #define EIGEN_DECLARE_CONST_Packet4ui(NAME, X) const Packet4ui p4ui_##NAME = pset1<Packet4ui>(X)
 
+// Work around lack of extract/cvt for epi64 when compiling for 32-bit.
+#if EIGEN_ARCH_x86_64
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_0(const __m128i& a) { return _mm_cvtsi128_si64(a); }
+#ifdef EIGEN_VECTORIZE_SSE4_1
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) { return _mm_extract_epi64(a, 1); }
+#else
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) {
+  return _mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(_mm_castsi128_pd(a), _mm_castsi128_pd(a), 0x1)));
+}
+#endif
+#else
+// epi64 instructions are not available.  The following seems to generate the same instructions
+// with -O2 in GCC/Clang.
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_0(const __m128i& a) {
+  return numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_castsi128_pd(a)));
+}
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) {
+  return numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_shuffle_pd(_mm_castsi128_pd(a), _mm_castsi128_pd(a), 0x1)));
+}
+#endif
+
 // Use the packet_traits defined in AVX/PacketMath.h instead if we're going
 // to leverage AVX instructions.
 #ifndef EIGEN_VECTORIZE_AVX
@@ -1610,7 +1631,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-  int64_t x = _mm_cvtsi128_si64(a);
+  int64_t x = _mm_extract_epi64_0(a);
   return x;
 }
 template <>
@@ -1637,7 +1658,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-  int64_t x = _mm_cvtsi128_si64(a);
+  int64_t x = _mm_extract_epi64_0(a);
   return x;
 }
 template <>
@@ -1661,7 +1682,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-  return _mm_cvtsi128_si64(a);
+  return _mm_extract_epi64_0(a);
 }
 template <>
 EIGEN_STRONG_INLINE int pfirst<Packet4i>(const Packet4i& a) {
