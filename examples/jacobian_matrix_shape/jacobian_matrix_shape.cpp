@@ -1,5 +1,12 @@
 /*
- * This example solves a big DAE system that describes potential distribution
+ * This example demonstrates how to define the shape (structure) of the Jacobian matrix.
+ * I.e., instead of providing the full analytic Jacobian (or not providing it at all, which is slow),
+ * the user can specify the positions of non-zero elements in the Jacobian.
+ * The solver will use automatic differentiation for the specified elements only.
+ * This works (nearly) as fast as the analytic Jacobian without requiring the user to differentiate
+ * the vector function manually.
+ *
+ * Similar to the `pervoskite_model`, here we solve a big DAE system that describes potential distribution
  * and ion concentration in a perovskite solar cell:
  *
  * | dP/dt = d/dx(dP/dx + P * dPhi/dx),
@@ -20,9 +27,13 @@
  *
  * The system will be solved using Finite Difference approach in the time interval t = [0, 10].
  *
- * This example introduces Solution Manager, that will work as solution observer and a simple event function.
- * It also shows how parameters, such as the number of discretization points, can be passed to the mass matrix,
- * vector function, and Jacobian matrix.
+ * This example introduces `JacobianMatrixShape` class that allows us to define the positions
+ * of all non-zero elements in the Jacobian, and an extension of `VectorFunctionJacobianShape` class,
+ * that helps to define the vector function suitable for automatic differentiation according to
+ * the given Jacobian shape.
+ *
+ * Compare this example with `perovskite_model`. The simulation time should be similar, despite
+ * `perovskite_model` uses analytic Jacobian, and this example defines the Jacobian shape only.
  *
  * This file is part of dae-cpp.
  *
@@ -77,6 +88,8 @@ public:
 /*
  * The vector-function (RHS) of the problem.
  * Based on `VectorFunctionJacobianShape` class.
+ * NOTE that we must derive the vector function class from `VectorFunctionJacobianShape` in order to be able
+ * to use the Jacobian shape class `JacobianMatrixShape`.
  */
 class JacShapeRHS : public VectorFunctionJacobianShape
 {
@@ -129,7 +142,8 @@ public:
     explicit JacShapeRHS(MyParams &params) : p(params) {}
 
     /*
-     * All equations combined
+     * All equations combined.
+     * This function returns the i-th component of the vector function.
      */
     dual_type equations(const state_type &x, const double t, const int_type i) const
     {
@@ -139,7 +153,7 @@ public:
             return eq2(x, t, i);
         else
         {
-            ERROR("Perovskite model: index i is out of boundaries.");
+            ERROR("Equation system: index i is out of boundaries.");
         }
     }
 };
@@ -205,8 +219,12 @@ int main()
     opt.verbosity = verbosity::normal;        // Prints computation time and basic info
     opt.solution_variability_control = false; // Switches off solution variability control for better performance
 
+    // Solver status
+    // FIXME: Adding solver status slows down Jacobian computation by a factor of 1.5 for some reason
+    // int status{-1};
+
     {
-        std::cout << "-- Automatic Jacobian derived from the user-defined shape:\n\n";
+        std::cout << "-- Using automatic Jacobian derived from the user-defined shape:\n\n";
 
         JacobianMatrixShape jac = JacobianMatrixShape(JacShapeRHS(params));
 
@@ -242,7 +260,7 @@ int main()
             }
             else
             {
-                ERROR("Perovskite model: index i is out of boundaries.");
+                ERROR("Jacobian shape: index i is out of boundaries.");
             }
         }
 
@@ -251,6 +269,14 @@ int main()
               x0, t_end,
               MySolutionManager(sol), opt);
     }
+
+    // Soluton vs time `t` is in the `sol` object.
+    // Print P at the left boundary, and Phi at the right boundary of the domain.
+    std::cout << "MySolutionManager: "
+              << "t = " << sol.t.back()
+              << ", P_left = " << sol.x.back()[0]
+              << ", Phi_right = " << sol.x.back().back()
+              << '\n';
 
     return 0;
 }
