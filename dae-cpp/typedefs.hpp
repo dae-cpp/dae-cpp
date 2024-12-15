@@ -63,7 +63,7 @@ typedef double float_type;
 #endif
 
 // Floating point dual number for automatic differentiation
-typedef autodiff::real dual_type;
+typedef autodiff::real1st dual_type;
 
 namespace core
 {

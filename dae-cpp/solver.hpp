@@ -118,7 +118,7 @@ inline void finalize(const timer::Time &time, const int v, const Counters c)
     auto &t = time.timers;
 
     PRINT(v >= 1, "\nComputation time:" << std::right);
-    PRINT(v >= 1, "------------------------------------------------------------");
+    PRINT(v >= 1, "----------------------------------------------------------------");
     PRINT(v >= 1, "  Initialization:       " << print_time(t[timer::init], time.total));
     PRINT(v >= 1, "  Time derivative:      " << print_time(t[timer::time_derivative], time.total));
     PRINT(v >= 1, "  RHS:                  " << print_time(t[timer::rhs], time.total));
@@ -130,9 +130,9 @@ inline void finalize(const timer::Time &time, const int v, const Counters c)
     PRINT(v >= 1, "  Error control:        " << print_time(t[timer::error_check], time.total));
     PRINT(v >= 1, "  Solution Manager:     " << print_time(t[timer::manager], time.total));
     PRINT(v >= 1, "  Other calculations:   " << print_time(time.other(), time.total));
-    PRINT(v >= 1, "------------------------------------------------------------");
+    PRINT(v >= 1, "----------------------------------------------------------------");
     PRINT(v >= 1, "Total time:             " << print_time(time.total, time.total) << std::left);
-    PRINT(v >= 1, "------------------------------------------------------------\n");
+    PRINT(v >= 1, "----------------------------------------------------------------\n");
 }
 
 /*

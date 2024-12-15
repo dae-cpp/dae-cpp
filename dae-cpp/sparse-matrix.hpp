@@ -146,6 +146,8 @@ struct sparse_matrix
             M.coeffRef(i[k], j[k]) += A[k];
         }
 
+        // M.makeCompressed(); // It is already compressed
+
         return M;
     }
 
