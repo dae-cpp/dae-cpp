@@ -85,19 +85,13 @@ public:
         };
 
         // Reserve memory
-        if (m_N_elements)
-        {
-            J.reserve(m_N_elements);
-        }
+        J.reserve(m_Jn.size());
 
         // Automatic differentiation of each element marked as non-zero by the user
         for (const std::pair<int_type, int_type> &Jn : m_Jn)
         {
             J(Jn.first, Jn.second, autodiff::derivative(f, wrt(x_[Jn.second]), at(x_, t, Jn.first)));
         }
-
-        // Update sparse Jacobian matrix size estimation
-        m_N_elements = static_cast<int_type>(m_Jn.size());
     }
 
     /*
@@ -128,11 +122,10 @@ public:
     }
 
     /*
-     * Reserve memory for the array of non-zero elements and the Jacobian matrix
+     * Reserve memory for the array of non-zero elements
      */
     inline void reserve(const int_type N_elements)
     {
-        m_N_elements = N_elements;
         m_Jn.reserve(N_elements);
     }
 };
