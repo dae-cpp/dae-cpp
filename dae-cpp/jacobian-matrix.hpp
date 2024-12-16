@@ -51,9 +51,6 @@ class JacobianMatrixShape
     // Array of non-zero elements
     std::vector<std::pair<int_type, int_type>> m_Jn;
 
-    // An estimation of the array (sparse Jacobian matrix) size
-    int_type m_N_elements{0};
-
     // The RHS for differentiation (a copy)
     RHS m_rhs;
 
