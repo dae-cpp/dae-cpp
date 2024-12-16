@@ -85,7 +85,7 @@ public:
         };
 
         // Reserve memory
-        J.reserve(m_Jn.size());
+        J.reserve(static_cast<int_type>(m_Jn.size()));
 
         // Automatic differentiation of each element marked as non-zero by the user
         for (const std::pair<int_type, int_type> &Jn : m_Jn)
