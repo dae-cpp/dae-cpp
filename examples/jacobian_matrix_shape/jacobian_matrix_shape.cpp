@@ -64,10 +64,10 @@ struct MyParams
  */
 class MyMassMatrix
 {
-    MyParams p; // Parameters
+    const MyParams &p; // Parameters
 
 public:
-    explicit MyMassMatrix(MyParams &params) : p(params) {}
+    explicit MyMassMatrix(const MyParams &params) : p(params) {}
 
     /*
      * Defines the mass matrix `M` of the DAE system `M dx/dt = f`.
@@ -93,7 +93,7 @@ public:
  */
 class MyRHS : public VectorFunctionJacobianShape
 {
-    const MyParams p; // Parameters
+    const MyParams &p; // Parameters
 
     // Derived parameters
     const double h = p.L / (double)(p.N - 1);           // Cell size
@@ -139,7 +139,7 @@ class MyRHS : public VectorFunctionJacobianShape
     }
 
 public:
-    explicit MyRHS(MyParams &params) : p(params) {}
+    explicit MyRHS(const MyParams &params) : p(params) {}
 
     /*
      * All equations combined.
@@ -208,7 +208,7 @@ class MyJacobianShape : public JacobianMatrixShape<MyRHS>
     }
 
 public:
-    MyJacobianShape(MyRHS rhs, const int_type N) : JacobianMatrixShape(rhs), N(N)
+    MyJacobianShape(MyRHS &rhs, const int_type N) : JacobianMatrixShape(rhs), N(N)
     {
         m_define_Jacobian_shape();
     }
