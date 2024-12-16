@@ -126,6 +126,8 @@ class MyJacobianShape : public JacobianMatrixShape<MyRHS>
      */
     void m_define_Jacobian_shape()
     {
+        reserve(10 * N); // Reserve memory for (6N + 4N) non-zero elements
+
         for (int_type i = 0; i < 2 * N; ++i)
         {
             if (i == 0)
