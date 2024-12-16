@@ -60,6 +60,8 @@ class JacobianMatrixShape
 public:
     explicit JacobianMatrixShape(RHS rhs) : m_rhs(rhs) {}
 
+    virtual ~JacobianMatrixShape() {}
+
     /*
      * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
      * Loops through all non-zero elements and performs automatic differentiation for each element.

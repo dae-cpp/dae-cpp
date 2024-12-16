@@ -88,10 +88,10 @@ public:
 /*
  * The vector-function (RHS) of the problem.
  * Based on `VectorFunctionJacobianShape` class.
- * NOTE that we must derive the vector function class from `VectorFunctionJacobianShape` in order to be able
- * to use the Jacobian shape class `JacobianMatrixShape`.
+ * NOTE that we must derive the vector function class from `VectorFunctionJacobianShape`
+ * and override the `equations()` function in order to be able to use the Jacobian shape class `JacobianMatrixShape`.
  */
-class JacShapeRHS : public VectorFunctionJacobianShape
+class MyRHS : public VectorFunctionJacobianShape
 {
     const MyParams p; // Parameters
 
@@ -139,7 +139,7 @@ class JacShapeRHS : public VectorFunctionJacobianShape
     }
 
 public:
-    explicit JacShapeRHS(MyParams &params) : p(params) {}
+    explicit MyRHS(MyParams &params) : p(params) {}
 
     /*
      * All equations combined.
@@ -155,6 +155,62 @@ public:
         {
             ERROR("Equation system: index i is out of boundaries.");
         }
+    }
+};
+
+/*
+ * User-defined Jacobian matrix shape (a list of non-zero elements).
+ * Note that unlike the `perovskite_model` example, we do not calculate each derivative manually,
+ * we only provide the positions (row, column) of each non-zero element in the Jacobian.
+ * The corresponding derivatives will be computed automatically.
+ */
+class MyJacobianShape : public JacobianMatrixShape<MyRHS>
+{
+    const int_type N{0}; // The number of discretization points for each equation
+
+    /*
+     * Defines all non-zero elements of the Jacobian matrix row by row.
+     * Here we use `add_element()` helper method from the `JacobianMatrixShape` class.
+     */
+    void m_define_Jacobian_shape()
+    {
+        for (int_type i = 0; i < 2 * N; ++i)
+        {
+            if (i == 0)
+            {
+                add_element(i, {i + 1, i, N + i + 1, N + i}); // The order does not matter
+            }
+            else if (i < N - 1)
+            {
+                add_element(i, {i - 1, i, i + 1, N + i - 1, N + i, N + i + 1});
+            }
+            else if (i == N - 1)
+            {
+                add_element(i, {i - 1, i, N + i - 1, N + i});
+            }
+            else if (i == N)
+            {
+                add_element(i, N); // Can pass one index instead of a vector
+            }
+            else if (i < 2 * N - 1)
+            {
+                add_element(i, {i - N, i - 1, i, i + 1});
+            }
+            else if (i == 2 * N - 1)
+            {
+                add_element(i, 2 * N - 1);
+            }
+            else
+            {
+                ERROR("Jacobian shape: index i is out of boundaries.");
+            }
+        }
+    }
+
+public:
+    MyJacobianShape(MyRHS rhs, const int_type N) : JacobianMatrixShape(rhs), N(N)
+    {
+        m_define_Jacobian_shape();
     }
 };
 
@@ -219,56 +275,16 @@ int main()
     opt.verbosity = verbosity::normal;        // Prints computation time and basic info
     opt.solution_variability_control = false; // Switches off solution variability control for better performance
 
-    // Solver status
-    // FIXME: Adding solver status slows down Jacobian computation by a factor of 1.5 for some reason
-    // int status{-1};
+    std::cout << "-- Using automatic Jacobian derived from the user-defined shape:\n\n";
 
-    {
-        std::cout << "-- Using automatic Jacobian derived from the user-defined shape:\n\n";
+    // The vector function and Jacobian objects
+    MyRHS rhs = MyRHS(params);
+    MyJacobianShape jac = MyJacobianShape(rhs, params.N);
 
-        JacobianMatrixShape jac = JacobianMatrixShape(JacShapeRHS(params));
-
-        // An alias for p.N - the number of discretization points for each equation
-        const int_type N = params.N;
-
-        // Defines all non-zero elements of the Jacobian matrix row by row
-        for (int_type i = 0; i < 2 * N; ++i)
-        {
-            if (i == 0)
-            {
-                jac.add_element(i, {i + 1, i, N + i + 1, N + i}); // The order does not matter
-            }
-            else if (i < N - 1)
-            {
-                jac.add_element(i, {i - 1, i, i + 1, N + i - 1, N + i, N + i + 1});
-            }
-            else if (i == N - 1)
-            {
-                jac.add_element(i, {i - 1, i, N + i - 1, N + i});
-            }
-            else if (i == N)
-            {
-                jac.add_element(i, N); // Can pass one index instead of a vector
-            }
-            else if (i < 2 * N - 1)
-            {
-                jac.add_element(i, {i - N, i - 1, i, i + 1});
-            }
-            else if (i == 2 * N - 1)
-            {
-                jac.add_element(i, 2 * N - 1);
-            }
-            else
-            {
-                ERROR("Jacobian shape: index i is out of boundaries.");
-            }
-        }
-
-        // Solve the DAE system using automatic Jacobian computed from the user-defined shape
-        solve(MyMassMatrix(params), JacShapeRHS(params), jac,
-              x0, t_end,
-              MySolutionManager(sol), opt);
-    }
+    // Solve the DAE system using automatic Jacobian computed from the user-defined shape
+    int status = solve(MyMassMatrix(params), rhs, jac,
+                       x0, t_end,
+                       MySolutionManager(sol), opt);
 
     // Soluton vs time `t` is in the `sol` object.
     // Print P at the left boundary, and Phi at the right boundary of the domain.
@@ -278,5 +294,5 @@ int main()
               << ", Phi_right = " << sol.x.back().back()
               << '\n';
 
-    return 0;
+    return status;
 }
