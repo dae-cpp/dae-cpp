@@ -223,6 +223,8 @@ TEST(Integration, JacobianShape)
     MyRHS rhs = MyRHS(params);
     MyJacobianShape jac = MyJacobianShape(rhs, params.N);
 
+    ASSERT_EQ(JacobianCompare(jac, rhs)(x0, 0.0), 0);
+
     // Solve the DAE system using automatic Jacobian computed from the user-defined shape
     int status = solve(MyMassMatrix(params), rhs, jac,
                        x0, t_end,
