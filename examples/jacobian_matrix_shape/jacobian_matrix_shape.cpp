@@ -283,6 +283,12 @@ int main()
     MyRHS rhs = MyRHS(params);
     MyJacobianShape jac = MyJacobianShape(rhs, params.N);
 
+    // If we want to make sure that the Jacobian shape is correct and no elements are missing,
+    // we can compare it with the analytic Jacobian computed automatically.
+    // This can be slow (this is element-by-element comparison), so it should be only done for debugging purposes
+    // and removed from the production run:
+    JacobianCompare(jac, rhs)(x0, 0.0);
+
     // Solve the DAE system using automatic Jacobian computed from the user-defined shape
     int status = solve(MyMassMatrix(params), rhs, jac,
                        x0, t_end,
