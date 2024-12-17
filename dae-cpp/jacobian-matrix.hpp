@@ -196,7 +196,8 @@ struct MatrixDiff
     float_type M_compare; // Value to compare
     float_type abs_err;   // Absolute error
 
-    MatrixDiff(int_type i, int_type j, float_type M_ref, float_type M_compare) : i(i), j(j), M_ref(M_ref), M_compare(M_compare)
+    MatrixDiff(const int_type i, const int_type j, const float_type M_ref, const float_type M_compare)
+        : i(i), j(j), M_ref(M_ref), M_compare(M_compare)
     {
         abs_err = M_compare - M_ref;
     }
@@ -221,7 +222,7 @@ class JacobianCompare
     bool m_is_first_call = true; // True if comparison is called for the first time
 
     /*
-     * Prints a horizontal line with the given delimiter for the table header
+     * Prints a horizontal line with the given delimiter for the table header/footer
      */
     void m_table_line(const char delimiter) const
     {
@@ -269,6 +270,8 @@ class JacobianCompare
 
 public:
     /*
+     * `JacobianCompare` class constructor.
+     *
      * Parameters:
      *     jac - user-defined Jacobian (defined either explicitly or from the Jacobian matrix shape)
      *     rhs - the vector function (RHS) of the system
@@ -293,7 +296,7 @@ public:
 
         JacobianAutomatic jac_auto = JacobianAutomatic(m_rhs);
 
-        sparse_matrix J_auto; // Analytic (reference) Jacobian
+        sparse_matrix J_auto; // Automatic (reference) Jacobian
         sparse_matrix J_user; // User-defined Jacobian
 
         const int_type size = static_cast<int_type>(x.size()); // System size
@@ -331,7 +334,7 @@ public:
         }
         else
         {
-            std::cout << "-- Found " << N_diff << " difference(s) compared to the automatic Jacobian:\n";
+            std::cout << "-- Found " << N_diff << " difference(s) compared to the automatic (reference) Jacobian:\n";
             m_print_table(J_diff);
         }
 
