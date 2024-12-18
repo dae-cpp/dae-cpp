@@ -28,7 +28,7 @@ set(PROJECT_TEST "dae-cpp-test")
 include(CTest)
 enable_testing()
 
-FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/*.cpp)
+FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/test_*.cpp)
 
 add_executable(${PROJECT_TEST} ${SOURCES_TEST})
 
