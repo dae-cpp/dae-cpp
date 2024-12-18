@@ -1,6 +1,6 @@
 /*
  * Integration test of the solver.
- * Based on the `jacobian_matrix_shape` example.
+ * Based on the `jacobian_shape` example.
  *
  * This file is part of dae-cpp.
  *

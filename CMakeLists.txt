@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 ######## Build examples ########
 
-set(EXAMPLE_LIST "quick_start" "simple_dae" "perovskite_model" "flame_propagation" "jacobian_matrix_shape")
+set(EXAMPLE_LIST "quick_start" "simple_dae" "perovskite_model" "flame_propagation" "jacobian_shape")
 
 include_directories(${PROJECT_SOURCE_DIR})
 
