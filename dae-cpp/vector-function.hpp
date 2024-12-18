@@ -39,10 +39,11 @@ public:
 
 /*
  * Vector function class used for automatic Jacobian computed from the user-defined Jacobian shape.
+ * Used to define the vector function (the RHS) element-by-element (equation-by-equation).
  * Should be used together with `JacobianMatrixShape` class for the Jacobian matrix.
  * This class is abstract and must be inherited.
  */
-class VectorFunctionJacobianShape
+class VectorFunctionElements
 {
 public:
     /*
@@ -62,11 +63,12 @@ public:
     /*
      * All RHS functions `f_i` for each equation `i` in the system.
      * Takes vector `x`, time `t`, index `i`, and returns the RHS value `f_i` for the given equation `i`.
+     * I.e., it returns the i-th element of the vector function.
      * This function is pure virtual and must be overriden.
      */
     virtual dual_type equations(const state_type &x, const double t, const int_type i) const = 0;
 
-    virtual ~VectorFunctionJacobianShape() {}
+    virtual ~VectorFunctionElements() {}
 };
 
 } // namespace daecpp_namespace_name

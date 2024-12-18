@@ -28,7 +28,7 @@
  * The system will be solved using Finite Difference approach in the time interval t = [0, 10].
  *
  * This example introduces `JacobianMatrixShape` class that allows us to define the positions
- * of all non-zero elements in the Jacobian, and an extension of `VectorFunctionJacobianShape` class,
+ * of all non-zero elements in the Jacobian, and an extension of `VectorFunctionElements` class,
  * that helps to define the vector function suitable for automatic differentiation according to
  * the given Jacobian shape.
  *
@@ -87,11 +87,11 @@ public:
 
 /*
  * The vector-function (RHS) of the problem.
- * Based on `VectorFunctionJacobianShape` class.
- * NOTE that we must derive the vector function class from `VectorFunctionJacobianShape`
+ * Based on `VectorFunctionElements` class.
+ * NOTE that we must derive the vector function class from `VectorFunctionElements`
  * and override the `equations()` function in order to be able to use the Jacobian shape class `JacobianMatrixShape`.
  */
-class MyRHS : public VectorFunctionJacobianShape
+class MyRHS : public VectorFunctionElements
 {
     const MyParams &p; // Parameters
 

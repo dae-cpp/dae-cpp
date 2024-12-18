@@ -49,7 +49,7 @@ public:
     }
 };
 
-class MyRHS : public VectorFunctionJacobianShape
+class MyRHS : public VectorFunctionElements
 {
     const MyParams &p; // Parameters
 
