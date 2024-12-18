@@ -306,8 +306,8 @@ public:
         m_jac_user(J_user, x, t);
 
         // Convert to the dense form
-        auto Jd_auto = J_auto.dense(x.size());
-        auto Jd_user = J_user.dense(x.size());
+        auto Jd_auto = J_auto.dense(size);
+        auto Jd_user = J_user.dense(size);
 
         // Vector of differences between the matrices
         std::vector<core::MatrixDiff> J_diff;
