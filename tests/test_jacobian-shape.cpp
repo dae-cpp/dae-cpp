@@ -29,7 +29,7 @@ struct TestRHS : VectorFunctionElements
         }
         else if (i == 1)
         {
-            return -x[1];
+            return x[0] - x[1];
         }
         else
         {
@@ -45,7 +45,7 @@ TEST(JacobianMatrixShape, Definition)
         explicit TestJacobian(TestRHS rhs) : JacobianMatrixShape(rhs)
         {
             add_element(0, {0, 1});
-            add_element(1, {1});
+            add_element(1, {1}); // Missing element (1, 0) on purpose
         }
     };
 
@@ -78,7 +78,7 @@ TEST(JacobianMatrixShape, DefinitionInline)
     jac.reserve(2);
 
     jac.add_element(0, {0, 1});
-    jac.add_element(1, {1});
+    jac.add_element(1, {1}); // Missing element (1, 0) on purpose
 
     sparse_matrix J;
     state_vector x{4.0, 6.0};
@@ -135,7 +135,7 @@ TEST(JacobianMatrixShape, Clear)
     constexpr double t{10.0};
 
     jac.add_element(0, {0, 1}); // Add as a vector
-    jac.add_element(1, 1);      // Add as a single element
+    jac.add_element(1, 0);      // Add as a single element
     jac.clear();
 
     jac(J, x, t);
@@ -145,7 +145,7 @@ TEST(JacobianMatrixShape, Clear)
     EXPECT_EQ(J.N_elements(), 0);
 
     jac.add_element(0, {0, 1}); // Add as a vector
-    jac.add_element(1, 1);      // Add as a single element
+    jac.add_element(1, 1);      // Add as a single element (a different one)
 
     jac(J, x, t);
 
