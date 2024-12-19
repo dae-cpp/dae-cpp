@@ -22,13 +22,13 @@ to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial cond
 - Uses [automatic](https://en.wikipedia.org/wiki/Automatic_differentiation) (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/) package) to compute the Jacobian matrix, if it is not provided by the user.
 - Fourth-order variable-step implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
 - A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
-- Mass matrix can be non-static (can depend on time) and it can be singular.
+- Mass matrix can be non-static (can depend on time) and it can be singular (contain empty rows).
 - The library is extremely easy to use. A simple DAE can be set up using just a few lines of code (see [Quick Start](#quick-start) example below).
 
 ### How does it work
 
 The DAE solver uses implicit Backward Differentiation Formulae (BDF) of orders I-IV with adaptive time stepping. Every time step, the BDF integrator reduces the original DAE system to a system of nonlinear equations, which is solved using iterative [Quasi-Newton](https://en.wikipedia.org/wiki/Quasi-Newton_method) root-finding algorithm. The Quasi-Newton method reduces the problem further down to a system of linear equations, which is solved using [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a versatile and fast C++ template library for linear algebra.
-Eigen's sparse solver performs two steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. This gives us the numerical solution of the entire DAE system at the current time step. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step size and initiates a new iteration in time.
+Eigen's sparse solver performs two main steps: factorization (decomposition) of the Jacobian matrix and the linear system solving itself. This gives us the numerical solution of the entire DAE system at the current time step. Finally, depending on the convergence rate of the Quasi-Newton method, variability of the solution, and user-defined accuracy, the DAE solver adjusts the time step size and initiates a new iteration in time.
 
 ## Installation
 
@@ -57,6 +57,7 @@ ctest
 
 - For more information about the solver, please refer to the [Documentation](https://dae-cpp.github.io/) pages.
 - Ready to use examples are given in the [examples](https://github.com/dae-cpp/dae-cpp/tree/master/examples) directory of this repository.
+- Examples can be built using CMake alongside with the tests (see [Testing](#testing)).
 - All notable user-facing changes to this project are documented in the [CHANGELOG](https://dae-cpp.github.io/CHANGELOG.html).
 
 ## Quick Start
@@ -147,7 +148,7 @@ struct MyRHS
 
 ```cpp
 MyMassMatrix mass; // Mass matrix object
-MyRHS rhs;         // Vector-function object
+MyRHS rhs;         // Vector function object
 
 System my_system(mass, rhs); // Defines the DAE system object
 ```
@@ -205,7 +206,9 @@ Then add the user-defined Jacobian to the `solve()` method:
 my_system.solve(x0, t, MyJacobian());
 ```
 
-Defining analytic Jacobian matrix can significantly speed up the computation (especially for big systems).
+Defining analytic Jacobian matrix can significantly speed up the computation for big systems (with thousands of DAEs).
+
+If deriving the Jacobian matrix manually is not a feasible task (e.g., due to a very complex non-linear RHS), the solver allows the user to specify only the positions of non-zero elements of the Jacobian matrix (i.e., the Jacobian matrix shape). All the derivatives will be calculated automatically with a very small computation time penalty (compared to the manually derived analytic Jacobian). For more details, see the [Jacobian shape example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/jacobian_shape/jacobian_shape.cpp).
 
 ### (Optional) Step 6. Tweak the [solver options](https://dae-cpp.github.io/solver-options.html)
 
