@@ -113,7 +113,7 @@ public:
     /*
      * Clear arrays of non-zero elements
      */
-    inline void clear()
+    void clear()
     {
         m_Jn.clear();
     }
@@ -121,7 +121,7 @@ public:
     /*
      * Reserve memory for the array of non-zero elements
      */
-    inline void reserve(const int_type N_elements)
+    void reserve(const int_type N_elements)
     {
         m_Jn.reserve(N_elements);
     }
