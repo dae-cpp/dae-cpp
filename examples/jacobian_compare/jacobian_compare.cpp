@@ -5,7 +5,7 @@
  * with the one computed algorithmically from the vector function.
  *
  * We will make a few mistakes in the analytic Jacobian on purpose to see what information
- * `JacobianComapre` can provide.
+ * `JacobianCompare` can provide.
  *
  * Note that `JacobianCompare` can work with Jacobians derived from the given Jacobian shapes as well.
  *
@@ -24,7 +24,7 @@
 using namespace daecpp;
 
 /*
- * The vector-function (RHS) of the problem.
+ * The vector function (RHS) of the problem.
  */
 struct MyRHS
 {
@@ -68,7 +68,7 @@ struct MyJacobianBad
         float_type u = x[0];
         float_type v = x[1];
         float_type w = x[2];
-        float_type z = x[3];
+        // float_type z = x[3]; // Unused
 
         J.reserve(6); // Pre-allocates memory for 6 non-zero elements
 
@@ -78,7 +78,7 @@ struct MyJacobianBad
         J(1, 2, 2.0 * w);  // Row 1, column 2
         J(2, 1, cos(u));   // Row 2, column 1 - error, should be column 0
         J(3, 1, -exp(-v)); // Row 3, column 1
-        // Forgot to differentiate f[3] w.r.t. `z` - missing element (3, 3)
+        // Let's "forget" to differentiate f[3] w.r.t. `z` - missing element (3, 3)
     }
 };
 
@@ -98,7 +98,7 @@ struct MyJacobianGood
         float_type u = x[0];
         float_type v = x[1];
         float_type w = x[2];
-        float_type z = x[3];
+        // float_type z = x[3]; // Unused
 
         J.reserve(7); // Pre-allocates memory for 7 non-zero elements
 
