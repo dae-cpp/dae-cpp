@@ -186,20 +186,28 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
         break;
 
     case 4:
+    {
         alpha = (4.0 * h0 * h0 * h0 +
                  h1 * h12 * h123 +
                  3.0 * h0 * h0 * (3.0 * h1 + 2.0 * h2 + h3) +
                  2.0 * h0 * (3.0 * h1 * h1 + h2 * h23 + 2.0 * h1 * (2.0 * h2 + h3))) /
                 (h0 * h01 * h012 * h0123);
+
+        const double term0 = h01 * h012 * h0123 / (h0 * h1 * h12 * h123);
+        const double term1 = h0 * h012 * h0123 / (h1 * h01 * h2 * h23);
+        const double term2 = h0 * h01 * h0123 / (h2 * h12 * h012 * h3);
+        const double term3 = h0 * h01 * h012 / (h3 * h23 * h123 * h0123);
+
         for (std::size_t i = 0; i < size; ++i)
         {
             dxdt[i] = alpha * xk[i] -
-                      h01 * h012 * h0123 / (h0 * h1 * h12 * h123) * state.x[0][i] +
-                      h0 * h012 * h0123 / (h1 * h01 * h2 * h23) * state.x[1][i] -
-                      h0 * h01 * h0123 / (h2 * h12 * h012 * h3) * state.x[2][i] +
-                      h0 * h01 * h012 / (h3 * h23 * h123 * h0123) * state.x[3][i];
+                      term0 * state.x[0][i] +
+                      term1 * state.x[1][i] -
+                      term2 * state.x[2][i] +
+                      term3 * state.x[3][i];
         }
-        break;
+    }
+    break;
 
     default:
         ERROR("Unsupported time integration order.");
