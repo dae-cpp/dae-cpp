@@ -45,7 +45,7 @@ TEST(JacobianMatrixShape, Definition)
         explicit TestJacobian(TestRHS rhs) : JacobianMatrixShape(rhs)
         {
             add_element(0, {0, 1});
-            add_element(1, {1}); // Missing element (1, 0) on purpose
+            add_element(1, 1); // Missing element (1, 0) on purpose
         }
     };
 
@@ -78,7 +78,7 @@ TEST(JacobianMatrixShape, DefinitionInline)
     jac.reserve(2);
 
     jac.add_element(0, {0, 1});
-    jac.add_element(1, {1}); // Missing element (1, 0) on purpose
+    jac.add_element(1, 1); // Missing element (1, 0) on purpose
 
     sparse_matrix J;
     state_vector x{4.0, 6.0};
