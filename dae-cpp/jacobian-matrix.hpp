@@ -14,6 +14,9 @@
 #ifndef DAECPP_JACOBIAN_MATRIX_H
 #define DAECPP_JACOBIAN_MATRIX_H
 
+#include <iomanip> // Formatted table printing
+#include <utility> // std::pair
+
 #include "sparse-matrix.hpp"
 #include "vector-function.hpp"
 
@@ -39,7 +42,93 @@ public:
 };
 
 /*
- * Automatic (algorithmic) Jacobian class.
+ * Helper Jacobian shape class.
+ * Computes Jacobian matrix from the given shape (a list of non-zero elements) provided by the user.
+ */
+template <class RHS>
+class JacobianMatrixShape
+{
+    // Array of non-zero elements
+    std::vector<std::pair<int_type, int_type>> m_Jn;
+
+    // The RHS for differentiation (a copy)
+    RHS m_rhs;
+
+public:
+    explicit JacobianMatrixShape(RHS rhs) : m_rhs(rhs) {}
+
+    virtual ~JacobianMatrixShape() {}
+
+    /*
+     * Defines the Jacobian matrix (matrix of the RHS derivatives) for the DAE system `M dx/dt = f`.
+     * Loops through all non-zero elements and performs automatic differentiation for each element.
+     */
+    void operator()(sparse_matrix &J, const state_vector &x, const double t)
+    {
+        const int_type size = static_cast<int_type>(x.size()); // System size
+
+        state_type x_(size); // Vectors of `dual` numbers are defined with `_` suffix
+
+        // Conversion to dual numbers for automatic differentiation
+        for (int_type k = 0; k < size; ++k)
+        {
+            x_[k] = x[k];
+        }
+
+        // Lambda-function with parameters for which the Jacobian is needed
+        auto f = [&rhs = m_rhs](const state_type &x_, const double t, const int_type row)
+        {
+            return rhs.equations(x_, t, row);
+        };
+
+        // Reserve memory
+        J.reserve(static_cast<int_type>(m_Jn.size()));
+
+        // Automatic differentiation of each element marked as non-zero by the user
+        for (const std::pair<int_type, int_type> &Jn : m_Jn)
+        {
+            J(Jn.first, Jn.second, autodiff::derivative(f, wrt(x_[Jn.second]), at(x_, t, Jn.first)));
+        }
+    }
+
+    /*
+     * Adds next non-zero element (i, j), where `i` is the row, and `j` is the column in the Jacobian matrix.
+     */
+    void add_element(const int_type ind_i, const int_type ind_j)
+    {
+        m_Jn.emplace_back(std::make_pair(ind_i, ind_j));
+    }
+
+    /*
+     * Adds a row of non-zero elements (i, j_k), where `i` is the row index, and `j_k` is the array of columns.
+     */
+    void add_element(const int_type ind_i, const std::vector<int_type> &ind_j)
+    {
+        for (const int_type &j : ind_j)
+        {
+            m_Jn.emplace_back(std::make_pair(ind_i, j));
+        }
+    }
+
+    /*
+     * Clear arrays of non-zero elements
+     */
+    void clear()
+    {
+        m_Jn.clear();
+    }
+
+    /*
+     * Reserve memory for the array of non-zero elements
+     */
+    void reserve(const int_type N_elements)
+    {
+        m_Jn.reserve(N_elements);
+    }
+};
+
+/*
+ * Helper automatic (algorithmic) Jacobian class.
  * Performs algorithmic differentiation of the RHS using `autodiff` package.
  */
 template <class RHS>
@@ -66,7 +155,7 @@ public:
             x_[k] = x[k];
         }
 
-        // The vector lambda-function with parameters for which the Jacobian is needed
+        // Vector lambda-function with parameters for which the Jacobian is needed
         auto f = [&rhs = m_rhs, size](const state_type &x_, const double t)
         {
             state_type f_(size);
@@ -86,10 +175,170 @@ public:
 
                 if (std::abs(val) > DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE)
                 {
-                    J(i, j, val);
+                    J(i, j, val); // Jacobian
                 }
             }
         }
+    }
+};
+
+namespace core
+{
+
+/*
+ * A helper structure to store the differences between two matrices
+ */
+struct MatrixDiff
+{
+    int_type i;           // Row
+    int_type j;           // Column
+    float_type M_ref;     // Reference value
+    float_type M_compare; // Value to compare
+    float_type abs_err;   // Absolute error
+
+    MatrixDiff(const int_type i, const int_type j, const float_type M_ref, const float_type M_compare)
+        : i(i), j(j), M_ref(M_ref), M_compare(M_compare)
+    {
+        abs_err = M_compare - M_ref;
+    }
+};
+
+} // namespace core
+
+/*
+ * A helper class that compares the user-defined Jacobian (defined either explicitly or from the Jacobian matrix shape)
+ * with the automatic Jacobian computed from the vector function.
+ */
+template <class Jacobian, class RHS>
+class JacobianCompare
+{
+    RHS m_rhs;           // The RHS for differentiation (a copy)
+    Jacobian m_jac_user; // User-defined Jacobian
+
+    // Table formatting settings
+    const int m_column_width_ind{12}; // Width for the columns with indices (integers)
+    const int m_column_width_val{20}; // Width for the columns with values (doubles)
+
+    bool m_is_first_call = true; // True if comparison is called for the first time
+
+    /*
+     * Prints a horizontal line with the given delimiter for the table header/footer
+     */
+    void m_table_line(const char delimiter) const
+    {
+        std::cout << std::string(m_column_width_ind, '-') << delimiter
+                  << std::string(m_column_width_ind, '-') << delimiter
+                  << std::string(m_column_width_val, '-') << delimiter
+                  << std::string(m_column_width_val, '-') << delimiter
+                  << std::string(m_column_width_val, '-') << "\n";
+    }
+
+    /*
+     * Prints formatted table with the comparison results
+     */
+    void m_print_table(const std::vector<core::MatrixDiff> &M_diff) const
+    {
+        // Print a horizontal line
+        m_table_line('-');
+
+        // Print the table header
+        std::cout << std::left << std::setw(m_column_width_ind) << " Row" << "|"
+                  << std::left << std::setw(m_column_width_ind) << " Column" << "|"
+                  << std::left << std::setw(m_column_width_val) << " Reference value" << "|"
+                  << std::left << std::setw(m_column_width_val) << " User-defined value" << "|"
+                  << std::left << std::setw(m_column_width_val) << " Absolute error" << "\n";
+
+        // Print a horizontal line
+        m_table_line('+');
+
+        // Print table rows
+        for (const auto &diff : M_diff)
+        {
+            std::cout << std::left << " " << std::setw(m_column_width_ind - 1) << diff.i << "|"
+                      << std::left << " " << std::setw(m_column_width_ind - 1) << diff.j << "|"
+                      << std::left << " " << std::setw(m_column_width_val - 1) << diff.M_ref << "|"
+                      << std::left << " " << std::setw(m_column_width_val - 1) << diff.M_compare << "|"
+                      << std::left << " " << std::setw(m_column_width_val - 1) << diff.abs_err << "\n";
+        }
+
+        // Print a horizontal line
+        m_table_line('-');
+
+        // New line and flush
+        std::cout << std::endl;
+    }
+
+public:
+    /*
+     * `JacobianCompare` class constructor.
+     *
+     * Parameters:
+     *     jac - user-defined Jacobian (defined either explicitly or from the Jacobian matrix shape)
+     *     rhs - the vector function (RHS) of the system
+     */
+    JacobianCompare(Jacobian jac, RHS rhs) : m_jac_user(jac), m_rhs(rhs) {}
+
+    /*
+     * Compares the user-defined Jacobian with automatic and prints the differences.
+     * Returns the number of differences.
+     *
+     * Parameters:
+     *     x - the state vector (e.g., the initial condition)
+     *     t - time (0 by default)
+     */
+    auto operator()(const state_vector &x, const double t = 0.0)
+    {
+        if (m_is_first_call)
+        {
+            NOTE("Comparing the Jacobian matrices...");
+            m_is_first_call = false;
+        }
+
+        JacobianAutomatic jac_auto = JacobianAutomatic(m_rhs);
+
+        sparse_matrix J_auto; // Automatic (reference) Jacobian
+        sparse_matrix J_user; // User-defined Jacobian
+
+        const int_type size = static_cast<int_type>(x.size()); // System size
+
+        // Compute Jacobians
+        jac_auto(J_auto, x, t);
+        m_jac_user(J_user, x, t);
+
+        // Convert to the dense form
+        auto Jd_auto = J_auto.dense(size);
+        auto Jd_user = J_user.dense(size);
+
+        // Vector of differences between the matrices
+        std::vector<core::MatrixDiff> J_diff;
+
+        // Perform comparison element-by-element
+        for (int_type j = 0; j < size; ++j)
+        {
+            for (int_type i = 0; i < size; ++i)
+            {
+                if (std::abs(Jd_auto(i, j) - Jd_user(i, j)) > DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE)
+                {
+                    J_diff.emplace_back(core::MatrixDiff(i, j, Jd_auto(i, j), Jd_user(i, j)));
+                }
+            }
+        }
+
+        auto N_diff = J_diff.size(); // Number of differences found
+
+        std::cout << "Jacobian matrix comparison summary at time t = " << t << ":\n";
+
+        if (N_diff == 0)
+        {
+            std::cout << "-- No differences found.\n";
+        }
+        else
+        {
+            std::cout << "-- Found " << N_diff << " difference(s) compared to the automatic (reference) Jacobian:\n";
+            m_print_table(J_diff);
+        }
+
+        return N_diff;
     }
 };
 

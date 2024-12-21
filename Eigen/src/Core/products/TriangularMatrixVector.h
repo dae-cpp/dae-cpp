@@ -301,9 +301,13 @@ struct trmv_selector<Mode, RowMajor> {
       } else {
         // Allocate either with alloca or malloc.
         Eigen::internal::check_size_for_overflow<RhsScalar>(actualRhs.size());
+#ifdef EIGEN_ALLOCA
         buffer = static_cast<RhsScalar*>((sizeof(RhsScalar) * actualRhs.size() <= EIGEN_STACK_ALLOCATION_LIMIT)
                                              ? EIGEN_ALIGNED_ALLOCA(sizeof(RhsScalar) * actualRhs.size())
                                              : Eigen::internal::aligned_malloc(sizeof(RhsScalar) * actualRhs.size()));
+#else
+        buffer = static_cast<RhsScalar*>(Eigen::internal::aligned_malloc(sizeof(RhsScalar) * actualRhs.size()));
+#endif
       }
 #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
       Index size = actualRhs.size();

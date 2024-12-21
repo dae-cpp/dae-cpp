@@ -199,6 +199,8 @@ TEST(Integration, PerovskiteModel)
     opt.verbosity = verbosity::off;           // Prints computation time and basic info
     opt.solution_variability_control = false; // Switches off solution variability control for better performance
 
+    ASSERT_EQ(JacobianCompare(MyJacobian(params), MyRHS(params))(x0, 0.0), 0);
+
     // Solve the DAE system
     int status = solve(MyMassMatrix(params), MyRHS(params), MyJacobian(params),
                        x0, t_end,

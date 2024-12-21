@@ -62,7 +62,7 @@ namespace daecpp_namespace_name
 /*
  * PRINT(condition, message)
  *
- * Prints a message (or not), depending on the condition (e.g., verbosity level).
+ * Prints a message if condition (e.g., verbosity level) is true.
  *
  * Example:
  * NOTE(verbosity > 1, "v = " << v);

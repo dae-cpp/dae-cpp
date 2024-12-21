@@ -1,5 +1,6 @@
 # Executables and builds
 build/
+benchmark/
 *.exe
 
 # VS Code files

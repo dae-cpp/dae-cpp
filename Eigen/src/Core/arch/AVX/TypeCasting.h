@@ -47,6 +47,13 @@ template <>
 struct type_casting_traits<bfloat16, float> : vectorized_type_casting_traits<bfloat16, float> {};
 template <>
 struct type_casting_traits<float, bfloat16> : vectorized_type_casting_traits<float, bfloat16> {};
+
+#ifdef EIGEN_VECTORIZE_AVX2
+template <>
+struct type_casting_traits<double, int64_t> : vectorized_type_casting_traits<double, int64_t> {};
+template <>
+struct type_casting_traits<int64_t, double> : vectorized_type_casting_traits<int64_t, double> {};
+#endif
 #endif
 
 template <>
@@ -189,6 +196,35 @@ EIGEN_STRONG_INLINE Packet4ui preinterpret<Packet4ui, Packet8ui>(const Packet8ui
 
 #ifdef EIGEN_VECTORIZE_AVX2
 template <>
+EIGEN_STRONG_INLINE Packet4l pcast<Packet4d, Packet4l>(const Packet4d& a) {
+#if defined(EIGEN_VECTORIZE_AVX512DQ) && defined(EIGEN_VECTORIZE_AVS512VL)
+  return _mm256_cvttpd_epi64(a);
+#else
+  EIGEN_ALIGN16 double aux[4];
+  pstore(aux, a);
+  return _mm256_set_epi64x(static_cast<int64_t>(aux[3]), static_cast<int64_t>(aux[2]), static_cast<int64_t>(aux[1]),
+                           static_cast<int64_t>(aux[0]));
+#endif
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet4d pcast<Packet4l, Packet4d>(const Packet4l& a) {
+#if defined(EIGEN_VECTORIZE_AVX512DQ) && defined(EIGEN_VECTORIZE_AVS512VL)
+  return _mm256_cvtepi64_pd(a);
+#else
+  EIGEN_ALIGN16 int64_t aux[4];
+  pstore(aux, a);
+  return _mm256_set_pd(static_cast<double>(aux[3]), static_cast<double>(aux[2]), static_cast<double>(aux[1]),
+                       static_cast<double>(aux[0]));
+#endif
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet4d pcast<Packet2l, Packet4d>(const Packet2l& a, const Packet2l& b) {
+  return _mm256_set_m128d((pcast<Packet2l, Packet2d>(b)), (pcast<Packet2l, Packet2d>(a)));
+}
+
+template <>
 EIGEN_STRONG_INLINE Packet4ul preinterpret<Packet4ul, Packet4l>(const Packet4l& a) {
   return Packet4ul(a);
 }
@@ -198,6 +234,21 @@ EIGEN_STRONG_INLINE Packet4l preinterpret<Packet4l, Packet4ul>(const Packet4ul& 
   return Packet4l(a);
 }
 
+template <>
+EIGEN_STRONG_INLINE Packet4l preinterpret<Packet4l, Packet4d>(const Packet4d& a) {
+  return _mm256_castpd_si256(a);
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet4d preinterpret<Packet4d, Packet4l>(const Packet4l& a) {
+  return _mm256_castsi256_pd(a);
+}
+
+// truncation operations
+template <>
+EIGEN_STRONG_INLINE Packet2l preinterpret<Packet2l, Packet4l>(const Packet4l& a) {
+  return _mm256_castsi256_si128(a);
+}
 #endif
 
 template <>

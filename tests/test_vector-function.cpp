@@ -1,6 +1,6 @@
 /*
  * Testing:
- * class VectorFunction
+ * class VectorFunction, VectorFunctionElements
  *
  * This file is part of dae-cpp.
  *
@@ -29,6 +29,44 @@ TEST(VectorFunction, Definition)
 
             f[0] = x[0];
             f[1] = x[1] * t;
+        }
+    };
+
+    TestVectorFunction rhs;
+
+    state_type x(2);
+
+    x[0] = 4.0;
+    x[1] = 6.0;
+
+    state_type f(2);
+
+    constexpr double t{10.0};
+
+    rhs(f, x, t);
+
+    EXPECT_DOUBLE_EQ(f[0].val(), 4.0);
+    EXPECT_DOUBLE_EQ(f[1].val(), 6.0 * t);
+
+    EXPECT_EQ(f.size(), 2);
+}
+
+TEST(VectorFunctionElements, Definition)
+{
+    struct TestVectorFunction : VectorFunctionElements
+    {
+        dual_type equations(const state_type &x, const double t, const int_type i) const
+        {
+            ASSERT(x.size() == 2, "Incorrect size of x: " << x.size());
+
+            if (i == 0)
+                return x[0];
+            else if (i == 1)
+                return x[1] * t;
+            else
+            {
+                ERROR("Index i in TestVectorFunction is out of boundaries, i = " << i);
+            }
         }
     };
 

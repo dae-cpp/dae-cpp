@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 ######## Build examples ########
 
-set(EXAMPLE_LIST "quick_start" "simple_dae" "perovskite_model" "flame_propagation")
+set(EXAMPLE_LIST "quick_start" "simple_dae" "perovskite_model" "flame_propagation" "jacobian_shape" "jacobian_compare")
 
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -28,7 +28,7 @@ set(PROJECT_TEST "dae-cpp-test")
 include(CTest)
 enable_testing()
 
-FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/*.cpp)
+FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/test_*.cpp)
 
 add_executable(${PROJECT_TEST} ${SOURCES_TEST})
 

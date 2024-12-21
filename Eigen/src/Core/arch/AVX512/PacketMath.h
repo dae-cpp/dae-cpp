@@ -34,6 +34,7 @@ namespace internal {
 typedef __m512 Packet16f;
 typedef __m512i Packet16i;
 typedef __m512d Packet8d;
+// TODO(rmlarsen): Add support for Packet8l.
 #ifndef EIGEN_VECTORIZE_AVX512FP16
 typedef eigen_packet_wrapper<__m256i, 1> Packet16h;
 #endif

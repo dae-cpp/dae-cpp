@@ -118,7 +118,7 @@ inline void finalize(const timer::Time &time, const int v, const Counters c)
     auto &t = time.timers;
 
     PRINT(v >= 1, "\nComputation time:" << std::right);
-    PRINT(v >= 1, "------------------------------------------------------------");
+    PRINT(v >= 1, std::string(64, '-'));
     PRINT(v >= 1, "  Initialization:       " << print_time(t[timer::init], time.total));
     PRINT(v >= 1, "  Time derivative:      " << print_time(t[timer::time_derivative], time.total));
     PRINT(v >= 1, "  RHS:                  " << print_time(t[timer::rhs], time.total));
@@ -130,9 +130,9 @@ inline void finalize(const timer::Time &time, const int v, const Counters c)
     PRINT(v >= 1, "  Error control:        " << print_time(t[timer::error_check], time.total));
     PRINT(v >= 1, "  Solution Manager:     " << print_time(t[timer::manager], time.total));
     PRINT(v >= 1, "  Other calculations:   " << print_time(time.other(), time.total));
-    PRINT(v >= 1, "------------------------------------------------------------");
+    PRINT(v >= 1, std::string(64, '-'));
     PRINT(v >= 1, "Total time:             " << print_time(time.total, time.total) << std::left);
-    PRINT(v >= 1, "------------------------------------------------------------\n");
+    PRINT(v >= 1, std::string(64, '-') << '\n');
 }
 
 /*
@@ -186,20 +186,28 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
         break;
 
     case 4:
+    {
         alpha = (4.0 * h0 * h0 * h0 +
                  h1 * h12 * h123 +
                  3.0 * h0 * h0 * (3.0 * h1 + 2.0 * h2 + h3) +
                  2.0 * h0 * (3.0 * h1 * h1 + h2 * h23 + 2.0 * h1 * (2.0 * h2 + h3))) /
                 (h0 * h01 * h012 * h0123);
+
+        const double term0 = h01 * h012 * h0123 / (h0 * h1 * h12 * h123);
+        const double term1 = h0 * h012 * h0123 / (h1 * h01 * h2 * h23);
+        const double term2 = h0 * h01 * h0123 / (h2 * h12 * h012 * h3);
+        const double term3 = h0 * h01 * h012 / (h3 * h23 * h123 * h0123);
+
         for (std::size_t i = 0; i < size; ++i)
         {
             dxdt[i] = alpha * xk[i] -
-                      h01 * h012 * h0123 / (h0 * h1 * h12 * h123) * state.x[0][i] +
-                      h0 * h012 * h0123 / (h1 * h01 * h2 * h23) * state.x[1][i] -
-                      h0 * h01 * h0123 / (h2 * h12 * h012 * h3) * state.x[2][i] +
-                      h0 * h01 * h012 / (h3 * h23 * h123 * h0123) * state.x[3][i];
+                      term0 * state.x[0][i] +
+                      term1 * state.x[1][i] -
+                      term2 * state.x[2][i] +
+                      term3 * state.x[3][i];
         }
-        break;
+    }
+    break;
 
     default:
         ERROR("Unsupported time integration order.");
@@ -227,7 +235,7 @@ inline double time_derivative_approx(eivec &dxdt, const rvec &xk, const SolverSt
  *     `daecpp::exit_code::success` if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager>
-exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vector &x0, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
+inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const state_vector &x0, const double t_end, const std::vector<double> &t_output, const SolverOptions &opt, bool is_jac_auto)
 {
     // Specific counters
     Counters c;
@@ -791,7 +799,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, const sta
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::detail::solve(mass, rhs, jac, mgr, x0, t_end, {}, opt, false);
 }
@@ -812,7 +820,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const double t_end, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::detail::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, t_end, {}, opt, true);
 }
@@ -833,7 +841,7 @@ exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const double
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Jacobian, class Manager = SolutionManager>
-exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::detail::solve(mass, rhs, jac, mgr, x0, 0.0, t_output, opt, false);
 }
@@ -854,7 +862,7 @@ exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, const state_vector &x0
  *     `daecpp::exit_code::success` (0) if integration is successful or error code if integration is failed (`int`)
  */
 template <class Mass, class RHS, class Manager = SolutionManager>
-exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
+inline exit_code::status solve(Mass mass, RHS rhs, const state_vector &x0, const std::vector<double> &t_output, Manager mgr = SolutionManager(), const SolverOptions &opt = SolverOptions())
 {
     return core::detail::solve(mass, rhs, JacobianAutomatic(rhs), mgr, x0, 0.0, t_output, opt, true);
 }
