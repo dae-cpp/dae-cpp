@@ -55,7 +55,7 @@ TEST(VectorFunctionElements, Definition)
 {
     struct TestVectorFunction : VectorFunctionElements
     {
-        dual_type equations(const state_type &x, const double t, const int_type i) const
+        state_value equations(const state_type &x, const double t, const int_type i) const
         {
             ASSERT(x.size() == 2, "Incorrect size of x: " << x.size());
 

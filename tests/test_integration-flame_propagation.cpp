@@ -23,7 +23,7 @@ struct MyRHS
 {
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        dual_type y = x[0];
+        state_value y = x[0];
         f[0] = y * y - y * y * y;
     }
 };

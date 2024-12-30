@@ -66,7 +66,7 @@ public:
      * I.e., it returns the i-th element of the vector function.
      * This function is pure virtual and must be overriden.
      */
-    virtual dual_type equations(const state_type &x, const double t, const int_type i) const = 0;
+    virtual state_value equations(const state_type &x, const double t, const int_type i) const = 0;
 
     virtual ~VectorFunctionElements() {}
 };

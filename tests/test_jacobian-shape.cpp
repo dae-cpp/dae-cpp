@@ -21,7 +21,7 @@ using namespace daecpp;
 
 struct TestRHS : VectorFunctionElements
 {
-    dual_type equations(const state_type &x, const double t, const int_type i) const
+    state_value equations(const state_type &x, const double t, const int_type i) const
     {
         if (i == 0)
         {

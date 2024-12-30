@@ -104,10 +104,10 @@ class MyRHS : public VectorFunctionElements
      * RHS for the ion concentration P = dFlux/dx:
      * dP/dt = d/dx(dP/dx + P * dPhi/dx)
      */
-    dual_type eq1(const state_type &x, const double t, const int_type i_global) const
+    state_value eq1(const state_type &x, const double t, const int_type i_global) const
     {
-        const dual_type *P = x.data();
-        const dual_type *Phi = x.data() + p.N;
+        const state_value *P = x.data();
+        const state_value *Phi = x.data() + p.N;
 
         const int_type i = i_global;
 
@@ -123,10 +123,10 @@ class MyRHS : public VectorFunctionElements
      * RHS for the potential Phi:
      * d^2(Phi)/dx^2 - (1 - P)/lambda^2 = 0
      */
-    dual_type eq2(const state_type &x, const double t, const int_type i_global) const
+    state_value eq2(const state_type &x, const double t, const int_type i_global) const
     {
-        const dual_type *P = x.data();
-        const dual_type *Phi = x.data() + p.N;
+        const state_value *P = x.data();
+        const state_value *Phi = x.data() + p.N;
 
         const int_type i = i_global - p.N;
 
@@ -145,7 +145,7 @@ public:
      * All equations combined.
      * This function returns the i-th component of the vector function.
      */
-    dual_type equations(const state_type &x, const double t, const int_type i) const
+    state_value equations(const state_type &x, const double t, const int_type i) const
     {
         if (i < p.N)
             return eq1(x, t, i);
