@@ -25,9 +25,11 @@ namespace daecpp_namespace_name
  * Example:
  * ERROR("v = " << v);
  */
-#define ERROR(msg)                                                            \
-    std::cerr << "\nERROR: " << msg << "\nThis error is fatal." << std::endl; \
-    exit(-1);
+#define ERROR(msg)                                                                \
+    {                                                                             \
+        std::cerr << "\nERROR: " << msg << "\nThis error is fatal." << std::endl; \
+        exit(-1);                                                                 \
+    }
 
 /*
  * WARNING(warning message)
@@ -62,7 +64,7 @@ namespace daecpp_namespace_name
 /*
  * PRINT(condition, message)
  *
- * Prints a message if condition (e.g., verbosity level) is true.
+ * Prints a message if condition (e.g., verbosity level) is true and flushes the output.
  *
  * Example:
  * NOTE(verbosity > 1, "v = " << v);

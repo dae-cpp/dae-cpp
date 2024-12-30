@@ -35,11 +35,11 @@ struct MyRHS
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        // `dual_type` for automatic differentiation
-        dual_type u = x[0];
-        dual_type v = x[1];
-        dual_type w = x[2];
-        dual_type z = x[3];
+        // `state_value` for automatic differentiation
+        state_value u = x[0];
+        state_value v = x[1];
+        state_value w = x[2];
+        state_value z = x[3];
 
         f[0] = z * 0.5;
         f[1] = u * u + v * v + w * w;
