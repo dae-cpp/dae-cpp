@@ -3,7 +3,7 @@
  *
  * Usage example:
  *
- *     double time = 0.0;
+ *     double time{};
  *     {
  *         Timer timer(&time);
  *         << TASK >>

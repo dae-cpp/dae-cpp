@@ -313,9 +313,9 @@ public:
         std::vector<core::MatrixDiff> J_diff;
 
         // Perform comparison element-by-element
-        for (int_type j = 0; j < size; ++j)
+        for (int_type i = 0; i < size; ++i)
         {
-            for (int_type i = 0; i < size; ++i)
+            for (int_type j = 0; j < size; ++j)
             {
                 if (std::abs(Jd_auto(i, j) - Jd_user(i, j)) > DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE)
                 {

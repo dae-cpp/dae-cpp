@@ -47,7 +47,7 @@ struct MyRHS
      */
     void operator()(state_type &f, const state_type &x, const double t)
     {
-        dual_type y = x[0]; // Note `dual_type` (not `double`) because the solver will automatically differentiate `f` w.r.t. `y`
+        state_value y = x[0]; // Note `state_value` (not `double`) because the solver will automatically differentiate `f` w.r.t. `y`
         f[0] = y * y - y * y * y;
     }
 };

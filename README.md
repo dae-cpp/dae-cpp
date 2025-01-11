@@ -1,7 +1,7 @@
 # dae-cpp
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
-![version](https://img.shields.io/badge/version-2.1.0-blue)
+![version](https://img.shields.io/badge/version-2.1.1-blue)
 [![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
 **A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).**
@@ -20,6 +20,7 @@ to be solved in the interval $`t \in [0, t_\mathrm{end}]`$ with the initial cond
 
 - Header only, no pre-compilation required.
 - Uses [automatic](https://en.wikipedia.org/wiki/Automatic_differentiation) (algorithmic, exact) differentiation ([autodiff](https://autodiff.github.io/) package) to compute the Jacobian matrix, if it is not provided by the user.
+- The user can provide analytically derived Jacobian or the Jacobian matrix shape (positions of non-zero elements) to significantly speed up the computation for big systems.
 - Fourth-order variable-step implicit BDF time integrator that preserves accuracy even when the time step rapidly changes.
 - A very flexible and customizable variable time stepping algorithm based on the solution stability and variability.
 - Mass matrix can be non-static (can depend on time) and it can be singular (contain empty rows).

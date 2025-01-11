@@ -62,8 +62,11 @@ typedef float float_type;
 typedef double float_type;
 #endif
 
-// Floating point dual number for automatic differentiation
+// Floating point dual number for automatic differentiation (DEPRECATED: use state_value)
 typedef autodiff::real1st dual_type;
+
+// Floating point dual number for automatic differentiation
+typedef autodiff::real1st state_value;
 
 namespace core
 {

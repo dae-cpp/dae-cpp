@@ -536,14 +536,19 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                         linsolver.compute(Jb);
 
+                        c.n_fact_calls++;
+
                         if (linsolver.info() != Eigen::Success)
                         {
                             PRINT(opt.verbosity >= 2, " <- decomposition failed");
+                            if(opt.recover_from_linsolver_failure)
+                            {
+                                is_diverged = true;
+                                break;
+                            }
                             error_msg = exit_code::linsolver_failed_decomposition;
                             goto result; // Abort all loops and go straight to the results
                         }
-
-                        c.n_fact_calls++;
                     }
 
                     // Solve linear system Jb dx = b
@@ -552,14 +557,19 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                         dx = linsolver.solve(b);
 
+                        c.n_lin_calls++;
+
                         if (linsolver.info() != Eigen::Success)
                         {
                             PRINT(opt.verbosity >= 2, " <- linear solver failed");
+                            if(opt.recover_from_linsolver_failure)
+                            {
+                                is_diverged = true;
+                                break;
+                            }
                             error_msg = exit_code::linsolver_failed_solving;
                             goto result; // Abort all loops and go straight to the results
                         }
-
-                        c.n_lin_calls++;
 
                         if (is_fact_enabled)
                         {
@@ -633,6 +643,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     state.t = state.t_prev;
                     n_steps--;
                     dt /= opt.dt_decrease_factor;
+                    xk = state.x[0];
                     if (dt < opt.dt_min)
                     {
                         PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
