@@ -50,7 +50,7 @@ public:
      * Defines the RHS (vector function) `f` of the DAE system `M dx/dt = f`.
      * Vector `f` is already pre-allocated with f.size() == x.size().
      */
-    void operator()(state_type &f, const state_type &x, const double t) const
+    void operator()(state_type &f, const state_type &x, const double t)
     {
         const int_type size = static_cast<int_type>(x.size()); // System size
 
@@ -66,7 +66,7 @@ public:
      * I.e., it returns the i-th element of the vector function.
      * This function is pure virtual and must be overriden.
      */
-    virtual state_value equations(const state_type &x, const double t, const int_type i) const = 0;
+    virtual state_value equations(const state_type &x, const double t, const int_type i) = 0;
 
     virtual ~VectorFunctionElements() {}
 };
