@@ -88,6 +88,10 @@ struct SolverOptions
     // Default value is 3.
     unsigned int max_Newton_failed_attempts{3};
 
+    // If `true`, the solver will try to recover from the linear solver failure by rolling back and decreasing the time step.
+    // Default value is `true`.
+    bool recover_from_linsolver_failure{true};
+
     // Time step amplification threshold delta (0 by default). Can be negative or positive integer number.
     // The solver increases the time step if the number of successful Newton iterations per time step is less than the threshold.
     // Example: If the solver increases the time step too often (too fast), decrease the time step amplification threshold by
