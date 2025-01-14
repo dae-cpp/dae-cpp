@@ -669,7 +669,6 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     }
                     else if (command == solver_command::decrease_time_step)
                     {
-                        PRINT(opt.verbosity >= 2, " <- decrease_time_step");
                         decrease_time_step = true;
                     }
                     else if (command == solver_command::decrease_time_step_and_redo)
@@ -737,11 +736,8 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     decrease_time_step)
                 {
                     dt /= opt.dt_decrease_factor;
-                    if (!decrease_time_step)
-                    {
-                        print_char(opt.verbosity >= 2, '<');
-                    }
                     decrease_time_step = false;
+                    print_char(opt.verbosity >= 2, '<');
                     if (dt < opt.dt_min)
                     {
                         PRINT(opt.verbosity >= 2, " <- reached dt_min");
