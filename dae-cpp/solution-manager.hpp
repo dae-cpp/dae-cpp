@@ -22,6 +22,17 @@
 namespace daecpp_namespace_name
 {
 
+// Solution Manager functor return values
+namespace solver_command
+{
+enum command
+{
+    continue_integration = 0,       // Default, continue integration
+    stop_intergration = 1,          // Stop integration
+    decrease_time_step_and_redo = 2 // Decrease time step size (by a factor of SolverOptions::dt_decrease_factor) and redo the current time step
+};
+} // namespace solver_command
+
 /*
  * Default Solution Manager class
  */
@@ -30,8 +41,9 @@ struct SolutionManager
     /*
      * Solution Manager functor will be called every time step providing the time `t` and
      * the corresponding solution `x` for further post-processing.
-     * If the functor returns an integer != 0 (`true`), the computation will immediately stop.
-     * It does nothing by default and returns 0.
+     * If the functor returns an integer == 1 (or `solver_command::stop_intergration`), the computation will immediately stop.
+     * The functor can return `solver_command::decrease_time_step_and_redo` to decrease the time step size and redo the current time step.
+     * It does nothing by default and returns 0 (`solver_command::continue_integration`).
      */
     virtual int operator()(const state_vector &x, const double t)
     {
