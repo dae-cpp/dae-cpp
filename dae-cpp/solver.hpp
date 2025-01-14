@@ -355,7 +355,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         try
         {
             Timer timer(&t[timer::manager]);
-            if (mgr(x0, 0.0))
+            if (mgr(x0, 0.0) == solver_command::stop_intergration)
             {
                 PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
                 error_msg = exit_code::success;
@@ -653,6 +653,41 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     continue;
                 }
 
+                // Call Solution Manager functor with the current solution and time
+                try
+                {
+                    Timer timer(&t[timer::manager]);
+                    auto command = mgr(xk, state.t);
+                    if (command == solver_command::stop_intergration)
+                    {
+                        print_char(opt.verbosity >= 2, '\n');
+                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                        error_msg = exit_code::success;
+                        goto result;
+                    }
+                    else if (command == solver_command::decrease_time_step_and_redo)
+                    {
+                        PRINT(opt.verbosity >= 2, " <- decrease_time_step_and_redo");
+                        delay_timestep_inc = true;
+                        state.t = state.t_prev;
+                        n_steps--;
+                        dt /= opt.dt_decrease_factor;
+                        xk = state.x[0];
+                        if (dt < opt.dt_min)
+                        {
+                            PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                            error_msg = exit_code::diverged;
+                            goto result; // Abort all loops and go straight to the results
+                        }
+                        continue;
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    ERROR("Solution Manager functor call failed.\n"
+                          << e.what());
+                }
+
                 n_iter_failed = 0;
 
                 double variability{0.0}; // Maximum relative variability of the solution
@@ -735,23 +770,6 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                 // Newton iteration finished
                 print_char(opt.verbosity >= 2, '\n');
-
-                // Call Solution Manager functor with the current solution and time
-                try
-                {
-                    Timer timer(&t[timer::manager]);
-                    if (mgr(state.x[0], state.t))
-                    {
-                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
-                        error_msg = exit_code::success;
-                        goto result;
-                    }
-                }
-                catch (const std::exception &e)
-                {
-                    ERROR("Solution Manager functor call failed.\n"
-                          << e.what());
-                }
 
                 // We may already reached the target time
                 if (dt < opt.dt_min)
