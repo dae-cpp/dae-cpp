@@ -653,6 +653,8 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     continue;
                 }
 
+                bool decrease_time_step{false}; // If true, decrease the time step
+
                 // Call Solution Manager functor with the current solution and time
                 try
                 {
@@ -664,6 +666,11 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
                         error_msg = exit_code::success;
                         goto result;
+                    }
+                    else if (command == solver_command::decrease_time_step)
+                    {
+                        PRINT(opt.verbosity >= 2, " <- decrease_time_step");
+                        decrease_time_step = true;
                     }
                     else if (command == solver_command::decrease_time_step_and_redo)
                     {
@@ -726,10 +733,15 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                 // Make decision about new time step
                 if ((iter >= dt_decrease_threshold) ||
-                    (variability > opt.variability_threshold_high))
+                    (variability > opt.variability_threshold_high) ||
+                    decrease_time_step)
                 {
                     dt /= opt.dt_decrease_factor;
-                    print_char(opt.verbosity >= 2, '<');
+                    if (!decrease_time_step)
+                    {
+                        print_char(opt.verbosity >= 2, '<');
+                    }
+                    decrease_time_step = false;
                     if (dt < opt.dt_min)
                     {
                         PRINT(opt.verbosity >= 2, " <- reached dt_min");
@@ -738,7 +750,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
-                if ((iter <= dt_increase_threshold - 1) &&
+                else if ((iter <= dt_increase_threshold - 1) &&
                     !delay_timestep_inc &&
                     (variability <= opt.variability_threshold_low))
                 {

@@ -29,7 +29,8 @@ enum command
 {
     continue_integration = 0,       // Default, continue integration
     stop_intergration = 1,          // Stop integration
-    decrease_time_step_and_redo = 2 // Decrease time step size (by a factor of SolverOptions::dt_decrease_factor) and redo the current time step
+    decrease_time_step = 2,         // Decrease time step size (by a factor of SolverOptions::dt_decrease_factor)
+    decrease_time_step_and_redo = 3 // Decrease time step size (by a factor of SolverOptions::dt_decrease_factor) and redo the current time step
 };
 } // namespace solver_command
 
@@ -42,6 +43,7 @@ struct SolutionManager
      * Solution Manager functor will be called every time step providing the time `t` and
      * the corresponding solution `x` for further post-processing.
      * If the functor returns an integer == 1 (or `solver_command::stop_intergration`), the computation will immediately stop.
+     * If the functor returns `solver_command::decrease_time_step`, the solver will decrease the next time step size.
      * The functor can return `solver_command::decrease_time_step_and_redo` to decrease the time step size and redo the current time step.
      * It does nothing by default and returns 0 (`solver_command::continue_integration`).
      */
