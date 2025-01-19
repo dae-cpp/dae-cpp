@@ -6,7 +6,7 @@
  * dae-cpp is licensed under the MIT license.
  * A copy of the license can be found in the LICENSE file.
  *
- * Copyright (c) 2024 Ivan Korotkin
+ * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
 #ifndef DAECPP_TYPEDEFS_H
@@ -24,7 +24,7 @@
 // dae-cpp version
 #define DAECPP_VERSION_MAJOR 2
 #define DAECPP_VERSION_MINOR 1
-#define DAECPP_VERSION_PATCH 0
+#define DAECPP_VERSION_PATCH 1
 
 // Internal constants
 #define DAECPP_MAX_ORDER 4
