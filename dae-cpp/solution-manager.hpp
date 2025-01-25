@@ -47,7 +47,7 @@ struct SolutionManager
      * The functor can return `solver_command::decrease_time_step_and_redo` to decrease the time step size and redo the current time step.
      * It does nothing by default and returns 0 (`solver_command::continue_integration`).
      */
-    virtual int operator()(const state_vector &x, const double t)
+    virtual int operator()([[maybe_unused]] const state_vector &x, [[maybe_unused]] const double t)
     {
         return 0;
     }
