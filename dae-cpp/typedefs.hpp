@@ -50,9 +50,9 @@ enum status
 
 // Unsigned integer type
 #ifdef DAECPP_LONG
-typedef uint64_t int_type;
+typedef std::int64_t int_type;
 #else
-typedef uint32_t int_type;
+typedef std::int32_t int_type;
 #endif
 
 // Floating point scalar
