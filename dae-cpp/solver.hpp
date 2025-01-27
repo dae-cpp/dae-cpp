@@ -590,7 +590,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         for (std::size_t i = 0; i < size; ++i)
                         {
                             // Absolute error
-                            double err_abs = std::abs(dx[i]);
+                            auto err_abs = std::abs(dx[i]);
 
                             // Solution diverged. Roll back to the previous state and redo with reduced time step.
                             if (err_abs > opt.max_err_abs || std::isnan(dx[i]))
@@ -601,13 +601,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                             }
 
                             // Relative error check
-                            if (state.x[0][i] != 0.0)
+                            auto x_abs = std::abs(state.x[0][i]);
+                            if ((x_abs > DAECPP_FLOAT_TOLERANCE) && ((err_abs / x_abs) > opt.rtol))
                             {
-                                double err_rel = err_abs / std::abs(state.x[0][i]);
-                                if (err_rel > opt.rtol)
-                                {
-                                    is_converged = false;
-                                }
+                                is_converged = false;
                             }
 
                             // Absolute error check
