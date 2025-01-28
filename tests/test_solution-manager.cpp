@@ -10,7 +10,7 @@
  * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
-#include <dae-cpp/solution-manager.hpp>
+#include <dae-cpp/solver.hpp>
 
 #include "gtest/gtest.h"
 
@@ -118,6 +118,81 @@ TEST(SolutionManager, SolutionClassList)
     EXPECT_DOUBLE_EQ(sol.x[1][1], 35.0);
     EXPECT_DOUBLE_EQ(sol.t[0], 11.0);
     EXPECT_DOUBLE_EQ(sol.t[1], 12.0);
+}
+
+struct MyRHS
+{
+    void operator()(state_type &f, const state_type &x, const double t)
+    {
+        f[0] = -1; // dx/dt = -1
+    }
+};
+
+// Absolute error
+constexpr double abs_err{1e-6};
+
+class MySolutionManager
+{
+    SolutionHolder &m_sol;
+
+    bool m_keep_reducing_time_step{false};
+
+    void m_save_solution(const state_vector &x, const double t)
+    {
+        m_sol.x.emplace_back(x);
+        m_sol.t.emplace_back(t);
+    }
+
+public:
+    MySolutionManager(SolutionHolder &sol) : m_sol(sol) {}
+
+    /*
+     * Solution Manager functor will be called every time step providing the time `t` and
+     * the corresponding solution `x` for further post-processing.
+     */
+    int operator()(const state_vector &x, const double t)
+    {
+        if (std::abs(x[0] - 1.0) < abs_err)
+        {
+            m_save_solution(x, t);
+            return solver_command::stop_intergration;
+        }
+
+        if (x[0] < 1.0)
+        {
+            m_keep_reducing_time_step = true;
+            return solver_command::decrease_time_step_and_redo;
+        }
+
+        m_save_solution(x, t);
+
+        if (m_keep_reducing_time_step)
+        {
+            return solver_command::decrease_time_step;
+        }
+
+        return 0;
+    }
+};
+
+TEST(SolutionManager, SolverCommands)
+{
+    MyRHS rhs; // The vector-function object
+
+    state_vector x0{2.0}; // Initial condition: x = 2
+    double t_end{100.0};  // Solution interval: t = [0, t_end] - should stop earlier
+
+    SolutionHolder sol;
+
+    auto status = solve(MassMatrixIdentity(x0.size()), rhs, x0, t_end, MySolutionManager(sol));
+
+    ASSERT_EQ(status, 0);
+
+    ASSERT_GT(sol.x.size(), 0);
+    ASSERT_GT(sol.t.size(), 0);
+    EXPECT_GT(sol.t.back(), 0.0);
+
+    EXPECT_NEAR(sol.x.back()[0], 1.0, abs_err); // Should stop at x = 1.0
 }
 
 } // namespace

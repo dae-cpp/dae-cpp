@@ -657,14 +657,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                 {
                     Timer timer(&t[timer::manager]);
                     auto command = mgr(xk, state.t);
-                    if (command == solver_command::stop_intergration)
-                    {
-                        print_char(opt.verbosity >= 2, '\n');
-                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
-                        error_msg = exit_code::success;
-                        goto result;
-                    }
-                    else if (command == solver_command::decrease_time_step)
+                    if (command == solver_command::decrease_time_step)
                     {
                         decrease_time_step = true;
                     }
@@ -683,6 +676,13 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                             goto result; // Abort all loops and go straight to the results
                         }
                         continue;
+                    }
+                    else if (command) // solver_command::stop_intergration
+                    {
+                        print_char(opt.verbosity >= 2, '\n');
+                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                        error_msg = exit_code::success;
+                        goto result;
                     }
                 }
                 catch (const std::exception &e)
