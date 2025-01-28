@@ -171,7 +171,7 @@ public:
             return solver_command::decrease_time_step;
         }
 
-        return 0;
+        return solver_command::continue_integration;
     }
 };
 
@@ -193,6 +193,58 @@ TEST(SolutionManager, SolverCommands)
     EXPECT_GT(sol.t.back(), 0.0);
 
     EXPECT_NEAR(sol.x.back()[0], 1.0, abs_err); // Should stop at x = 1.0
+    EXPECT_NEAR(sol.t.back(), 1.0, abs_err);    // Should stop at t = 1.0
+}
+
+class MySolutionManagerStop
+{
+    SolutionHolder &m_sol;
+
+    void m_save_solution(const state_vector &x, const double t)
+    {
+        m_sol.x.emplace_back(x);
+        m_sol.t.emplace_back(t);
+    }
+
+public:
+    MySolutionManagerStop(SolutionHolder &sol) : m_sol(sol) {}
+
+    /*
+     * Solution Manager functor will be called every time step providing the time `t` and
+     * the corresponding solution `x` for further post-processing.
+     */
+    int operator()(const state_vector &x, const double t)
+    {
+        m_save_solution(x, t);
+
+        if (x[0] < 0.0)
+        {
+            return -1; // solver_command::stop_intergration;
+        }
+
+        return 0; // solver_command::continue_integration;
+    }
+};
+
+TEST(SolutionManager, StopIntegration)
+{
+    MyRHS rhs; // The vector-function object
+
+    state_vector x0{2.0}; // Initial condition: x = 2
+    double t_end{100.0};  // Solution interval: t = [0, t_end] - should stop earlier
+
+    SolutionHolder sol;
+
+    auto status = solve(MassMatrixIdentity(x0.size()), rhs, x0, t_end, MySolutionManagerStop(sol));
+
+    ASSERT_EQ(status, 0);
+
+    ASSERT_GT(sol.x.size(), 0);
+    ASSERT_GT(sol.t.size(), 0);
+    EXPECT_GT(sol.t.back(), 2.0);
+    EXPECT_LT(sol.t.back(), 3.0);
+    EXPECT_LT(sol.x.back()[0], 0.0);  // Should stop after `x` passes 0.0
+    EXPECT_GT(sol.x.back()[0], -1.0); // But before `x` passes -1.0
 }
 
 } // namespace
