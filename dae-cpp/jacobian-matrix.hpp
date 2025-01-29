@@ -8,7 +8,7 @@
  * dae-cpp is licensed under the MIT license.
  * A copy of the license can be found in the LICENSE file.
  *
- * Copyright (c) 2024 Ivan Korotkin
+ * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
 #ifndef DAECPP_JACOBIAN_MATRIX_H
@@ -48,11 +48,11 @@ public:
 template <class RHS>
 class JacobianMatrixShape
 {
-    // Array of non-zero elements
-    std::vector<std::pair<int_type, int_type>> m_Jn;
-
     // The RHS for differentiation (a copy)
     RHS m_rhs;
+
+    // Array of non-zero elements
+    std::vector<std::pair<int_type, int_type>> m_Jn;
 
 public:
     explicit JacobianMatrixShape(RHS rhs) : m_rhs(rhs) {}
@@ -212,8 +212,8 @@ struct MatrixDiff
 template <class Jacobian, class RHS>
 class JacobianCompare
 {
-    RHS m_rhs;           // The RHS for differentiation (a copy)
     Jacobian m_jac_user; // User-defined Jacobian
+    RHS m_rhs;           // The RHS for differentiation
 
     // Table formatting settings
     const int m_column_width_ind{12}; // Width for the columns with indices (integers)

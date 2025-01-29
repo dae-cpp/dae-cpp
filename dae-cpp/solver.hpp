@@ -6,7 +6,7 @@
  * dae-cpp is licensed under the MIT license.
  * A copy of the license can be found in the LICENSE file.
  *
- * Copyright (c) 2024 Ivan Korotkin
+ * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
 #ifndef DAECPP_SOLVER_H
@@ -355,7 +355,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         try
         {
             Timer timer(&t[timer::manager]);
-            if (mgr(x0, 0.0))
+            if (mgr(x0, 0.0) == solver_command::stop_intergration)
             {
                 PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
                 error_msg = exit_code::success;
@@ -590,7 +590,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         for (std::size_t i = 0; i < size; ++i)
                         {
                             // Absolute error
-                            double err_abs = std::abs(dx[i]);
+                            auto err_abs = std::abs(dx[i]);
 
                             // Solution diverged. Roll back to the previous state and redo with reduced time step.
                             if (err_abs > opt.max_err_abs || std::isnan(dx[i]))
@@ -601,13 +601,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                             }
 
                             // Relative error check
-                            if (state.x[0][i] != 0.0)
+                            auto x_abs = std::abs(state.x[0][i]);
+                            if ((x_abs > DAECPP_FLOAT_TOLERANCE) && ((err_abs / x_abs) > opt.rtol))
                             {
-                                double err_rel = err_abs / std::abs(state.x[0][i]);
-                                if (err_rel > opt.rtol)
-                                {
-                                    is_converged = false;
-                                }
+                                is_converged = false;
                             }
 
                             // Absolute error check
@@ -653,6 +650,47 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     continue;
                 }
 
+                bool decrease_time_step{false}; // If true, decrease the time step
+
+                // Call Solution Manager functor with the current solution and time
+                try
+                {
+                    Timer timer(&t[timer::manager]);
+                    auto command = mgr(xk, state.t);
+                    if (command == solver_command::decrease_time_step)
+                    {
+                        decrease_time_step = true;
+                    }
+                    else if (command == solver_command::decrease_time_step_and_redo)
+                    {
+                        PRINT(opt.verbosity >= 2, " <- decrease_time_step_and_redo");
+                        delay_timestep_inc = true;
+                        state.t = state.t_prev;
+                        n_steps--;
+                        dt /= opt.dt_decrease_factor;
+                        xk = state.x[0];
+                        if (dt < opt.dt_min)
+                        {
+                            PRINT(opt.verbosity >= 1, "The time step was reduced to `t_min` but the scheme failed to converge.");
+                            error_msg = exit_code::diverged;
+                            goto result; // Abort all loops and go straight to the results
+                        }
+                        continue;
+                    }
+                    else if (command) // solver_command::stop_intergration
+                    {
+                        print_char(opt.verbosity >= 2, '\n');
+                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
+                        error_msg = exit_code::success;
+                        goto result;
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    ERROR("Solution Manager functor call failed.\n"
+                          << e.what());
+                }
+
                 n_iter_failed = 0;
 
                 double variability{0.0}; // Maximum relative variability of the solution
@@ -691,9 +729,11 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                 // Make decision about new time step
                 if ((iter >= dt_decrease_threshold) ||
-                    (variability > opt.variability_threshold_high))
+                    (variability > opt.variability_threshold_high) ||
+                    decrease_time_step)
                 {
                     dt /= opt.dt_decrease_factor;
+                    decrease_time_step = false;
                     print_char(opt.verbosity >= 2, '<');
                     if (dt < opt.dt_min)
                     {
@@ -703,7 +743,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         goto result; // Abort all loops and go straight to the results
                     }
                 }
-                if ((iter <= dt_increase_threshold - 1) &&
+                else if ((iter <= dt_increase_threshold - 1) &&
                     !delay_timestep_inc &&
                     (variability <= opt.variability_threshold_low))
                 {
@@ -735,23 +775,6 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
 
                 // Newton iteration finished
                 print_char(opt.verbosity >= 2, '\n');
-
-                // Call Solution Manager functor with the current solution and time
-                try
-                {
-                    Timer timer(&t[timer::manager]);
-                    if (mgr(state.x[0], state.t))
-                    {
-                        PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
-                        error_msg = exit_code::success;
-                        goto result;
-                    }
-                }
-                catch (const std::exception &e)
-                {
-                    ERROR("Solution Manager functor call failed.\n"
-                          << e.what());
-                }
 
                 // We may already reached the target time
                 if (dt < opt.dt_min)

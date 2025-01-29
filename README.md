@@ -1,7 +1,7 @@
 # dae-cpp
 
 ![tests](https://github.com/dae-cpp/dae-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)
-![version](https://img.shields.io/badge/version-2.1.1-blue)
+![version](https://img.shields.io/badge/version-2.2.0-blue)
 [![Static Badge](https://img.shields.io/badge/Documentation-8A2BE2?logo=githubpages&logoColor=fff&style=flat)](https://dae-cpp.github.io/)
 
 **A simple but powerful header-only C++ solver for [systems of Differential-Algebraic Equations](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (DAE).**
@@ -207,7 +207,7 @@ Then add the user-defined Jacobian to the `solve()` method:
 my_system.solve(x0, t, MyJacobian());
 ```
 
-Defining analytic Jacobian matrix can significantly speed up the computation for big systems (with thousands of DAEs).
+Defining analytic Jacobian matrix can significantly speed up the computation for big systems (with hundreds and thousands of DAEs).
 
 If deriving the Jacobian matrix manually is not a feasible task (e.g., due to a very complex non-linear RHS), the solver allows the user to specify only the positions of non-zero elements of the Jacobian matrix (i.e., the Jacobian matrix shape). All the derivatives will be calculated automatically with a very small computation time penalty (compared to the manually derived analytic Jacobian). For more details, see the [Jacobian shape example](https://github.com/dae-cpp/dae-cpp/blob/master/examples/jacobian_shape/jacobian_shape.cpp).
 

@@ -8,7 +8,7 @@
  * dae-cpp is licensed under the MIT license.
  * A copy of the license can be found in the LICENSE file.
  *
- * Copyright (c) 2024 Ivan Korotkin
+ * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
 #ifndef DAECPP_MASS_MATRIX_H
@@ -47,7 +47,7 @@ class MassMatrixIdentity : public MassMatrix
 public:
     explicit MassMatrixIdentity(const std::size_t N) : MassMatrix(), m_N(N) {}
 
-    void operator()(sparse_matrix &M, const double t) const
+    void operator()(sparse_matrix &M, [[maybe_unused]] const double t) const
     {
         M.A.resize(m_N, 1.0);
         M.i.resize(m_N); // Resize and then overwrite in a loop worked faster than reserve and push_back
@@ -67,7 +67,7 @@ public:
 class MassMatrixZero : public MassMatrix
 {
 public:
-    void operator()(sparse_matrix &M, const double t) const
+    void operator()(sparse_matrix &M, [[maybe_unused]] const double t) const
     {
         M.A.clear();
         M.i.clear();

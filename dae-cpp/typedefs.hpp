@@ -6,7 +6,7 @@
  * dae-cpp is licensed under the MIT license.
  * A copy of the license can be found in the LICENSE file.
  *
- * Copyright (c) 2024 Ivan Korotkin
+ * Copyright (c) 2024-2025 Ivan Korotkin
  */
 
 #ifndef DAECPP_TYPEDEFS_H
@@ -23,12 +23,18 @@
 
 // dae-cpp version
 #define DAECPP_VERSION_MAJOR 2
-#define DAECPP_VERSION_MINOR 1
+#define DAECPP_VERSION_MINOR 2
 #define DAECPP_VERSION_PATCH 0
 
 // Internal constants
 #define DAECPP_MAX_ORDER 4
+#ifndef DAECPP_SINGLE
 #define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-14 // Used in automatic (algorithmic) Jacobian
+#define DAECPP_FLOAT_TOLERANCE 1e-14                 // Used in the solver for convergence check against relative tolerance
+#else
+#define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-6 // Used in automatic (algorithmic) Jacobian
+#define DAECPP_FLOAT_TOLERANCE 1e-6                 // Used in the solver for convergence check against relative tolerance
+#endif
 
 #include "assert-custom.hpp"
 
@@ -50,9 +56,9 @@ enum status
 
 // Unsigned integer type
 #ifdef DAECPP_LONG
-typedef uint64_t int_type;
+typedef std::int64_t int_type;
 #else
-typedef uint32_t int_type;
+typedef std::int32_t int_type;
 #endif
 
 // Floating point scalar
