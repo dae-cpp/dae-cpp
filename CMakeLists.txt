@@ -44,7 +44,7 @@ include_directories(${PROJECT_SOURCE_DIR}/googletest/googletest/include)
 
 target_link_libraries(${PROJECT_TEST} gtest_main gtest)
 
-target_compile_definitions(${PROJECT_TEST} PRIVATE "TESTING")
+target_compile_definitions(${PROJECT_TEST} PRIVATE "DAECPP_TESTING")
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_TEST})
