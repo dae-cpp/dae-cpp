@@ -39,7 +39,7 @@ namespace daecpp_namespace_name
  * Example:
  * WARNING("v = " << v);
  */
-#ifdef TESTING
+#ifdef DAECPP_TESTING
 #define WARNING(msg)
 #else
 #define WARNING(msg) \
@@ -54,7 +54,7 @@ namespace daecpp_namespace_name
  * Example:
  * NOTE("v = " << v);
  */
-#ifdef TESTING
+#ifdef DAECPP_TESTING
 #define NOTE(msg)
 #else
 #define NOTE(msg) \
@@ -69,7 +69,7 @@ namespace daecpp_namespace_name
  * Example:
  * NOTE(verbosity > 1, "v = " << v);
  */
-#ifdef TESTING
+#ifdef DAECPP_TESTING
 #define PRINT(condition, msg)
 #else
 #define PRINT(condition, msg)          \
