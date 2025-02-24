@@ -54,7 +54,7 @@ enum status
 };
 } // namespace exit_code
 
-// Unsigned integer type
+// Integer type
 #ifdef DAECPP_LONG
 typedef std::int64_t int_type;
 #else
@@ -77,7 +77,7 @@ typedef autodiff::real1st state_value;
 namespace core
 {
 
-// Unsigned integer vector
+// Integer vector
 typedef std::vector<int_type> ivec;
 
 // Floating point (double or single precision) vector
