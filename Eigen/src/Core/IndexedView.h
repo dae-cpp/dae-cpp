@@ -20,8 +20,8 @@ namespace internal {
 template <typename XprType, typename RowIndices, typename ColIndices>
 struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
   enum {
-    RowsAtCompileTime = int(array_size<RowIndices>::value),
-    ColsAtCompileTime = int(array_size<ColIndices>::value),
+    RowsAtCompileTime = int(IndexedViewHelper<RowIndices>::SizeAtCompileTime),
+    ColsAtCompileTime = int(IndexedViewHelper<ColIndices>::SizeAtCompileTime),
     MaxRowsAtCompileTime = RowsAtCompileTime,
     MaxColsAtCompileTime = ColsAtCompileTime,
 
@@ -30,8 +30,8 @@ struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
                  : (MaxColsAtCompileTime == 1 && MaxRowsAtCompileTime != 1) ? 0
                                                                             : XprTypeIsRowMajor,
 
-    RowIncr = int(get_compile_time_incr<RowIndices>::value),
-    ColIncr = int(get_compile_time_incr<ColIndices>::value),
+    RowIncr = int(IndexedViewHelper<RowIndices>::IncrAtCompileTime),
+    ColIncr = int(IndexedViewHelper<ColIndices>::IncrAtCompileTime),
     InnerIncr = IsRowMajor ? ColIncr : RowIncr,
     OuterIncr = IsRowMajor ? RowIncr : ColIncr,
 
@@ -47,24 +47,23 @@ struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
                     is_same<AllRange<InnerSize>, std::conditional_t<XprTypeIsRowMajor, ColIndices, RowIndices>>::value,
 
     InnerStrideAtCompileTime =
-        InnerIncr < 0 || InnerIncr == DynamicIndex || XprInnerStride == Dynamic || InnerIncr == UndefinedIncr
+        InnerIncr < 0 || InnerIncr == DynamicIndex || XprInnerStride == Dynamic || InnerIncr == Undefined
             ? Dynamic
             : XprInnerStride * InnerIncr,
     OuterStrideAtCompileTime =
-        OuterIncr < 0 || OuterIncr == DynamicIndex || XprOuterstride == Dynamic || OuterIncr == UndefinedIncr
+        OuterIncr < 0 || OuterIncr == DynamicIndex || XprOuterstride == Dynamic || OuterIncr == Undefined
             ? Dynamic
             : XprOuterstride * OuterIncr,
 
-    ReturnAsScalar = is_same<RowIndices, SingleRange>::value && is_same<ColIndices, SingleRange>::value,
+    ReturnAsScalar = is_single_range<RowIndices>::value && is_single_range<ColIndices>::value,
     ReturnAsBlock = (!ReturnAsScalar) && IsBlockAlike,
     ReturnAsIndexedView = (!ReturnAsScalar) && (!ReturnAsBlock),
 
     // FIXME we deal with compile-time strides if and only if we have DirectAccessBit flag,
     // but this is too strict regarding negative strides...
-    DirectAccessMask =
-        (int(InnerIncr) != UndefinedIncr && int(OuterIncr) != UndefinedIncr && InnerIncr >= 0 && OuterIncr >= 0)
-            ? DirectAccessBit
-            : 0,
+    DirectAccessMask = (int(InnerIncr) != Undefined && int(OuterIncr) != Undefined && InnerIncr >= 0 && OuterIncr >= 0)
+                           ? DirectAccessBit
+                           : 0,
     FlagsRowMajorBit = IsRowMajor ? RowMajorBit : 0,
     FlagsLvalueBit = is_lvalue<XprType>::value ? LvalueBit : 0,
     FlagsLinearAccessBit = (RowsAtCompileTime == 1 || ColsAtCompileTime == 1) ? LinearAccessBit : 0,
@@ -153,10 +152,10 @@ class IndexedViewImpl : public internal::generic_xpr_base<IndexedView<XprType, R
       : m_xpr(xpr), m_rowIndices(rowIndices), m_colIndices(colIndices) {}
 
   /** \returns number of rows */
-  Index rows() const { return internal::index_list_size(m_rowIndices); }
+  Index rows() const { return IndexedViewHelper<RowIndices>::size(m_rowIndices); }
 
   /** \returns number of columns */
-  Index cols() const { return internal::index_list_size(m_colIndices); }
+  Index cols() const { return IndexedViewHelper<ColIndices>::size(m_colIndices); }
 
   /** \returns the nested expression */
   const internal::remove_all_t<XprType>& nestedExpression() const { return m_xpr; }
@@ -198,16 +197,16 @@ class IndexedViewImpl<XprType, RowIndices, ColIndices, StorageKind, true>
   IndexedViewImpl(XprType& xpr, const T0& rowIndices, const T1& colIndices) : Base(xpr, rowIndices, colIndices) {}
 
   Index rowIncrement() const {
-    if (traits<Derived>::RowIncr != DynamicIndex && traits<Derived>::RowIncr != UndefinedIncr) {
+    if (traits<Derived>::RowIncr != DynamicIndex && traits<Derived>::RowIncr != Undefined) {
       return traits<Derived>::RowIncr;
     }
-    return get_runtime_incr(this->rowIndices());
+    return IndexedViewHelper<RowIndices>::incr(this->rowIndices());
   }
   Index colIncrement() const {
-    if (traits<Derived>::ColIncr != DynamicIndex && traits<Derived>::ColIncr != UndefinedIncr) {
+    if (traits<Derived>::ColIncr != DynamicIndex && traits<Derived>::ColIncr != Undefined) {
       return traits<Derived>::ColIncr;
     }
-    return get_runtime_incr(this->colIndices());
+    return IndexedViewHelper<ColIndices>::incr(this->colIndices());
   }
 
   Index innerIncrement() const { return traits<Derived>::IsRowMajor ? colIncrement() : rowIncrement(); }
@@ -226,14 +225,14 @@ class IndexedViewImpl<XprType, RowIndices, ColIndices, StorageKind, true>
     return this->nestedExpression().data() + row_offset + col_offset;
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index innerStride() const EIGEN_NOEXCEPT {
+  EIGEN_DEVICE_FUNC constexpr Index innerStride() const noexcept {
     if (traits<Derived>::InnerStrideAtCompileTime != Dynamic) {
       return traits<Derived>::InnerStrideAtCompileTime;
     }
     return innerIncrement() * this->nestedExpression().innerStride();
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index outerStride() const EIGEN_NOEXCEPT {
+  EIGEN_DEVICE_FUNC constexpr Index outerStride() const noexcept {
     if (traits<Derived>::OuterStrideAtCompileTime != Dynamic) {
       return traits<Derived>::OuterStrideAtCompileTime;
     }
@@ -307,6 +306,12 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
  protected:
   evaluator<ArgType> m_argImpl;
   const XprType& m_xpr;
+};
+
+// Catch assignments to an IndexedView.
+template <typename ArgType, typename RowIndices, typename ColIndices>
+struct evaluator_assume_aliasing<IndexedView<ArgType, RowIndices, ColIndices>> {
+  static const bool value = true;
 };
 
 }  // end namespace internal

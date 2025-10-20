@@ -50,26 +50,6 @@ struct traits<BDCSVD<MatrixType_, Options> > : svd_traits<MatrixType_, Options> 
   typedef MatrixType_ MatrixType;
 };
 
-template <typename MatrixType, int Options>
-struct allocate_small_svd {
-  static void run(JacobiSVD<MatrixType, Options>& smallSvd, Index rows, Index cols, unsigned int computationOptions) {
-    (void)computationOptions;
-    smallSvd = JacobiSVD<MatrixType, Options>(rows, cols);
-  }
-};
-
-EIGEN_DIAGNOSTICS(push)
-EIGEN_DISABLE_DEPRECATED_WARNING
-
-template <typename MatrixType>
-struct allocate_small_svd<MatrixType, 0> {
-  static void run(JacobiSVD<MatrixType>& smallSvd, Index rows, Index cols, unsigned int computationOptions) {
-    smallSvd = JacobiSVD<MatrixType>(rows, cols, computationOptions);
-  }
-};
-
-EIGEN_DIAGNOSTICS(pop)
-
 }  // end namespace internal
 
 /** \ingroup SVD_Module
@@ -164,42 +144,48 @@ class BDCSVD : public SVDBase<BDCSVD<MatrixType_, Options_> > {
    * Like the default constructor but with preallocation of the internal data
    * according to the specified problem size and the \a computationOptions.
    *
-   * One \b cannot request unitiaries using both the \a Options template parameter
+   * One \b cannot request unitaries using both the \a Options template parameter
    * and the constructor. If possible, prefer using the \a Options template parameter.
    *
-   * \param computationOptions specifification for computing Thin/Full unitaries U/V
+   * \param rows number of rows for the input matrix
+   * \param cols number of columns for the input matrix
+   * \param computationOptions specification for computing Thin/Full unitaries U/V
    * \sa BDCSVD()
    *
    * \deprecated Will be removed in the next major Eigen version. Options should
    * be specified in the \a Options template parameter.
    */
-  EIGEN_DEPRECATED BDCSVD(Index rows, Index cols, unsigned int computationOptions) : m_algoswap(16), m_numIters(0) {
+  EIGEN_DEPRECATED_WITH_REASON("Options should be specified using the class template parameter.")
+  BDCSVD(Index rows, Index cols, unsigned int computationOptions) : m_algoswap(16), m_numIters(0) {
     internal::check_svd_options_assertions<MatrixType, Options>(computationOptions, rows, cols);
     allocate(rows, cols, computationOptions);
   }
 
   /** \brief Constructor performing the decomposition of given matrix, using the custom options specified
-   *         with the \a Options template paramter.
+   *         with the \a Options template parameter.
    *
    * \param matrix the matrix to decompose
    */
-  BDCSVD(const MatrixType& matrix) : m_algoswap(16), m_numIters(0) {
+  template <typename Derived>
+  BDCSVD(const MatrixBase<Derived>& matrix) : m_algoswap(16), m_numIters(0) {
     compute_impl(matrix, internal::get_computation_options(Options));
   }
 
   /** \brief Constructor performing the decomposition of given matrix using specified options
    *         for computing unitaries.
    *
-   *  One \b cannot request unitiaries using both the \a Options template parameter
+   *  One \b cannot request unitaries using both the \a Options template parameter
    *  and the constructor. If possible, prefer using the \a Options template parameter.
    *
    * \param matrix the matrix to decompose
-   * \param computationOptions specifification for computing Thin/Full unitaries U/V
+   * \param computationOptions specification for computing Thin/Full unitaries U/V
    *
    * \deprecated Will be removed in the next major Eigen version. Options should
    * be specified in the \a Options template parameter.
    */
-  EIGEN_DEPRECATED BDCSVD(const MatrixType& matrix, unsigned int computationOptions) : m_algoswap(16), m_numIters(0) {
+  template <typename Derived>
+  EIGEN_DEPRECATED_WITH_REASON("Options should be specified using the class template parameter.")
+  BDCSVD(const MatrixBase<Derived>& matrix, unsigned int computationOptions) : m_algoswap(16), m_numIters(0) {
     internal::check_svd_options_assertions<MatrixType, Options>(computationOptions, matrix.rows(), matrix.cols());
     compute_impl(matrix, computationOptions);
   }
@@ -211,7 +197,10 @@ class BDCSVD : public SVDBase<BDCSVD<MatrixType_, Options_> > {
    *
    * \param matrix the matrix to decompose
    */
-  BDCSVD& compute(const MatrixType& matrix) { return compute_impl(matrix, m_computationOptions); }
+  template <typename Derived>
+  BDCSVD& compute(const MatrixBase<Derived>& matrix) {
+    return compute_impl(matrix, m_computationOptions);
+  }
 
   /** \brief Method performing the decomposition of given matrix, as specified by
    *         the `computationOptions` parameter.
@@ -222,7 +211,9 @@ class BDCSVD : public SVDBase<BDCSVD<MatrixType_, Options_> > {
    * \deprecated Will be removed in the next major Eigen version. Options should
    * be specified in the \a Options template parameter.
    */
-  EIGEN_DEPRECATED BDCSVD& compute(const MatrixType& matrix, unsigned int computationOptions) {
+  template <typename Derived>
+  EIGEN_DEPRECATED_WITH_REASON("Options should be specified using the class template parameter.")
+  BDCSVD& compute(const MatrixBase<Derived>& matrix, unsigned int computationOptions) {
     internal::check_svd_options_assertions<MatrixType, Options>(computationOptions, matrix.rows(), matrix.cols());
     return compute_impl(matrix, computationOptions);
   }
@@ -233,7 +224,8 @@ class BDCSVD : public SVDBase<BDCSVD<MatrixType_, Options_> > {
   }
 
  private:
-  BDCSVD& compute_impl(const MatrixType& matrix, unsigned int computationOptions);
+  template <typename Derived>
+  BDCSVD& compute_impl(const MatrixBase<Derived>& matrix, unsigned int computationOptions);
   void divide(Index firstCol, Index lastCol, Index firstRowW, Index firstColW, Index shift);
   void computeSVDofM(Index firstCol, Index n, MatrixXr& U, VectorType& singVals, MatrixXr& V);
   void computeSingVals(const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, VectorType& singVals,
@@ -289,7 +281,7 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   if (Base::allocate(rows, cols, computationOptions)) return;
 
   if (cols < m_algoswap)
-    internal::allocate_small_svd<MatrixType, ComputationOptions>::run(smallSvd, rows, cols, computationOptions);
+    smallSvd.allocate(rows, cols, Options == 0 ? computationOptions : internal::get_computation_options(Options));
 
   m_computed = MatrixXr::Zero(diagSize() + 1, diagSize());
   m_compU = computeV();
@@ -325,8 +317,13 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
 }  // end allocate
 
 template <typename MatrixType, int Options>
-BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const MatrixType& matrix,
+template <typename Derived>
+BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const MatrixBase<Derived>& matrix,
                                                                        unsigned int computationOptions) {
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(Derived, MatrixType);
+  EIGEN_STATIC_ASSERT((std::is_same<typename Derived::Scalar, typename MatrixType::Scalar>::value),
+                      Input matrix must have the same Scalar type as the BDCSVD object.);
+
 #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
   std::cout << "\n\n\n================================================================================================="
                "=====================\n\n\n";
@@ -1048,7 +1045,7 @@ void BDCSVD<MatrixType, Options>::computeSingVals(const ArrayRef& col0, const Ar
       } else {
         // We have a problem as shifting on the left or right give either a positive or negative value
         // at the middle of [left,right]...
-        // Instead fo abbording or entering an infinite loop,
+        // Instead of abbording or entering an infinite loop,
         // let's just use the middle as the estimated zero-crossing:
         muCur = (right - left) * RealScalar(0.5);
         // we can test exact equality here, because shift comes from `... ? left : right`
@@ -1233,7 +1230,7 @@ void BDCSVD<MatrixType, Options>::deflation44(Index firstColu, Index firstColm, 
   using std::conj;
   using std::pow;
   using std::sqrt;
-  
+
   RealScalar s = m_computed(firstColm + i, firstColm);
   RealScalar c = m_computed(firstColm + j, firstColm);
   RealScalar r = numext::hypot(c, s);
@@ -1424,8 +1421,7 @@ void BDCSVD<MatrixType, Options>::deflation(Index firstCol, Index lastCol, Index
       if ((diag(i) - diag(i - 1)) < epsilon_strict) {
 #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
         std::cout << "deflation 4.4 with i = " << i << " because " << diag(i) << " - " << diag(i - 1)
-                  << " == " << (diag(i) - diag(i - 1)) << " < "
-                  << epsilon_strict << "\n";
+                  << " == " << (diag(i) - diag(i - 1)) << " < " << epsilon_strict << "\n";
 #endif
         eigen_internal_assert(abs(diag(i) - diag(i - 1)) < epsilon_coarse &&
                               " diagonal entries are not properly sorted");

@@ -345,7 +345,7 @@ EIGEN_DEVICE_FUNC void tridiagonalization_inplace(MatrixType& matA, CoeffVectorT
 
     // Apply similarity transformation to remaining columns,
     // i.e., A = H A H' where H = I - h v v' and v = matA.col(i).tail(n-i-1)
-    matA.col(i).coeffRef(i + 1) = 1;
+    matA.col(i).coeffRef(i + 1) = Scalar(1);
 
     hCoeffs.tail(n - i - 1).noalias() =
         (matA.bottomRightCorner(remainingSize, remainingSize).template selfadjointView<Lower>() *
@@ -379,6 +379,8 @@ struct tridiagonalization_inplace_selector;
  *    decomposition.
  * \param[out]  subdiag  The subdiagonal of the tridiagonal matrix T in
  *    the decomposition.
+ * \param[out]  hcoeffs
+ * \param[out]  workspace
  * \param[in]  extractQ  If true, the orthogonal matrix Q in the
  *    decomposition is computed and stored in \p mat.
  *
@@ -445,8 +447,8 @@ struct tridiagonalization_inplace_selector<MatrixType, 3, false> {
   typedef typename MatrixType::RealScalar RealScalar;
 
   template <typename DiagonalType, typename SubDiagonalType, typename CoeffVectorType, typename WorkSpaceType>
-  static void run(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag, CoeffVectorType&, WorkSpaceType&,
-                  bool extractQ) {
+  static EIGEN_DEVICE_FUNC void run(MatrixType& mat, DiagonalType& diag, SubDiagonalType& subdiag, CoeffVectorType&,
+                                    WorkSpaceType&, bool extractQ) {
     using std::sqrt;
     const RealScalar tol = (std::numeric_limits<RealScalar>::min)();
     diag[0] = mat(0, 0);
@@ -513,8 +515,8 @@ struct TridiagonalizationMatrixTReturnType : public ReturnByValue<Tridiagonaliza
     result.template diagonal<-1>() = m_matrix.template diagonal<-1>();
   }
 
-  EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT { return m_matrix.rows(); }
-  EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT { return m_matrix.cols(); }
+  constexpr Index rows() const noexcept { return m_matrix.rows(); }
+  constexpr Index cols() const noexcept { return m_matrix.cols(); }
 
  protected:
   typename MatrixType::Nested m_matrix;

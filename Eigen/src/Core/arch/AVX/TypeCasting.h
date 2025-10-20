@@ -200,10 +200,38 @@ EIGEN_STRONG_INLINE Packet4l pcast<Packet4d, Packet4l>(const Packet4d& a) {
 #if defined(EIGEN_VECTORIZE_AVX512DQ) && defined(EIGEN_VECTORIZE_AVS512VL)
   return _mm256_cvttpd_epi64(a);
 #else
-  EIGEN_ALIGN16 double aux[4];
-  pstore(aux, a);
-  return _mm256_set_epi64x(static_cast<int64_t>(aux[3]), static_cast<int64_t>(aux[2]), static_cast<int64_t>(aux[1]),
-                           static_cast<int64_t>(aux[0]));
+
+  // if 'a' exceeds the numerical limits of int64_t, the behavior is undefined
+
+  // e <= 0 corresponds to |a| < 1, which should result in zero. incidentally, intel intrinsics with shift arguments
+  // greater than or equal to 64 produce zero. furthermore, negative shifts appear to be interpreted as large positive
+  // shifts (two's complement), which also result in zero. therefore, e does not need to be clamped to [0, 64)
+
+  constexpr int kTotalBits = sizeof(double) * CHAR_BIT, kMantissaBits = std::numeric_limits<double>::digits - 1,
+                kExponentBits = kTotalBits - kMantissaBits - 1, kBias = (1 << (kExponentBits - 1)) - 1;
+
+  const __m256i cst_one = _mm256_set1_epi64x(1);
+  const __m256i cst_total_bits = _mm256_set1_epi64x(kTotalBits);
+  const __m256i cst_bias = _mm256_set1_epi64x(kBias);
+
+  __m256i a_bits = _mm256_castpd_si256(a);
+  // shift left by 1 to clear the sign bit, and shift right by kMantissaBits + 1 to recover biased exponent
+  __m256i biased_e = _mm256_srli_epi64(_mm256_slli_epi64(a_bits, 1), kMantissaBits + 1);
+  __m256i e = _mm256_sub_epi64(biased_e, cst_bias);
+
+  // shift to the left by kExponentBits + 1 to clear the sign and exponent bits
+  __m256i shifted_mantissa = _mm256_slli_epi64(a_bits, kExponentBits + 1);
+  // shift to the right by kTotalBits - e to convert the significand to an integer
+  __m256i result_significand = _mm256_srlv_epi64(shifted_mantissa, _mm256_sub_epi64(cst_total_bits, e));
+
+  // add the implied bit
+  __m256i result_exponent = _mm256_sllv_epi64(cst_one, e);
+  // e <= 0 is interpreted as a large positive shift (2's complement), which also conveniently results in zero
+  __m256i result = _mm256_add_epi64(result_significand, result_exponent);
+  // handle negative arguments
+  __m256i sign_mask = _mm256_cmpgt_epi64(_mm256_setzero_si256(), a_bits);
+  result = _mm256_sub_epi64(_mm256_xor_si256(result, sign_mask), sign_mask);
+  return result;
 #endif
 }
 
@@ -251,19 +279,21 @@ EIGEN_STRONG_INLINE Packet2l preinterpret<Packet2l, Packet4l>(const Packet4l& a)
 }
 #endif
 
+#ifndef EIGEN_VECTORIZE_AVX512FP16
 template <>
 EIGEN_STRONG_INLINE Packet8f pcast<Packet8h, Packet8f>(const Packet8h& a) {
   return half2float(a);
 }
 
 template <>
-EIGEN_STRONG_INLINE Packet8f pcast<Packet8bf, Packet8f>(const Packet8bf& a) {
-  return Bf16ToF32(a);
-}
-
-template <>
 EIGEN_STRONG_INLINE Packet8h pcast<Packet8f, Packet8h>(const Packet8f& a) {
   return float2half(a);
+}
+#endif
+
+template <>
+EIGEN_STRONG_INLINE Packet8f pcast<Packet8bf, Packet8f>(const Packet8bf& a) {
+  return Bf16ToF32(a);
 }
 
 template <>

@@ -100,8 +100,8 @@ class KLU : public SparseSolverBase<KLU<MatrixType_> > {
     if (m_numeric) klu_free_numeric(&m_numeric, &m_common);
   }
 
-  EIGEN_CONSTEXPR inline Index rows() const EIGEN_NOEXCEPT { return mp_matrix.rows(); }
-  EIGEN_CONSTEXPR inline Index cols() const EIGEN_NOEXCEPT { return mp_matrix.cols(); }
+  constexpr Index rows() const noexcept { return mp_matrix.rows(); }
+  constexpr Index cols() const noexcept { return mp_matrix.cols(); }
 
   /** \brief Reports whether previous computation was successful.
    *
@@ -150,7 +150,7 @@ class KLU : public SparseSolverBase<KLU<MatrixType_> > {
     factorize_impl();
   }
 
-  /** Performs a symbolic decomposition on the sparcity of \a matrix.
+  /** Performs a symbolic decomposition on the sparsity of \a matrix.
    *
    * This function is particularly useful when solving for several problems having the same structure.
    *
@@ -182,7 +182,7 @@ class KLU : public SparseSolverBase<KLU<MatrixType_> > {
 
   /** Performs a numeric decomposition of \a matrix
    *
-   * The given matrix must has the same sparcity than the matrix on which the pattern anylysis has been performed.
+   * The given matrix must has the same sparsity than the matrix on which the pattern anylysis has been performed.
    *
    * \sa analyzePattern(), compute()
    */

@@ -85,10 +85,14 @@ EIGEN_STRONG_INLINE Packet4cf pconj(const Packet4cf& a) {
 }
 
 template <>
-EIGEN_STRONG_INLINE Packet4cf pmul<Packet4cf>(const Packet4cf& a, const Packet4cf& b) {
-  __m256 tmp1 = _mm256_mul_ps(_mm256_moveldup_ps(a.v), b.v);
-  __m256 tmp2 = _mm256_mul_ps(_mm256_movehdup_ps(a.v), _mm256_permute_ps(b.v, _MM_SHUFFLE(2, 3, 0, 1)));
-  __m256 result = _mm256_addsub_ps(tmp1, tmp2);
+EIGEN_STRONG_INLINE Packet4cf pmul(const Packet4cf& a, const Packet4cf& b) {
+  __m256 tmp1 = _mm256_mul_ps(_mm256_movehdup_ps(a.v), _mm256_permute_ps(b.v, _MM_SHUFFLE(2, 3, 0, 1)));
+  __m256 tmp2 = _mm256_moveldup_ps(a.v);
+#ifdef EIGEN_VECTORIZE_FMA
+  __m256 result = _mm256_fmaddsub_ps(tmp2, b.v, tmp1);
+#else
+  __m256 result = _mm256_addsub_ps(_mm256_mul_ps(tmp2, b.v), tmp1);
+#endif
   return Packet4cf(result);
 }
 
@@ -121,11 +125,11 @@ EIGEN_STRONG_INLINE Packet4cf pandnot<Packet4cf>(const Packet4cf& a, const Packe
 
 template <>
 EIGEN_STRONG_INLINE Packet4cf pload<Packet4cf>(const std::complex<float>* from) {
-  EIGEN_DEBUG_ALIGNED_LOAD return Packet4cf(pload<Packet8f>(&numext::real_ref(*from)));
+  EIGEN_DEBUG_ALIGNED_LOAD return Packet4cf(_mm256_load_ps(&numext::real_ref(*from)));
 }
 template <>
 EIGEN_STRONG_INLINE Packet4cf ploadu<Packet4cf>(const std::complex<float>* from) {
-  EIGEN_DEBUG_UNALIGNED_LOAD return Packet4cf(ploadu<Packet8f>(&numext::real_ref(*from)));
+  EIGEN_DEBUG_UNALIGNED_LOAD return Packet4cf(_mm256_loadu_ps(&numext::real_ref(*from)));
 }
 
 template <>
@@ -145,11 +149,11 @@ EIGEN_STRONG_INLINE Packet4cf ploaddup<Packet4cf>(const std::complex<float>* fro
 
 template <>
 EIGEN_STRONG_INLINE void pstore<std::complex<float> >(std::complex<float>* to, const Packet4cf& from) {
-  EIGEN_DEBUG_ALIGNED_STORE pstore(&numext::real_ref(*to), from.v);
+  EIGEN_DEBUG_ALIGNED_STORE _mm256_store_ps(&numext::real_ref(*to), from.v);
 }
 template <>
 EIGEN_STRONG_INLINE void pstoreu<std::complex<float> >(std::complex<float>* to, const Packet4cf& from) {
-  EIGEN_DEBUG_UNALIGNED_STORE pstoreu(&numext::real_ref(*to), from.v);
+  EIGEN_DEBUG_UNALIGNED_STORE _mm256_storeu_ps(&numext::real_ref(*to), from.v);
 }
 
 template <>
@@ -283,13 +287,15 @@ EIGEN_STRONG_INLINE Packet2cd pconj(const Packet2cd& a) {
 }
 
 template <>
-EIGEN_STRONG_INLINE Packet2cd pmul<Packet2cd>(const Packet2cd& a, const Packet2cd& b) {
-  __m256d tmp1 = _mm256_shuffle_pd(a.v, a.v, 0x0);
-  __m256d even = _mm256_mul_pd(tmp1, b.v);
-  __m256d tmp2 = _mm256_shuffle_pd(a.v, a.v, 0xF);
-  __m256d tmp3 = _mm256_shuffle_pd(b.v, b.v, 0x5);
-  __m256d odd = _mm256_mul_pd(tmp2, tmp3);
-  return Packet2cd(_mm256_addsub_pd(even, odd));
+EIGEN_STRONG_INLINE Packet2cd pmul(const Packet2cd& a, const Packet2cd& b) {
+  __m256d tmp1 = _mm256_mul_pd(_mm256_permute_pd(a.v, 0xF), _mm256_permute_pd(b.v, 0x5));
+  __m256d tmp2 = _mm256_movedup_pd(a.v);
+#ifdef EIGEN_VECTORIZE_FMA
+  __m256d result = _mm256_fmaddsub_pd(tmp2, b.v, tmp1);
+#else
+  __m256d result = _mm256_addsub_pd(_mm256_mul_pd(tmp2, b.v), tmp1);
+#endif
+  return Packet2cd(result);
 }
 
 template <>
@@ -321,11 +327,11 @@ EIGEN_STRONG_INLINE Packet2cd pandnot<Packet2cd>(const Packet2cd& a, const Packe
 
 template <>
 EIGEN_STRONG_INLINE Packet2cd pload<Packet2cd>(const std::complex<double>* from) {
-  EIGEN_DEBUG_ALIGNED_LOAD return Packet2cd(pload<Packet4d>((const double*)from));
+  EIGEN_DEBUG_ALIGNED_LOAD return Packet2cd(_mm256_load_pd((const double*)from));
 }
 template <>
 EIGEN_STRONG_INLINE Packet2cd ploadu<Packet2cd>(const std::complex<double>* from) {
-  EIGEN_DEBUG_UNALIGNED_LOAD return Packet2cd(ploadu<Packet4d>((const double*)from));
+  EIGEN_DEBUG_UNALIGNED_LOAD return Packet2cd(_mm256_loadu_pd((const double*)from));
 }
 
 template <>
@@ -342,11 +348,11 @@ EIGEN_STRONG_INLINE Packet2cd ploaddup<Packet2cd>(const std::complex<double>* fr
 
 template <>
 EIGEN_STRONG_INLINE void pstore<std::complex<double> >(std::complex<double>* to, const Packet2cd& from) {
-  EIGEN_DEBUG_ALIGNED_STORE pstore((double*)to, from.v);
+  EIGEN_DEBUG_ALIGNED_STORE _mm256_store_pd((double*)to, from.v);
 }
 template <>
 EIGEN_STRONG_INLINE void pstoreu<std::complex<double> >(std::complex<double>* to, const Packet2cd& from) {
-  EIGEN_DEBUG_UNALIGNED_STORE pstoreu((double*)to, from.v);
+  EIGEN_DEBUG_UNALIGNED_STORE _mm256_storeu_pd((double*)to, from.v);
 }
 
 template <>
@@ -448,6 +454,109 @@ template <>
 EIGEN_STRONG_INLINE Packet4cf pexp<Packet4cf>(const Packet4cf& a) {
   return pexp_complex<Packet4cf>(a);
 }
+
+#ifdef EIGEN_VECTORIZE_FMA
+// std::complex<float>
+template <>
+EIGEN_STRONG_INLINE Packet4cf pmadd(const Packet4cf& a, const Packet4cf& b, const Packet4cf& c) {
+  __m256 a_odd = _mm256_movehdup_ps(a.v);
+  __m256 a_even = _mm256_moveldup_ps(a.v);
+  __m256 b_swap = _mm256_permute_ps(b.v, _MM_SHUFFLE(2, 3, 0, 1));
+  __m256 result = _mm256_fmaddsub_ps(a_even, b.v, _mm256_fmaddsub_ps(a_odd, b_swap, c.v));
+  return Packet4cf(result);
+}
+template <>
+EIGEN_STRONG_INLINE Packet4cf pmsub(const Packet4cf& a, const Packet4cf& b, const Packet4cf& c) {
+  __m256 a_odd = _mm256_movehdup_ps(a.v);
+  __m256 a_even = _mm256_moveldup_ps(a.v);
+  __m256 b_swap = _mm256_permute_ps(b.v, _MM_SHUFFLE(2, 3, 0, 1));
+  __m256 result = _mm256_fmaddsub_ps(a_even, b.v, _mm256_fmsubadd_ps(a_odd, b_swap, c.v));
+  return Packet4cf(result);
+}
+template <>
+EIGEN_STRONG_INLINE Packet4cf pnmadd(const Packet4cf& a, const Packet4cf& b, const Packet4cf& c) {
+  return pnegate(pmsub(a, b, c));
+}
+template <>
+EIGEN_STRONG_INLINE Packet4cf pnmsub(const Packet4cf& a, const Packet4cf& b, const Packet4cf& c) {
+  return pnegate(pmadd(a, b, c));
+}
+// std::complex<double>
+template <>
+EIGEN_STRONG_INLINE Packet2cd pmadd(const Packet2cd& a, const Packet2cd& b, const Packet2cd& c) {
+  __m256d a_odd = _mm256_permute_pd(a.v, 0xF);
+  __m256d a_even = _mm256_movedup_pd(a.v);
+  __m256d b_swap = _mm256_permute_pd(b.v, 0x5);
+  __m256d result = _mm256_fmaddsub_pd(a_even, b.v, _mm256_fmaddsub_pd(a_odd, b_swap, c.v));
+  return Packet2cd(result);
+}
+template <>
+EIGEN_STRONG_INLINE Packet2cd pmsub(const Packet2cd& a, const Packet2cd& b, const Packet2cd& c) {
+  __m256d a_odd = _mm256_permute_pd(a.v, 0xF);
+  __m256d a_even = _mm256_movedup_pd(a.v);
+  __m256d b_swap = _mm256_permute_pd(b.v, 0x5);
+  __m256d result = _mm256_fmaddsub_pd(a_even, b.v, _mm256_fmsubadd_pd(a_odd, b_swap, c.v));
+  return Packet2cd(result);
+}
+template <>
+EIGEN_STRONG_INLINE Packet2cd pnmadd(const Packet2cd& a, const Packet2cd& b, const Packet2cd& c) {
+  return pnegate(pmsub(a, b, c));
+}
+template <>
+EIGEN_STRONG_INLINE Packet2cd pnmsub(const Packet2cd& a, const Packet2cd& b, const Packet2cd& c) {
+  return pnegate(pmadd(a, b, c));
+}
+#endif
+
+/*---------------- load/store segment support ----------------*/
+
+/*---------------- std::complex<float> ----------------*/
+
+template <>
+struct has_packet_segment<Packet2cf> : std::true_type {};
+
+template <>
+struct has_packet_segment<Packet4cf> : std::true_type {};
+
+template <>
+inline Packet2cf ploaduSegment<Packet2cf>(const std::complex<float>* from, Index begin, Index count) {
+  return (Packet2cf)_mm_maskload_ps(&numext::real_ref(*from), segment_mask_2x64(begin, count));
+}
+
+template <>
+inline void pstoreuSegment<std::complex<float>, Packet2cf>(std::complex<float>* to, const Packet2cf& from, Index begin,
+                                                           Index count) {
+  _mm_maskstore_ps(&numext::real_ref(*to), segment_mask_2x64(begin, count), from.v);
+}
+
+template <>
+inline Packet4cf ploaduSegment<Packet4cf>(const std::complex<float>* from, Index begin, Index count) {
+  return (Packet4cf)_mm256_maskload_ps(&numext::real_ref(*from), segment_mask_4x64(begin, count));
+}
+
+template <>
+inline void pstoreuSegment<std::complex<float>, Packet4cf>(std::complex<float>* to, const Packet4cf& from, Index begin,
+                                                           Index count) {
+  _mm256_maskstore_ps(&numext::real_ref(*to), segment_mask_4x64(begin, count), from.v);
+}
+
+/*---------------- std::complex<double> ----------------*/
+
+template <>
+struct has_packet_segment<Packet2cd> : std::true_type {};
+
+template <>
+inline Packet2cd ploaduSegment<Packet2cd>(const std::complex<double>* from, Index begin, Index count) {
+  return (Packet2cd)_mm256_maskload_pd(&numext::real_ref(*from), segment_mask_4x64(2 * begin, 2 * count));
+}
+
+template <>
+inline void pstoreuSegment<std::complex<double>, Packet2cd>(std::complex<double>* to, const Packet2cd& from,
+                                                            Index begin, Index count) {
+  _mm256_maskstore_pd(&numext::real_ref(*to), segment_mask_4x64(2 * begin, 2 * count), from.v);
+}
+
+/*---------------- end load/store segment support ----------------*/
 
 }  // end namespace internal
 
