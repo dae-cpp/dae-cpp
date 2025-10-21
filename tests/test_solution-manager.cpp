@@ -155,7 +155,7 @@ public:
         if (std::abs(x[0] - 1.0) < abs_err)
         {
             m_save_solution(x, t);
-            return solver_command::stop_intergration;
+            return solver_command::stop_integration;
         }
 
         if (x[0] < 1.0)
@@ -219,7 +219,7 @@ public:
 
         if (x[0] < 0.0)
         {
-            return -1; // solver_command::stop_intergration;
+            return -1; // solver_command::stop_integration;
         }
 
         return 0; // solver_command::continue_integration;

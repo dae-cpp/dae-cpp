@@ -355,7 +355,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         try
         {
             Timer timer(&t[timer::manager]);
-            if (mgr(x0, 0.0) == solver_command::stop_intergration)
+            if (mgr(x0, 0.0) == solver_command::stop_integration)
             {
                 PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
                 error_msg = exit_code::success;
@@ -677,7 +677,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         }
                         continue;
                     }
-                    else if (command) // solver_command::stop_intergration
+                    else if (command) // solver_command::stop_integration
                     {
                         print_char(opt.verbosity >= 2, '\n');
                         PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
