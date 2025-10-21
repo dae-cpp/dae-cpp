@@ -24,16 +24,16 @@
 // dae-cpp version
 #define DAECPP_VERSION_MAJOR 2
 #define DAECPP_VERSION_MINOR 2
-#define DAECPP_VERSION_PATCH 0
+#define DAECPP_VERSION_PATCH 1
 
 // Internal constants
 #define DAECPP_MAX_ORDER 4
 #ifndef DAECPP_SINGLE
 #define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-14 // Used in automatic (algorithmic) Jacobian
-#define DAECPP_FLOAT_TOLERANCE 1e-14                 // Used in the solver for convergence check against relative tolerance
+#define DAECPP_FLOAT_TOLERANCE 1e-8                  // Used in the solver for convergence check against relative tolerance
 #else
 #define DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE 1e-6 // Used in automatic (algorithmic) Jacobian
-#define DAECPP_FLOAT_TOLERANCE 1e-6                 // Used in the solver for convergence check against relative tolerance
+#define DAECPP_FLOAT_TOLERANCE 1e-3                 // Used in the solver for convergence check against relative tolerance
 #endif
 
 #include "assert-custom.hpp"
