@@ -167,6 +167,8 @@ public:
         Eigen::MatrixXd jac = autodiff::jacobian(f, wrt(x_), at(x_, t));
 
         // Convert dense matrix to sparse format
+        // TODO: Could use eimat J = jac.sparseView(); J.prune(DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE);
+        // if we don't need `sparse_matrix` format
         for (int_type j = 0; j < size; ++j)
         {
             for (int_type i = 0; i < size; ++i)
