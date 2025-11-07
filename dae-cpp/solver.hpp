@@ -332,9 +332,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         eimat Jb; // Linear system matrix
 
         // Eigen::VectorX vectors
-        eivec f_(size); // The RHS vector (converted)
-        eivec b;        // The RHS of the linear system
-        eivec dx;       // Linear system solution
+        eivec f_(size);       // The RHS vector (converted)
+        eivec rowscale(size); // Row scaling factors
+        eivec b;              // The RHS of the linear system
+        eivec dx;             // Linear system solution
 
         // Counts number of time steps
         uint64_t n_steps{0};
@@ -521,6 +522,55 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         if (is_fact_enabled)
                         {
                             Jb -= M_ * alpha;
+
+                            // Matrix scaling if enabled
+                            if (opt.linear_system_scaling)
+                            {
+                                rowscale.setZero();
+
+                                // Find max abs per row
+                                for (int col = 0; col < Jb.outerSize(); ++col)
+                                {
+                                    for (eimat::InnerIterator it(Jb, col); it; ++it)
+                                    {
+                                        int i = it.row();
+                                        double val = std::abs(it.value());
+                                        if (val > rowscale[i])
+                                        {
+                                            rowscale[i] = val;
+                                        }
+                                    }
+                                }
+
+                                // Convert to scaling factors (1 / max), protect zero rows
+                                for (int i = 0; i < rowscale.size(); ++i)
+                                {
+                                    if (rowscale[i] > 0.0)
+                                    {
+                                        rowscale[i] = 1.0 / rowscale[i];
+                                    }
+                                    else
+                                    {
+                                        rowscale[i] = 1.0; // zero row -> no scaling
+                                    }
+                                }
+
+                                // Apply row scaling to matrix
+                                for (int col = 0; col < Jb.outerSize(); ++col)
+                                {
+                                    for (eimat::InnerIterator it(Jb, col); it; ++it)
+                                    {
+                                        int i = it.row();
+                                        it.valueRef() *= rowscale[i];
+                                    }
+                                }
+                            }
+                        }
+
+                        if (opt.linear_system_scaling)
+                        {
+                            // Apply row scaling to RHS
+                            b = b.cwiseProduct(rowscale);
                         }
                     }
                     catch (const std::exception &e)
