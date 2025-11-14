@@ -54,6 +54,9 @@ class JacobianMatrixShape
     // Array of non-zero elements
     std::vector<std::pair<int_type, int_type>> m_Jn;
 
+    // Cache for `dual` numbers
+    mutable state_type m_x_cache;
+
 public:
     explicit JacobianMatrixShape(RHS rhs) : m_rhs(rhs) {}
 
@@ -67,12 +70,16 @@ public:
     {
         const int_type size = static_cast<int_type>(x.size()); // System size
 
-        state_type x_(size); // Vectors of `dual` numbers are defined with `_` suffix
+        // Resize cache if needed
+        if (m_x_cache.size() != size)
+        {
+            m_x_cache.resize(size);
+        }
 
-        // Conversion to dual numbers for automatic differentiation
+        // Conversion to `dual` numbers for automatic differentiation
         for (int_type k = 0; k < size; ++k)
         {
-            x_[k] = x[k];
+            m_x_cache[k] = x[k];
         }
 
         // Lambda-function with parameters for which the Jacobian is needed
@@ -85,9 +92,9 @@ public:
         J.reserve(static_cast<int_type>(m_Jn.size()));
 
         // Automatic differentiation of each element marked as non-zero by the user
-        for (const std::pair<int_type, int_type> &Jn : m_Jn)
+        for (const auto &Jn : m_Jn)
         {
-            J(Jn.first, Jn.second, autodiff::derivative(f, wrt(x_[Jn.second]), at(x_, t, Jn.first)));
+            J(Jn.first, Jn.second, autodiff::derivative(f, wrt(m_x_cache[Jn.second]), at(m_x_cache, t, Jn.first)));
         }
     }
 
