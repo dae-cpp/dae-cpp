@@ -146,7 +146,7 @@ struct sparse_matrix
             M.coeffRef(i[k], j[k]) += A[k];
         }
 
-        // M.makeCompressed(); // It is already compressed
+        // M.makeCompressed(); // Will be taken care of in the solver before factorization
 
         return M;
     }

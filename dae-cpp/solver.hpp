@@ -584,7 +584,15 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     {
                         Timer timer(&t[timer::factorization]);
 
-                        linsolver.compute(Jb);
+                        // Prepare linear system matrix
+                        Jb.prune(DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE);
+                        Jb.makeCompressed();
+
+                        if(iter == 0)
+                        {
+                            linsolver.analyzePattern(Jb); // Analyze the sparsity pattern only once per time step
+                        }
+                        linsolver.factorize(Jb);
 
                         c.n_fact_calls++;
 
