@@ -14,6 +14,7 @@
 
 #include <iostream>
 
+// Macros do not care about namespaces, keeping it here in case of future changes
 namespace daecpp_namespace_name
 {
 

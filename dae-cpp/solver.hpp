@@ -497,10 +497,19 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         try
                         {
                             Timer timer(&t[timer::jacobian]);
-                            J.clear();
-                            jac(J, xk, state.t);
-                            J.check();
-                            Jb = J.convert(static_cast<int_type>(size));
+                            if constexpr (std::is_same_v<Jacobian, JacobianAutomatic<RHS>>)
+                            {
+                                // Automatic Jacobian in Eigen::SparseMatrix format
+                                jac(Jb, xk, state.t);
+                            }
+                            else
+                            {
+                                // Jacobian matrix in daecpp::sparse_matrix format
+                                J.clear();
+                                jac(J, xk, state.t);
+                                J.check();
+                                Jb = J.convert(static_cast<int_type>(size));
+                            }
                         }
                         catch (const std::exception &e)
                         {
@@ -585,7 +594,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         Timer timer(&t[timer::factorization]);
 
                         // Prepare linear system matrix
-                        Jb.prune(DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE);
+                        if (opt.linear_system_scaling)
+                        {
+                            Jb.prune(DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE);
+                        }
                         Jb.makeCompressed();
 
                         if(iter == 0)
