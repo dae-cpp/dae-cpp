@@ -7,18 +7,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 ######## Build examples ########
 
-set(EXAMPLE_LIST "quick_start" "simple_dae" "perovskite_model" "flame_propagation" "jacobian_shape" "jacobian_compare")
-
 include_directories(${PROJECT_SOURCE_DIR})
 
-foreach(EXAMPLE_NAME ${EXAMPLE_LIST})
+file(GLOB EXAMPLE_DIRS RELATIVE ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/examples/*)
 
-  FILE(GLOB SOURCES ${PROJECT_SOURCE_DIR}/examples/${EXAMPLE_NAME}/*.cpp)
-
-  add_executable(${EXAMPLE_NAME} ${SOURCES})
-
-  install(TARGETS ${EXAMPLE_NAME} DESTINATION bin)
-
+foreach(EXAMPLE_NAME ${EXAMPLE_DIRS})
+  if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/${EXAMPLE_NAME})
+    file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/examples/${EXAMPLE_NAME}/*.cpp)
+    add_executable(${EXAMPLE_NAME} ${SOURCES})
+    install(TARGETS ${EXAMPLE_NAME} DESTINATION bin)
+  endif()
 endforeach()
 
 ######## Build tests ########
@@ -28,7 +26,7 @@ set(PROJECT_TEST "dae-cpp-test")
 include(CTest)
 enable_testing()
 
-FILE(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/test_*.cpp)
+file(GLOB SOURCES_TEST ${PROJECT_SOURCE_DIR}/tests/test_*.cpp)
 
 add_executable(${PROJECT_TEST} ${SOURCES_TEST})
 
