@@ -600,9 +600,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         }
                         Jb.makeCompressed();
 
-                        if(iter == 0)
+                        // TODO: May actually need to analyze pattern more often if the sparsity pattern changes over time
+                        if(iter == 0 && state.t <= dt)
                         {
-                            linsolver.analyzePattern(Jb); // Analyze the sparsity pattern only once per time step
+                            linsolver.analyzePattern(Jb); // Analyze the sparsity pattern only once at the first iteration
                         }
                         linsolver.factorize(Jb);
 

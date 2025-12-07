@@ -20,7 +20,7 @@ All notable changes to `dae-cpp` project will be documented in this file.
 
 - Eigen to version 5.0.0.
 - Renamed `TESTING` macro definition to `DAECPP_TESTING` to avoid potential clash.
-- Linear system matrix pattern now analysed only once per time step.
+- Linear system matrix pattern now analysed only once at the first iteration.
 - Pre-allocate vector of `dual` numbers in `JacobianMatrixShape` class to improve performance of the Jacobian computed from the user-defined shape.
 - Updated internal tolerances used in the solver for the convergence check against relative tolerance `rtol`.
 
