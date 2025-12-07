@@ -84,9 +84,9 @@ class MapBase<Derived, ReadOnlyAccessors> : public internal::dense_xpr_base<Deri
   typedef typename Base::CoeffReturnType CoeffReturnType;
 
   /** \copydoc DenseBase::rows() */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index rows() const EIGEN_NOEXCEPT { return m_rows.value(); }
+  EIGEN_DEVICE_FUNC constexpr Index rows() const noexcept { return m_rows.value(); }
   /** \copydoc DenseBase::cols() */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index cols() const EIGEN_NOEXCEPT { return m_cols.value(); }
+  EIGEN_DEVICE_FUNC constexpr Index cols() const noexcept { return m_cols.value(); }
 
   /** Returns a pointer to the first coefficient of the matrix or vector.
    *
@@ -94,7 +94,7 @@ class MapBase<Derived, ReadOnlyAccessors> : public internal::dense_xpr_base<Deri
    *
    * \sa innerStride(), outerStride()
    */
-  EIGEN_DEVICE_FUNC inline const Scalar* data() const { return m_data; }
+  EIGEN_DEVICE_FUNC constexpr const Scalar* data() const { return m_data; }
 
   /** \copydoc PlainObjectBase::coeff(Index,Index) const */
   EIGEN_DEVICE_FUNC inline const Scalar& coeff(Index rowId, Index colId) const {
@@ -233,8 +233,8 @@ class MapBase<Derived, WriteAccessors> : public MapBase<Derived, ReadOnlyAccesso
 
   typedef std::conditional_t<internal::is_lvalue<Derived>::value, Scalar, const Scalar> ScalarWithConstIfNotLvalue;
 
-  EIGEN_DEVICE_FUNC inline const Scalar* data() const { return this->m_data; }
-  EIGEN_DEVICE_FUNC inline ScalarWithConstIfNotLvalue* data() {
+  EIGEN_DEVICE_FUNC constexpr const Scalar* data() const { return this->m_data; }
+  EIGEN_DEVICE_FUNC constexpr ScalarWithConstIfNotLvalue* data() {
     return this->m_data;
   }  // no const-cast here so non-const-correct code will give a compile error
 

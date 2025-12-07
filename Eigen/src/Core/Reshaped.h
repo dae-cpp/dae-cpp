@@ -173,7 +173,7 @@ class ReshapedImpl_dense<XprType, Rows, Cols, Order, false>
 
 #ifdef EIGEN_PARSED_BY_DOXYGEN
   /** \sa MapBase::data() */
-  EIGEN_DEVICE_FUNC inline const Scalar* data() const;
+  EIGEN_DEVICE_FUNC constexpr const Scalar* data() const;
   EIGEN_DEVICE_FUNC inline Index innerStride() const;
   EIGEN_DEVICE_FUNC inline Index outerStride() const;
 #endif
@@ -215,10 +215,10 @@ class ReshapedImpl_dense<XprType, Rows, Cols, Order, true> : public MapBase<Resh
   EIGEN_DEVICE_FUNC XprType& nestedExpression() { return m_xpr; }
 
   /** \sa MapBase::innerStride() */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index innerStride() const { return m_xpr.innerStride(); }
+  EIGEN_DEVICE_FUNC constexpr Index innerStride() const { return m_xpr.innerStride(); }
 
   /** \sa MapBase::outerStride() */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index outerStride() const {
+  EIGEN_DEVICE_FUNC constexpr Index outerStride() const {
     return (((Flags & RowMajorBit) == RowMajorBit) ? this->cols() : this->rows()) * m_xpr.innerStride();
   }
 

@@ -70,10 +70,17 @@ class Stride {
   /** Copy constructor */
   EIGEN_DEVICE_FUNC Stride(const Stride& other) : m_outer(other.outer()), m_inner(other.inner()) {}
 
+  /** Copy assignment operator */
+  EIGEN_DEVICE_FUNC Stride& operator=(const Stride& other) {
+    m_outer.setValue(other.outer());
+    m_inner.setValue(other.inner());
+    return *this;
+  }
+
   /** \returns the outer stride */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index outer() const { return m_outer.value(); }
+  EIGEN_DEVICE_FUNC constexpr Index outer() const { return m_outer.value(); }
   /** \returns the inner stride */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index inner() const { return m_inner.value(); }
+  EIGEN_DEVICE_FUNC constexpr Index inner() const { return m_inner.value(); }
 
  protected:
   internal::variable_if_dynamic<Index, OuterStrideAtCompileTime> m_outer;

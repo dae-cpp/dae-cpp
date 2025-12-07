@@ -73,30 +73,13 @@ struct packet_traits<std::complex<float> > : default_packet_traits {
 };
 
 template <>
-struct unpacket_traits<Packet1cf> {
-  typedef std::complex<float> type;
-  typedef Packet1cf half;
-  typedef Packet2f as_real;
-  enum {
-    size = 1,
-    alignment = Aligned16,
-    vectorizable = true,
-    masked_load_available = false,
-    masked_store_available = false
-  };
+struct unpacket_traits<Packet1cf> : neon_unpacket_default<Packet1cf, std::complex<float>> {
+  using as_real = Packet2f;
 };
 template <>
-struct unpacket_traits<Packet2cf> {
-  typedef std::complex<float> type;
-  typedef Packet1cf half;
-  typedef Packet4f as_real;
-  enum {
-    size = 2,
-    alignment = Aligned16,
-    vectorizable = true,
-    masked_load_available = false,
-    masked_store_available = false
-  };
+struct unpacket_traits<Packet2cf> : neon_unpacket_default<Packet2cf, std::complex<float>> {
+  using half = Packet1cf;
+  using as_real = Packet4f;
 };
 
 template <>
@@ -106,6 +89,16 @@ EIGEN_STRONG_INLINE Packet1cf pcast<float, Packet1cf>(const float& a) {
 template <>
 EIGEN_STRONG_INLINE Packet2cf pcast<Packet2f, Packet2cf>(const Packet2f& a) {
   return Packet2cf(vreinterpretq_f32_u64(vmovl_u32(vreinterpret_u32_f32(a))));
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet1cf pzero(const Packet1cf& /*a*/) {
+  return Packet1cf(vdup_n_f32(0.0f));
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet2cf pzero(const Packet2cf& /*a*/) {
+  return Packet2cf(vdupq_n_f32(0.0f));
 }
 
 template <>
@@ -156,6 +149,20 @@ EIGEN_STRONG_INLINE Packet2cf pconj(const Packet2cf& a) {
   return Packet2cf(vreinterpretq_f32_u32(veorq_u32(b, p4ui_CONJ_XOR())));
 }
 
+#ifdef __ARM_FEATURE_COMPLEX
+template <>
+EIGEN_STRONG_INLINE Packet1cf pmadd<Packet1cf>(const Packet1cf& a, const Packet1cf& b, const Packet1cf& c) {
+  Packet1cf result;
+  result.v = vcmla_f32(c.v, a.v, b.v);
+  result.v = vcmla_rot90_f32(result.v, a.v, b.v);
+  return result;
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet1cf pmul<Packet1cf>(const Packet1cf& a, const Packet1cf& b) {
+  return pmadd(a, b, pzero(a));
+}
+#else
 template <>
 EIGEN_STRONG_INLINE Packet1cf pmul<Packet1cf>(const Packet1cf& a, const Packet1cf& b) {
   Packet2f v1, v2;
@@ -175,6 +182,22 @@ EIGEN_STRONG_INLINE Packet1cf pmul<Packet1cf>(const Packet1cf& a, const Packet1c
   // Add and return the result
   return Packet1cf(vadd_f32(v1, v2));
 }
+#endif
+
+#ifdef __ARM_FEATURE_COMPLEX
+template <>
+EIGEN_STRONG_INLINE Packet2cf pmadd<Packet2cf>(const Packet2cf& a, const Packet2cf& b, const Packet2cf& c) {
+  Packet2cf result;
+  result.v = vcmlaq_f32(c.v, a.v, b.v);
+  result.v = vcmlaq_rot90_f32(result.v, a.v, b.v);
+  return result;
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet2cf pmul<Packet2cf>(const Packet2cf& a, const Packet2cf& b) {
+  return pmadd(a, b, pzero(a));
+}
+#else
 template <>
 EIGEN_STRONG_INLINE Packet2cf pmul<Packet2cf>(const Packet2cf& a, const Packet2cf& b) {
   Packet4f v1, v2;
@@ -194,6 +217,7 @@ EIGEN_STRONG_INLINE Packet2cf pmul<Packet2cf>(const Packet2cf& a, const Packet2c
   // Add and return the result
   return Packet2cf(vaddq_f32(v1, v2));
 }
+#endif
 
 template <>
 EIGEN_STRONG_INLINE Packet1cf pcmp_eq(const Packet1cf& a, const Packet1cf& b) {
@@ -256,10 +280,12 @@ EIGEN_STRONG_INLINE Packet2cf pandnot<Packet2cf>(const Packet2cf& a, const Packe
 
 template <>
 EIGEN_STRONG_INLINE Packet1cf pload<Packet1cf>(const std::complex<float>* from) {
+  EIGEN_ASSUME_ALIGNED(from, unpacket_traits<Packet1cf>::alignment);
   EIGEN_DEBUG_ALIGNED_LOAD return Packet1cf(pload<Packet2f>((const float*)from));
 }
 template <>
 EIGEN_STRONG_INLINE Packet2cf pload<Packet2cf>(const std::complex<float>* from) {
+  EIGEN_ASSUME_ALIGNED(from, unpacket_traits<Packet2cf>::alignment);
   EIGEN_DEBUG_ALIGNED_LOAD return Packet2cf(pload<Packet4f>(reinterpret_cast<const float*>(from)));
 }
 
@@ -283,10 +309,12 @@ EIGEN_STRONG_INLINE Packet2cf ploaddup<Packet2cf>(const std::complex<float>* fro
 
 template <>
 EIGEN_STRONG_INLINE void pstore<std::complex<float> >(std::complex<float>* to, const Packet1cf& from) {
+  EIGEN_ASSUME_ALIGNED(to, unpacket_traits<Packet1cf>::alignment);
   EIGEN_DEBUG_ALIGNED_STORE pstore((float*)to, from.v);
 }
 template <>
 EIGEN_STRONG_INLINE void pstore<std::complex<float> >(std::complex<float>* to, const Packet2cf& from) {
+  EIGEN_ASSUME_ALIGNED(to, unpacket_traits<Packet2cf>::alignment);
   EIGEN_DEBUG_ALIGNED_STORE pstore(reinterpret_cast<float*>(to), from.v);
 }
 
@@ -461,13 +489,10 @@ EIGEN_STRONG_INLINE Packet2cf pexp<Packet2cf>(const Packet2cf& a) {
 //---------- double ----------
 #if EIGEN_ARCH_ARM64 && !EIGEN_APPLE_DOUBLE_NEON_BUG
 
-// See bug 1325, clang fails to call vld1q_u64.
-#if EIGEN_COMP_CLANG || EIGEN_COMP_CASTXML || EIGEN_COMP_CPE
-static uint64x2_t p2ul_CONJ_XOR = {0x0, 0x8000000000000000};
-#else
-const uint64_t p2ul_conj_XOR_DATA[] = {0x0, 0x8000000000000000};
-static uint64x2_t p2ul_CONJ_XOR = vld1q_u64(p2ul_conj_XOR_DATA);
-#endif
+inline uint64x2_t p2ul_CONJ_XOR() {
+  static const uint64_t p2ul_conj_XOR_DATA[] = {0x0, 0x8000000000000000};
+  return vld1q_u64(p2ul_conj_XOR_DATA);
+}
 
 struct Packet1cd {
   EIGEN_STRONG_INLINE Packet1cd() {}
@@ -500,27 +525,24 @@ struct packet_traits<std::complex<double> > : default_packet_traits {
 };
 
 template <>
-struct unpacket_traits<Packet1cd> {
-  typedef std::complex<double> type;
-  typedef Packet1cd half;
-  typedef Packet2d as_real;
-  enum {
-    size = 1,
-    alignment = Aligned16,
-    vectorizable = true,
-    masked_load_available = false,
-    masked_store_available = false
-  };
+struct unpacket_traits<Packet1cd> : neon_unpacket_default<Packet1cd, std::complex<double>> {
+  using as_real = Packet2d;
 };
 
 template <>
 EIGEN_STRONG_INLINE Packet1cd pload<Packet1cd>(const std::complex<double>* from) {
+  EIGEN_ASSUME_ALIGNED(from, unpacket_traits<Packet1cd>::alignment);
   EIGEN_DEBUG_ALIGNED_LOAD return Packet1cd(pload<Packet2d>(reinterpret_cast<const double*>(from)));
 }
 
 template <>
 EIGEN_STRONG_INLINE Packet1cd ploadu<Packet1cd>(const std::complex<double>* from) {
   EIGEN_DEBUG_UNALIGNED_LOAD return Packet1cd(ploadu<Packet2d>(reinterpret_cast<const double*>(from)));
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet1cd pzero<Packet1cd>(const Packet1cd& /*a*/) {
+  return Packet1cd(vdupq_n_f64(0.0));
 }
 
 template <>
@@ -546,9 +568,23 @@ EIGEN_STRONG_INLINE Packet1cd pnegate(const Packet1cd& a) {
 
 template <>
 EIGEN_STRONG_INLINE Packet1cd pconj(const Packet1cd& a) {
-  return Packet1cd(vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v), p2ul_CONJ_XOR)));
+  return Packet1cd(vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v), p2ul_CONJ_XOR())));
 }
 
+#ifdef __ARM_FEATURE_COMPLEX
+template <>
+EIGEN_STRONG_INLINE Packet1cd pmadd<Packet1cd>(const Packet1cd& a, const Packet1cd& b, const Packet1cd& c) {
+  Packet1cd result;
+  result.v = vcmlaq_f64(c.v, a.v, b.v);
+  result.v = vcmlaq_rot90_f64(result.v, a.v, b.v);
+  return result;
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet1cd pmul<Packet1cd>(const Packet1cd& a, const Packet1cd& b) {
+  return pmadd(a, b, pzero(a));
+}
+#else
 template <>
 EIGEN_STRONG_INLINE Packet1cd pmul<Packet1cd>(const Packet1cd& a, const Packet1cd& b) {
   Packet2d v1, v2;
@@ -562,12 +598,13 @@ EIGEN_STRONG_INLINE Packet1cd pmul<Packet1cd>(const Packet1cd& a, const Packet1c
   // Multiply the imag a with b
   v2 = vmulq_f64(v2, b.v);
   // Conjugate v2
-  v2 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(v2), p2ul_CONJ_XOR));
+  v2 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(v2), p2ul_CONJ_XOR()));
   // Swap real/imag elements in v2.
   v2 = preverse<Packet2d>(v2);
   // Add and return the result
   return Packet1cd(vaddq_f64(v1, v2));
 }
+#endif
 
 template <>
 EIGEN_STRONG_INLINE Packet1cd pcmp_eq(const Packet1cd& a, const Packet1cd& b) {
@@ -608,6 +645,7 @@ EIGEN_STRONG_INLINE Packet1cd ploaddup<Packet1cd>(const std::complex<double>* fr
 
 template <>
 EIGEN_STRONG_INLINE void pstore<std::complex<double> >(std::complex<double>* to, const Packet1cd& from) {
+  EIGEN_ASSUME_ALIGNED(to, unpacket_traits<Packet1cd>::alignment);
   EIGEN_DEBUG_ALIGNED_STORE pstore(reinterpret_cast<double*>(to), from.v);
 }
 

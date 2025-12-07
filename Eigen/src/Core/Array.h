@@ -102,8 +102,13 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
     return Base::_set(other);
   }
 
-  /** This is a special case of the templated operator=. Its purpose is to
-   * prevent a default operator= from hiding the templated operator=.
+  /**
+   * \brief Assigns arrays to each other.
+   *
+   * \note This is a special case of the templated operator=. Its purpose is
+   * to prevent a default operator= from hiding the templated operator=.
+   *
+   * \callgraph
    */
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Array& operator=(const Array& other) { return Base::_set(other); }
 
@@ -117,25 +122,27 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
    *
    * \sa resize(Index,Index)
    */
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Array() : Base() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
-
-#ifndef EIGEN_PARSED_BY_DOXYGEN
-  // FIXME is it still needed ??
-  /** \internal */
-  EIGEN_DEVICE_FUNC Array(internal::constructor_without_unaligned_array_assert)
-      : Base(internal::constructor_without_unaligned_array_assert()){EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED}
+#ifdef EIGEN_INITIALIZE_COEFFS
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() : Base() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
+#else
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() = default;
 #endif
-
-        EIGEN_DEVICE_FUNC Array(Array && other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_constructible<Scalar>::value)
-      : Base(std::move(other)) {
-  }
-  EIGEN_DEVICE_FUNC Array& operator=(Array&& other) EIGEN_NOEXCEPT_IF(std::is_nothrow_move_assignable<Scalar>::value) {
+  /** \brief Move constructor */
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array(Array&&) = default;
+  EIGEN_DEVICE_FUNC Array& operator=(Array&& other) noexcept(std::is_nothrow_move_assignable<Scalar>::value) {
     Base::operator=(std::move(other));
     return *this;
   }
 
-  /** \copydoc PlainObjectBase(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const
-   * ArgTypes&... args)
+  /** \brief Construct a row of column vector with fixed size from an arbitrary number of coefficients.
+   *
+   * \only_for_vectors
+   *
+   * This constructor is for 1D array or vectors with more than 4 coefficients.
+   *
+   * \warning To construct a column (resp. row) vector of fixed length, the number of values passed to this
+   * constructor must match the the fixed number of rows (resp. columns) of \c *this.
+   *
    *
    * Example: \include Array_variadic_ctor_cxx11.cpp
    * Output: \verbinclude Array_variadic_ctor_cxx11.out
@@ -232,7 +239,7 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
   }
 
   /** Copy constructor */
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Array(const Array& other) : Base(other) {}
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array(const Array&) = default;
 
  private:
   struct PrivateType {};
@@ -246,8 +253,8 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
           PrivateType())
       : Base(other.derived()) {}
 
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index innerStride() const EIGEN_NOEXCEPT { return 1; }
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index outerStride() const EIGEN_NOEXCEPT { return this->innerSize(); }
+  EIGEN_DEVICE_FUNC constexpr Index innerStride() const noexcept { return 1; }
+  EIGEN_DEVICE_FUNC constexpr Index outerStride() const noexcept { return this->innerSize(); }
 
 #ifdef EIGEN_ARRAY_PLUGIN
 #include EIGEN_ARRAY_PLUGIN

@@ -202,9 +202,9 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
   inline StorageIndex* innerNonZeroPtr() { return m_innerNonZeros; }
 
   /** \internal */
-  inline Storage& data() { return m_data; }
+  constexpr Storage& data() { return m_data; }
   /** \internal */
-  inline const Storage& data() const { return m_data; }
+  constexpr const Storage& data() const { return m_data; }
 
   /** \returns the value of the matrix at position \a i, \a j
    * This function returns Scalar(0) if the element is an explicit \em zero */
@@ -250,7 +250,7 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
       }
     }
     if ((dst < end) && (m_data.index(dst) == inner)) {
-      // this coefficient exists, return a refernece to it
+      // this coefficient exists, return a reference to it
       if (inserted != nullptr) {
         *inserted = false;
       }
@@ -302,9 +302,10 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
    */
   inline void setZero() {
     m_data.clear();
-    std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+    using std::fill_n;
+    fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
     if (m_innerNonZeros) {
-      std::fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
+      fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
     }
   }
 
@@ -506,7 +507,7 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
 
   // insert empty outer vectors at indices j, j+1 ... j+num-1 and resize the matrix
   void insertEmptyOuterVectors(Index j, Index num = 1) {
-    EIGEN_USING_STD(fill_n);
+    using std::fill_n;
     eigen_assert(num >= 0 && j >= 0 && j < m_outerSize && "Invalid parameters");
 
     const Index newRows = IsRowMajor ? m_outerSize + num : rows();
@@ -563,6 +564,8 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
   /** \internal
    * same as insert(Index,Index) except that the indices are given relative to the storage order */
   Scalar& insertByOuterInner(Index j, Index i) {
+    eigen_assert(j >= 0 && j < m_outerSize && "invalid outer index");
+    eigen_assert(i >= 0 && i < m_innerSize && "invalid inner index");
     Index start = m_outerIndex[j];
     Index end = isCompressed() ? m_outerIndex[j + 1] : start + m_innerNonZeros[j];
     Index dst = start == end ? end : m_data.searchLowerIndex(start, end, i);
@@ -619,10 +622,12 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
   void uncompress() {
     if (!isCompressed()) return;
     m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
-    if (m_outerIndex[m_outerSize] == 0)
-      std::fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
-    else
+    if (m_outerIndex[m_outerSize] == 0) {
+      using std::fill_n;
+      fill_n(m_innerNonZeros, m_outerSize, StorageIndex(0));
+    } else {
       for (Index j = 0; j < m_outerSize; j++) m_innerNonZeros[j] = m_outerIndex[j + 1] - m_outerIndex[j];
+    }
   }
 
   /** Suppresses all nonzeros which are \b much \b smaller \b than \a reference under the tolerance \a epsilon */
@@ -693,9 +698,10 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
 
       if (outerChange > 0) {
         StorageIndex lastIdx = m_outerSize == 0 ? StorageIndex(0) : m_outerIndex[m_outerSize];
-        std::fill_n(m_outerIndex + m_outerSize, outerChange + 1, lastIdx);
+        using std::fill_n;
+        fill_n(m_outerIndex + m_outerSize, outerChange + 1, lastIdx);
 
-        if (!isCompressed()) std::fill_n(m_innerNonZeros + m_outerSize, outerChange, StorageIndex(0));
+        if (!isCompressed()) fill_n(m_innerNonZeros + m_outerSize, outerChange, StorageIndex(0));
       }
     }
     m_outerSize = newOuterSize;
@@ -739,7 +745,8 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
     m_innerNonZeros = 0;
 
-    std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
+    using std::fill_n;
+    fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
   }
 
   /** \internal
@@ -827,6 +834,8 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     std::swap(m_innerNonZeros, other.m_innerNonZeros);
     m_data.swap(other.m_data);
   }
+  /** Free-function swap. */
+  friend EIGEN_DEVICE_FUNC void swap(SparseMatrix& a, SparseMatrix& b) { a.swap(b); }
 
   /** Sets *this to the identity matrix.
    * This function also turns the matrix into compressed mode, and drop any reserved memory. */
@@ -839,7 +848,8 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     m_data.squeeze();
     std::iota(m_outerIndex, m_outerIndex + m_outerSize + 1, StorageIndex(0));
     std::iota(innerIndexPtr(), innerIndexPtr() + m_outerSize, StorageIndex(0));
-    std::fill_n(valuePtr(), m_outerSize, Scalar(1));
+    using std::fill_n;
+    fill_n(valuePtr(), m_outerSize, Scalar(1));
   }
 
   inline SparseMatrix& operator=(const SparseMatrix& other) {
@@ -865,7 +875,6 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
     return *this;
   }
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
   template <typename OtherDerived>
   inline SparseMatrix& operator=(const EigenBase<OtherDerived>& other) {
     return Base::operator=(other.derived());
@@ -873,7 +882,6 @@ class SparseMatrix : public SparseCompressedBase<SparseMatrix<Scalar_, Options_,
 
   template <typename Lhs, typename Rhs>
   inline SparseMatrix& operator=(const Product<Lhs, Rhs, AliasFreeProduct>& other);
-#endif  // EIGEN_PARSED_BY_DOXYGEN
 
   template <typename OtherDerived>
   EIGEN_DONT_INLINE SparseMatrix& operator=(const SparseMatrixBase<OtherDerived>& other);
@@ -1122,7 +1130,11 @@ void set_from_triplets(const InputIterator& begin, const InputIterator& end, Spa
   using TransposedSparseMatrix =
       SparseMatrix<typename SparseMatrixType::Scalar, IsRowMajor ? ColMajor : RowMajor, StorageIndex>;
 
-  if (begin == end) return;
+  if (begin == end) {
+    // Clear out existing data (if any).
+    mat.setZero();
+    return;
+  }
 
   // There are two strategies to consider for constructing a matrix from unordered triplets:
   // A) construct the 'mat' in its native storage order and sort in-place (less memory); or,
@@ -1224,8 +1236,8 @@ void set_from_triplets_sorted(const InputIterator& begin, const InputIterator& e
   // matrix is finalized
 }
 
-// thin wrapper around a generic binary functor to use the sparse disjunction evaulator instead of the default
-// "arithmetic" evaulator
+// thin wrapper around a generic binary functor to use the sparse disjunction evaluator instead of the default
+// "arithmetic" evaluator
 template <typename DupFunctor, typename LhsScalar, typename RhsScalar = LhsScalar>
 struct scalar_disjunction_op {
   using result_type = typename result_of<DupFunctor(LhsScalar, RhsScalar)>::type;
@@ -1631,7 +1643,7 @@ SparseMatrix<Scalar_, Options_, StorageIndex_>::insertCompressedAtByOuterInner(I
   // first, check if there is adequate allocated memory
   if (m_data.allocatedSize() <= m_data.size()) {
     // if there is no capacity for a single insertion, double the capacity
-    // increase capacity by a mininum of 32
+    // increase capacity by a minimum of 32
     Index minReserve = 32;
     Index reserveSize = numext::maxi(minReserve, m_data.allocatedSize());
     m_data.reserve(reserveSize);

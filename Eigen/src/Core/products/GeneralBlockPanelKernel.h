@@ -305,7 +305,8 @@ inline bool useSpecificBlockingSizes(Index& k, Index& m, Index& n) {
  * \param[in,out] k Input: the third dimension of the product. Output: the blocking size along the same dimension.
  * \param[in,out] m Input: the number of rows of the left hand side. Output: the blocking size along the same dimension.
  * \param[in,out] n Input: the number of columns of the right hand side. Output: the blocking size along the same
- * dimension.
+ *                         dimension.
+ * \param[in] num_threads Input: the number of threads used for the computation.
  *
  * Given a m x k times k x n matrix product of scalar types \c LhsScalar and \c RhsScalar,
  * this function computes the blocking size parameters along the respective dimensions
@@ -718,10 +719,10 @@ class gebp_traits<std::complex<RealScalar>, std::complex<RealScalar>, ConjLhs_, 
     LhsPacketSize = Vectorizable ? unpacket_traits<LhsPacket_>::size : 1,
     RhsPacketSize = Vectorizable ? unpacket_traits<RhsScalar>::size : 1,
     RealPacketSize = Vectorizable ? unpacket_traits<RealPacket>::size : 1,
+    NumberOfRegisters = EIGEN_ARCH_DEFAULT_NUMBER_OF_REGISTERS,
 
-    // FIXME: should depend on NumberOfRegisters
     nr = 4,
-    mr = ResPacketSize,
+    mr = (plain_enum_min(16, NumberOfRegisters) / 2 / nr) * ResPacketSize,
 
     LhsProgress = ResPacketSize,
     RhsProgress = 1
@@ -795,8 +796,8 @@ class gebp_traits<std::complex<RealScalar>, std::complex<RealScalar>, ConjLhs_, 
                                                                                          DoublePacket<ResPacketType>& c,
                                                                                          TmpType& /*tmp*/,
                                                                                          const LaneIdType&) const {
-    c.first = padd(pmul(a, b.first), c.first);
-    c.second = padd(pmul(a, b.second), c.second);
+    c.first = pmadd(a, b.first, c.first);
+    c.second = pmadd(a, b.second, c.second);
   }
 
   template <typename LaneIdType>
@@ -1117,7 +1118,7 @@ struct lhs_process_one_packet {
     // loops on each largest micro horizontal panel of lhs
     // (LhsProgress x depth)
     for (Index i = peelStart; i < peelEnd; i += LhsProgress) {
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
       EIGEN_IF_CONSTEXPR(nr >= 8) {
         for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
           const LhsScalar* blA = &blockA[i * strideA + offsetA * (LhsProgress)];
@@ -1257,7 +1258,7 @@ struct lhs_process_one_packet {
         traits.initAcc(C3);
         // To improve instruction pipelining, let's double the accumulation registers:
         //  even k will accumulate in C*, while odd k will accumulate in D*.
-        // This trick is crutial to get good performance with FMA, otherwise it is
+        // This trick is crucial to get good performance with FMA, otherwise it is
         // actually faster to perform separated MUL+ADD because of a naturally
         // better instruction-level parallelism.
         AccPacket D0, D1, D2, D3;
@@ -1467,7 +1468,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr, 
                                                 (depth * sizeof(LhsScalar) * 3 * LhsProgress)));
     for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
       const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
       EIGEN_IF_CONSTEXPR(nr >= 8) {
         for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
           for (Index i = i1; i < actual_panel_end; i += 3 * LhsProgress) {
@@ -1935,7 +1936,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr, 
 
     for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
       Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
       EIGEN_IF_CONSTEXPR(nr >= 8) {
         for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
           for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
@@ -2326,7 +2327,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr, 
   }
   //---------- Process remaining rows, 1 at once ----------
   if (peeled_mc_quarter < rows) {
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
     EIGEN_IF_CONSTEXPR(nr >= 8) {
       // loop on each panel of the rhs
       for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
@@ -2852,7 +2853,7 @@ EIGEN_DONT_INLINE void gemm_pack_rhs<Scalar, Index, DataMapper, nr, ColMajor, Co
   Index count = 0;
   const Index peeled_k = (depth / PacketSize) * PacketSize;
 
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
   EIGEN_IF_CONSTEXPR(nr >= 8) {
     for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
       // skip what we have before
@@ -3035,7 +3036,7 @@ struct gemm_pack_rhs<Scalar, Index, DataMapper, nr, RowMajor, Conjugate, PanelMo
     Index packet_cols4 = nr >= 4 ? (cols / 4) * 4 : 0;
     Index count = 0;
 
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
     EIGEN_IF_CONSTEXPR(nr >= 8) {
       for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
         // skip what we have before
@@ -3130,9 +3131,8 @@ inline std::ptrdiff_t l2CacheSize() {
   return l2;
 }
 
-/** \returns the currently set level 3 cpu cache size (in bytes) used to estimate the ideal blocking size paramete\
-rs.
-* \sa setCpuCacheSize */
+/** \returns the currently set level 3 cpu cache size (in bytes) used to estimate the ideal blocking size parameters.
+ * \sa setCpuCacheSize */
 inline std::ptrdiff_t l3CacheSize() {
   std::ptrdiff_t l1, l2, l3;
   internal::manage_caching_sizes(GetAction, &l1, &l2, &l3);

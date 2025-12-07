@@ -46,22 +46,22 @@ struct EigenBase {
   typedef typename internal::traits<Derived>::StorageKind StorageKind;
 
   /** \returns a reference to the derived object */
-  EIGEN_DEVICE_FUNC Derived& derived() { return *static_cast<Derived*>(this); }
+  EIGEN_DEVICE_FUNC constexpr Derived& derived() { return *static_cast<Derived*>(this); }
   /** \returns a const reference to the derived object */
-  EIGEN_DEVICE_FUNC const Derived& derived() const { return *static_cast<const Derived*>(this); }
+  EIGEN_DEVICE_FUNC constexpr const Derived& derived() const { return *static_cast<const Derived*>(this); }
 
-  EIGEN_DEVICE_FUNC inline Derived& const_cast_derived() const {
+  EIGEN_DEVICE_FUNC inline constexpr Derived& const_cast_derived() const {
     return *static_cast<Derived*>(const_cast<EigenBase*>(this));
   }
   EIGEN_DEVICE_FUNC inline const Derived& const_derived() const { return *static_cast<const Derived*>(this); }
 
   /** \returns the number of rows. \sa cols(), RowsAtCompileTime */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index rows() const EIGEN_NOEXCEPT { return derived().rows(); }
+  EIGEN_DEVICE_FUNC constexpr Index rows() const noexcept { return derived().rows(); }
   /** \returns the number of columns. \sa rows(), ColsAtCompileTime*/
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index cols() const EIGEN_NOEXCEPT { return derived().cols(); }
+  EIGEN_DEVICE_FUNC constexpr Index cols() const noexcept { return derived().cols(); }
   /** \returns the number of coefficients, which is rows()*cols().
    * \sa rows(), cols(), SizeAtCompileTime. */
-  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR inline Index size() const EIGEN_NOEXCEPT { return rows() * cols(); }
+  EIGEN_DEVICE_FUNC constexpr Index size() const noexcept { return rows() * cols(); }
 
   /** \internal Don't use it, but do the equivalent: \code dst = *this; \endcode */
   template <typename Dest>
@@ -104,6 +104,11 @@ struct EigenBase {
     // derived class can reimplement it in a more optimized way.
     dst = this->derived() * dst;
   }
+
+  template <typename Device>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE DeviceWrapper<Derived, Device> device(Device& device);
+  template <typename Device>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE DeviceWrapper<const Derived, Device> device(Device& device) const;
 };
 
 /***************************************************************************

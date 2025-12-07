@@ -138,6 +138,12 @@ struct SolverOptions
     // Default value is 2.0.
     double dt_decrease_factor{2.0};
 
+    // Matrix scaling flag.
+    // If `true`, the solver will scale the linear system matrix before solving it.
+    // Matrix scaling can improve the stability of the linear solver in some cases.
+    // Default value is `false`.
+    bool linear_system_scaling{false};
+
     // Number of threads
     unsigned int num_threads{1}; // TODO: Not used yet
 

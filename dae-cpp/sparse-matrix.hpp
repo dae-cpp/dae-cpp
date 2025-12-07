@@ -95,9 +95,8 @@ struct sparse_matrix
      */
     inline void check() const noexcept
     {
-        constexpr char msg[] = "Three-array sparse matrix check failed. Inconsistent array size.";
-        ASSERT(A.size() == i.size(), msg);
-        ASSERT(A.size() == j.size(), msg);
+        ASSERT(A.size() == i.size(), "Three-array sparse matrix check failed. Array A and i have inconsistent sizes.");
+        ASSERT(A.size() == j.size(), "Three-array sparse matrix check failed. Array A and j have inconsistent sizes.");
     }
 
     /*
@@ -146,7 +145,7 @@ struct sparse_matrix
             M.coeffRef(i[k], j[k]) += A[k];
         }
 
-        // M.makeCompressed(); // It is already compressed
+        // M.makeCompressed(); // Will be taken care of in the solver before factorization
 
         return M;
     }

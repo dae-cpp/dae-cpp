@@ -332,9 +332,10 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         eimat Jb; // Linear system matrix
 
         // Eigen::VectorX vectors
-        eivec f_(size); // The RHS vector (converted)
-        eivec b;        // The RHS of the linear system
-        eivec dx;       // Linear system solution
+        eivec f_(size);       // The RHS vector (converted)
+        eivec rowscale(size); // Row scaling factors
+        eivec b;              // The RHS of the linear system
+        eivec dx;             // Linear system solution
 
         // Counts number of time steps
         uint64_t n_steps{0};
@@ -355,7 +356,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
         try
         {
             Timer timer(&t[timer::manager]);
-            if (mgr(x0, 0.0) == solver_command::stop_intergration)
+            if (mgr(x0, 0.0) == solver_command::stop_integration)
             {
                 PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");
                 error_msg = exit_code::success;
@@ -496,10 +497,19 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         try
                         {
                             Timer timer(&t[timer::jacobian]);
-                            J.clear();
-                            jac(J, xk, state.t);
-                            J.check();
-                            Jb = J.convert(static_cast<int_type>(size));
+                            if constexpr (std::is_same_v<Jacobian, JacobianAutomatic<RHS>>)
+                            {
+                                // Automatic Jacobian in Eigen::SparseMatrix format
+                                jac(Jb, xk, state.t);
+                            }
+                            else
+                            {
+                                // Jacobian matrix in daecpp::sparse_matrix format
+                                J.clear();
+                                jac(J, xk, state.t);
+                                J.check();
+                                Jb = J.convert(static_cast<int_type>(size));
+                            }
                         }
                         catch (const std::exception &e)
                         {
@@ -521,6 +531,55 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         if (is_fact_enabled)
                         {
                             Jb -= M_ * alpha;
+
+                            // Matrix scaling if enabled
+                            if (opt.linear_system_scaling)
+                            {
+                                rowscale.setZero();
+
+                                // Find max abs per row
+                                for (int col = 0; col < Jb.outerSize(); ++col)
+                                {
+                                    for (eimat::InnerIterator it(Jb, col); it; ++it)
+                                    {
+                                        int i = it.row();
+                                        double val = std::abs(it.value());
+                                        if (val > rowscale[i])
+                                        {
+                                            rowscale[i] = val;
+                                        }
+                                    }
+                                }
+
+                                // Convert to scaling factors (1 / max), protect zero rows
+                                for (int i = 0; i < rowscale.size(); ++i)
+                                {
+                                    if (rowscale[i] > 0.0)
+                                    {
+                                        rowscale[i] = 1.0 / rowscale[i];
+                                    }
+                                    else
+                                    {
+                                        rowscale[i] = 1.0; // zero row -> no scaling
+                                    }
+                                }
+
+                                // Apply row scaling to matrix
+                                for (int col = 0; col < Jb.outerSize(); ++col)
+                                {
+                                    for (eimat::InnerIterator it(Jb, col); it; ++it)
+                                    {
+                                        int i = it.row();
+                                        it.valueRef() *= rowscale[i];
+                                    }
+                                }
+                            }
+                        }
+
+                        if (opt.linear_system_scaling)
+                        {
+                            // Apply row scaling to RHS
+                            b = b.cwiseProduct(rowscale);
                         }
                     }
                     catch (const std::exception &e)
@@ -534,7 +593,19 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                     {
                         Timer timer(&t[timer::factorization]);
 
-                        linsolver.compute(Jb);
+                        // Prepare linear system matrix
+                        if (opt.linear_system_scaling)
+                        {
+                            Jb.prune(DAECPP_SPARSE_MATRIX_ELEMENT_TOLERANCE);
+                        }
+                        Jb.makeCompressed();
+
+                        // TODO: May actually need to analyze pattern more often if the sparsity pattern changes over time
+                        if(iter == 0 && state.t <= dt)
+                        {
+                            linsolver.analyzePattern(Jb); // Analyze the sparsity pattern only once at the first iteration
+                        }
+                        linsolver.factorize(Jb);
 
                         c.n_fact_calls++;
 
@@ -677,7 +748,7 @@ inline exit_code::status solve(Mass mass, RHS rhs, Jacobian jac, Manager mgr, co
                         }
                         continue;
                     }
-                    else if (command) // solver_command::stop_intergration
+                    else if (command) // solver_command::stop_integration
                     {
                         print_char(opt.verbosity >= 2, '\n');
                         PRINT(opt.verbosity >= 1, "Stop event in Solution Manager triggered.");

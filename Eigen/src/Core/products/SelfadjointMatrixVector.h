@@ -164,6 +164,11 @@ struct selfadjoint_product_impl<Lhs, LhsMode, false, Rhs, 0, true> {
 
   enum { LhsUpLo = LhsMode & (Upper | Lower) };
 
+  // Verify that the Rhs is a vector in the correct orientation.
+  // Otherwise, we break the assumption that we are multiplying
+  // MxN * Nx1.
+  static_assert(Rhs::ColsAtCompileTime == 1, "The RHS must be a column vector.");
+
   template <typename Dest>
   static EIGEN_DEVICE_FUNC void run(Dest& dest, const Lhs& a_lhs, const Rhs& a_rhs, const Scalar& alpha) {
     typedef typename Dest::Scalar ResScalar;
@@ -197,6 +202,7 @@ struct selfadjoint_product_impl<Lhs, LhsMode, false, Rhs, 0, true> {
 
     if (!EvalToDest) {
 #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+      constexpr int Size = Dest::SizeAtCompileTime;
       Index size = dest.size();
       EIGEN_DENSE_STORAGE_CTOR_PLUGIN
 #endif
@@ -205,6 +211,7 @@ struct selfadjoint_product_impl<Lhs, LhsMode, false, Rhs, 0, true> {
 
     if (!UseRhs) {
 #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
+      constexpr int Size = ActualRhsTypeCleaned::SizeAtCompileTime;
       Index size = rhs.size();
       EIGEN_DENSE_STORAGE_CTOR_PLUGIN
 #endif
